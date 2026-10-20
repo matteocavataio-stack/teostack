@@ -274,7 +274,7 @@ struct ClipTableView: View {
                 Spacer()
                 Button("Leggi metadata") { projects.readMetadataForSelection() }
                     .disabled(projects.isReadingMetadata || projects.clips.isEmpty)
-                    .help("Rilegge i metadata dei clip mostrati con ExifTool (dalla copia verificata sul disco di destinazione).")
+                    .help("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).")
                 Menu("Colonne") {
                     Section("Dati dell'offload") {
                         ForEach(ClipColumns.all.filter { !$0.isMetadata }) { c in
@@ -292,7 +292,7 @@ struct ClipTableView: View {
             if let status = projects.metadataStatus {
                 Text(status).font(.caption).foregroundStyle(.secondary)
             }
-            Text("Metadata letti con ExifTool: camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. ISO, WB, lente, ND, look e sensor FPS richiedono ARRI Meta Extract (non ancora collegato) e mostrano N/D.")
+            Text("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Se un valore non è leggibile mostra N/D.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             if projects.clips.isEmpty {
@@ -471,10 +471,13 @@ struct DependencyBanner: View {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     Text("Programmi esterni mancanti: " + tools.missing.map { $0.tool.displayName }.joined(separator: ", ")
-                         + (tools.missing.contains { $0.tool.isRequired } ? " — senza ExifTool i metadata non vengono letti." : "."))
+                         + ". I metadata che dipendono da essi resteranno N/D.")
                         .font(.callout.bold())
                     Spacer()
                     Button(expanded ? "Nascondi istruzioni" : "Come installarli") { expanded.toggle() }
+                    if tools.missing.contains(where: { $0.tool == .artCmd }) {
+                        Button("Scegli art-cmd…") { tools.choosePath(for: .artCmd) }
+                    }
                     Button("Ricontrolla") { tools.recheck() }
                 }
                 if expanded {

@@ -4,6 +4,7 @@ import Foundation
 public enum ExternalTool: String, CaseIterable, Identifiable {
     case exiftool
     case ffprobe
+    case artCmd
 
     public var id: String { rawValue }
 
@@ -11,6 +12,16 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
         switch self {
         case .exiftool: return "ExifTool"
         case .ffprobe: return "ffprobe"
+        case .artCmd: return "art-cmd (ARRI Reference Tool)"
+        }
+    }
+
+    /// Nome del file eseguibile.
+    public var executableName: String {
+        switch self {
+        case .exiftool: return "exiftool"
+        case .ffprobe: return "ffprobe"
+        case .artCmd: return "art-cmd"
         }
     }
 
@@ -19,15 +30,18 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
         switch self {
         case .exiftool: return "legge i metadata dei clip ARRI e Sony (necessario)"
         case .ffprobe: return "legge i dati tecnici degli MXF Sony e dei file ProRes (consigliato)"
+        case .artCmd: return "legge i metadata dei clip ARRI: ISO, lente, ND, WB, look, sensor FPS (senza di esso restano N/D)"
         }
     }
 
     public var isRequired: Bool { self == .exiftool }
 
-    var versionArguments: [String] {
+    /// nil = non si esegue il programma per verificarlo (basta che il file esista ed sia eseguibile).
+    var versionArguments: [String]? {
         switch self {
         case .exiftool: return ["-ver"]
         case .ffprobe: return ["-version"]
+        case .artCmd: return nil
         }
     }
 
@@ -49,6 +63,15 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
             sudo mv ffprobe /usr/local/bin/
             (poi, per verifica: ffprobe -version)
             """
+        case .artCmd:
+            return """
+            mkdir -p ~/ARRI
+            cd ~/ARRI
+            curl -L -o art-cmd.zip "https://arri.canto.de/direct/other/ht9rmfr4q177f2jlct7alob95s/AXAAWD6V5zGk08YuSogjUy6PcKM/original?content-type=application%2Fzip&name=ARRIReferenceTool_CMD_1.0.0_macos_universal_data.zip"
+            unzip -q art-cmd.zip
+            (tieni l'intera cartella ~/ARRI/art-cmd_1.0.0_macos_universal: art-cmd ha bisogno della sottocartella lib)
+            (se macOS lo blocca: xattr -dr com.apple.quarantine ~/ARRI)
+            """
         }
     }
 }
@@ -65,15 +88,42 @@ public enum ExternalTools {
     /// Cartelle dove cercare, oltre al PATH (le app lanciate dal Finder non ereditano il PATH del Terminale).
     public static let defaultSearchDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin"]
 
+    /// Percorso scelto a mano dall'utente per un programma (UserDefaults, chiave "toolPath.<nome>").
+    public static func userPath(for tool: ExternalTool) -> String? {
+        UserDefaults.standard.string(forKey: "toolPath.\(tool.rawValue)")
+    }
+
+    public static func setUserPath(_ path: String?, for tool: ExternalTool) {
+        UserDefaults.standard.set(path, forKey: "toolPath.\(tool.rawValue)")
+    }
+
+    /// Dove cercare art-cmd: il pacchetto ARRI si scompatta in una cartella con bin/ e lib/ (es. ~/ARRI/art-cmd_1.0.0_macos_universal/bin).
+    public static func artCmdSearchDirectories(home: String = NSHomeDirectory()) -> [String] {
+        var result: [String] = []
+        for base in [home + "/ARRI", "/Applications/ARRI", "/opt/ARRI", "/usr/local/ARRI"] {
+            let entries = ((try? FileManager.default.contentsOfDirectory(atPath: base)) ?? []).sorted(by: >)   // versioni più recenti prima
+            for e in entries { result.append(base + "/" + e + "/bin") }
+            result.append(base + "/bin")
+        }
+        return result
+    }
+
     public static func detect(_ tool: ExternalTool,
                               searchDirectories: [String] = defaultSearchDirectories,
-                              pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"]) -> ToolStatus {
+                              pathEnvironment: String? = ProcessInfo.processInfo.environment["PATH"],
+                              userPath: String? = nil) -> ToolStatus {
+        var candidates: [String] = []
+        if let userPath = userPath ?? Self.userPath(for: tool) { candidates.append(userPath) }
         var dirs = searchDirectories
+        if tool == .artCmd && searchDirectories == defaultSearchDirectories { dirs += artCmdSearchDirectories() }
         for d in (pathEnvironment ?? "").split(separator: ":").map(String.init) where !dirs.contains(d) { dirs.append(d) }
-        for dir in dirs {
-            let candidate = (dir as NSString).appendingPathComponent(tool.rawValue)
+        candidates += dirs.map { ($0 as NSString).appendingPathComponent(tool.executableName) }
+        for candidate in candidates {
             guard FileManager.default.isExecutableFile(atPath: candidate) else { continue }
-            if let version = run(candidate, arguments: tool.versionArguments) {
+            guard let args = tool.versionArguments else {
+                return ToolStatus(tool: tool, path: candidate, version: nil)
+            }
+            if let version = run(candidate, arguments: args) {
                 return ToolStatus(tool: tool, path: candidate, version: version)
             }
         }

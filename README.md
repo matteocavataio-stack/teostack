@@ -9,7 +9,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 |------|-----------|-------|
 | a | Offload + XXH64 + UI base | **fatta** (nucleo testato su Linux; UI da compilare su Mac) |
 | b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
-| c | Metadata ARRI / Sony Venice | **ARRI (ExifTool) fatta**; ARRI Meta Extract e Sony in attesa di dati di esempio |
+| c | Metadata ARRI / Sony Venice | **ARRI fatta** (ExifTool + art-cmd, testata su dati reali ALEXA 35); Sony in attesa di dati di esempio |
 | d | Report fase 1 | da fare |
 | e | Report fase 2 (thumbnail, contact print) | da fare |
 
@@ -48,9 +48,19 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
   «Leggi metadata» nel tab Clip. Si legge la **copia verificata** sul disco di destinazione, mai la scheda sorgente, e solo in lettura.
 - **Un modulo parser per famiglia di camera:** `ARRIMetadataParser` (riconosce `MXF:ApplicationSupplierName = ARRI`). Sony Venice: da scrivere
   quando avrò un XML sidecar e un output ExifTool/ffprobe reali.
-- **ARRI, cosa ExifTool dà davvero** (verificato su un clip ALEXA 35, fixture in `Tests/TeoStackCoreTests/Fixtures`): camera, firmware, risoluzione,
-  durata, FPS del file, timecode iniziale, data di ripresa. **ISO, WB, lente, ND, look info e sensor FPS non ci sono**: restano **N/D**
-  finché non si collega ARRI Meta Extract. Con timecode drop-frame il timecode resta N/D (non si calcola un valore dubbio).
+- **ARRI Meta Extract è dismesso** da ARRI e non si usa. Lo sostituisce l'**ARRI Reference Tool CMD** (`art-cmd`, gratuito, nessuna registrazione):
+  l'app lo cerca in `~/ARRI/*/bin`, `/Applications/ARRI*`, `/usr/local/bin`, nel PATH, oppure in un percorso scelto con «Scegli art-cmd…».
+  Comando usato: `art-cmd export --input clip.mxf --duration 1 --output <temp>/metadata.json` (cartella temporanea sempre eliminata).
+- **ARRI — cosa si legge davvero** (verificato su un clip MXF/ARRIRAW di ALEXA 35, fixture in `Tests/TeoStackCoreTests/Fixtures`):
+  - ExifTool: camera, firmware, risoluzione, **durata**, FPS del file, timecode iniziale, data di ripresa.
+  - art-cmd: camera + serial, firmware, codec, risoluzione, **sensor FPS, ISO, shutter, WB (K e tint), filtro ND (densità), look, lente (modello e focale),
+    color space, scena, take, reel**, timecode. Dove i due strumenti si sovrappongono prevale art-cmd.
+  - I valori "dinamici" (ISO, lente, ND, WB, shutter, sensor FPS, timecode) sono quelli del **primo fotogramma**: su uno zoom o un ND variabile possono cambiare
+    durante la ripresa. Le unità sono state verificate negli schemi JSON ufficiali ARRI (focale in µm, ISO lineare, ND = densità ottica).
+  - La durata vera viene da ExifTool: nell'export di art-cmd `clipDuration` vale 1 perché si esporta un solo fotogramma.
+  - Il campo data di creazione di art-cmd (`clipCreationTime`) è marcato «Z» ma coincide con l'ora locale del nome file: non viene usato.
+  - Con timecode drop-frame (ExifTool) il timecode resta N/D (non si calcola un valore dubbio).
+  - Senza art-cmd restano N/D: ISO, WB, lente, ND, look, sensor FPS, scena, take, reel, serial, codec.
 - Formati non riconosciuti: nessun valore scritto (N/D) e conteggiati nel messaggio «Metadata: N clip letti, M formato non supportato».
 
 ## Cronologia del progetto

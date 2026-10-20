@@ -1,5 +1,6 @@
 #if canImport(SwiftUI)
 import SwiftUI
+import AppKit
 import TeoStackCore
 
 /// Contenitore dei due modelli dell'app. Non è osservato: le viste osservano i due modelli separatamente.
@@ -32,6 +33,19 @@ final class ToolsViewModel: ObservableObject {
             let found = ExternalTools.detectAll()
             DispatchQueue.main.async { self?.statuses = found }
         }
+    }
+
+    /// Indica a mano dove si trova un programma (es. art-cmd se è stato estratto in una cartella non standard).
+    func choosePath(for tool: ExternalTool) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.message = "Seleziona il programma «\(tool.executableName)»"
+        panel.prompt = "Scegli"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        ExternalTools.setUserPath(url.path, for: tool)
+        recheck()
     }
 }
 
@@ -223,15 +237,17 @@ final class ProjectsViewModel: ObservableObject {
 
     private func runMetadataImport(clips: [ClipRecord]) {
         guard let store, !clips.isEmpty, !isReadingMetadata else { return }
-        guard let runner = ExifToolRunner.locate() else {
-            metadataStatus = "ExifTool non è installato: metadata non letti (vedi l'avviso in alto per installarlo)."
+        let exif = ExifToolRunner.locate()
+        let art = ARTCmdRunner.locate()
+        guard exif != nil || art != nil else {
+            metadataStatus = "Né ExifTool né art-cmd sono installati: metadata non letti (vedi l'avviso in alto per installarli)."
             return
         }
         isReadingMetadata = true
         metadataStatus = "Lettura metadata…"
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
-                let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: runner) { done, total in
+                let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: exif, art: art) { done, total in
                     DispatchQueue.main.async { self?.metadataStatus = "Lettura metadata… \(done)/\(total)" }
                 }
                 DispatchQueue.main.async { self?.finishMetadataImport("Metadata: \(summary.text)") }
