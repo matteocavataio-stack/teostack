@@ -33,7 +33,7 @@ final class OffloadViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var resumable: OffloadJournal?
 
-    /// Bin scelto nel progetto: la destinazione su disco è <cartella scelta>/<Progetto>/<Giorno>/<Bin>.
+    /// Bin scelto nel progetto: la destinazione su disco è <cartella scelta>/<Bin>.
     @Published var target: BinTarget?
     var store: ProjectStore?
     var onRecorded: (() -> Void)?
@@ -147,9 +147,8 @@ final class OffloadViewModel: ObservableObject {
         }
         guard register(job: journal.job, binID: record.binID) else { return }
         sourceURL = source
-        destinations = journal.job.destinationRoots.map {
-            DestinationSlot(url: $0.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent())
-        }
+        destinations = (journal.job.destinationBases ?? journal.job.destinationRoots.map { $0.deletingLastPathComponent() })
+            .map { DestinationSlot(url: $0) }
         runState = .scanning
         result = nil
         errorMessage = nil

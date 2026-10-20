@@ -29,7 +29,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 - **Eliminare o rinominare nel programma non tocca mai i file sui dischi.** Le finestre di conferma lo dicono.
 - I nomi diventano cartelle: sono vietati `/ \ : * ? " < > |`, i nomi che iniziano/finiscono con punto e quelli oltre 100 caratteri.
 - **Offload:** scegli un bin nella sidebar, poi le cartelle base dei dischi. I file finiscono in
-  `<cartella base>/<Progetto>/<Giorno>/<Bin>/…` (la Library è solo logica, non crea una cartella). L'offload viene registrato nel bin
+  `<cartella scelta>/<Bin>/…`: sul disco viene creata solo la cartella del bin; Progetto, Library e giorno esistono solo nel programma. L'offload viene registrato nel bin
   all'avvio e aggiornato alla fine (anche se annullato o con errori). «Riprendi» riusa lo stesso record.
 - **Clip:** contano come clip solo i file con estensione `ari, arx, mov, mxf, mp4` (valore predefinito modificabile in
   `MediaClassifier`) **e** con tutte le destinazioni OK. Gli altri file (XML, sidecar…) sono registrati e visibili con

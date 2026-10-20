@@ -112,7 +112,7 @@ final class ProjectStoreTests: XCTestCase {
         let target = try XCTUnwrap(try store.binTarget(binID: bin.id))
         XCTAssertEqual(target.projectName, "Film")
         XCTAssertEqual(target.destinationRoot(under: URL(fileURLWithPath: "/Volumes/SSD1")).path,
-                       "/Volumes/SSD1/Film/DAY01_20261016/A_0001_1DET")
+                       "/Volumes/SSD1/A_0001_1DET", "su disco solo la cartella del bin")
         XCTAssertNil(try store.binTarget(binID: day.id), "un giorno non è un bin")
         XCTAssertNil(try store.binTarget(binID: 9999))
     }

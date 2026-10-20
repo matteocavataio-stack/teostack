@@ -59,7 +59,8 @@ public struct ClipRecord: Identifiable, Equatable {
     public var dayName: String
 }
 
-/// Dove va un offload: cartelle su disco = <base>/<Progetto>/<Giorno>/<Bin>.
+/// Dove va un offload: su disco viene creata SOLO la cartella del bin = <base>/<Bin>.
+/// Progetto, Library e giorno esistono nel programma ma non creano cartelle sui dischi.
 public struct BinTarget: Equatable {
     public var projectID: Int64
     public var projectName: String
@@ -68,9 +69,7 @@ public struct BinTarget: Equatable {
     public var binName: String
 
     public func destinationRoot(under base: URL) -> URL {
-        base.appendingPathComponent(projectName, isDirectory: true)
-            .appendingPathComponent(dayName, isDirectory: true)
-            .appendingPathComponent(binName, isDirectory: true)
+        base.appendingPathComponent(binName, isDirectory: true)
     }
 }
 

@@ -198,7 +198,7 @@ struct DestinationsPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Destinazioni (cartella base del disco: dentro verrà creato Progetto/Giorno/Bin)").font(.headline)
+                Text("Destinazioni (verrà creata la cartella del bin dentro quella scelta)").font(.headline)
                 Spacer()
                 Button("Aggiungi destinazione") { vm.addDestination() }
                     .disabled(vm.destinations.count >= 3 || vm.isRunning)
