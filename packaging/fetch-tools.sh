@@ -42,7 +42,11 @@ echo "== ffmpeg / ffprobe (evermeet.cx, build statiche)"
 for tool in ffmpeg ffprobe; do
     URL="$(curl -fsSL --retry 5 --retry-delay 30 --max-time 60 "https://evermeet.cx/ffmpeg/info/$tool/release" | python3 -c 'import json,sys; print(json.load(sys.stdin)["download"]["zip"]["url"])')"
     echo "$URL"
-    fetch "$URL" "$(basename "$URL")"
+    if ! fetch "$URL" "$(basename "$URL")"; then
+        if [ "${ALLOW_MISSING_TOOLS:-0}" = "1" ]; then echo "ATTENZIONE: $tool non scaricato, l'app lo segnalerà come mancante"; continue; fi
+        echo "Scarica a mano $URL dal browser e copialo in $CACHE, poi rilancia lo script (oppure usa ALLOW_MISSING_TOOLS=1)."
+        exit 1
+    fi
     unzip -q -o "$CACHE/$(basename "$URL")" -d "$WORK/$tool"
     cp "$WORK/$tool/$tool" "$DEST/$tool"
     chmod +x "$DEST/$tool"
