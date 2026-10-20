@@ -23,6 +23,7 @@ final class ProjectsViewModel: ObservableObject {
     @Published var tree: TreeNode?
     @Published var selectedNodeID: Int64?
     @Published var clips: [ClipRecord] = []
+    @Published var history: [HistoryEvent] = []
     @Published var binTarget: BinTarget?
     @Published var showAllFiles = false
     @Published var errorMessage: String?
@@ -59,12 +60,13 @@ final class ProjectsViewModel: ObservableObject {
 
     private func reloadTree() throws {
         guard let store, let pid = selectedProjectID else {
-            tree = nil; selectedNodeID = nil; clips = []; binTarget = nil
+            tree = nil; selectedNodeID = nil; clips = []; history = []; binTarget = nil
             return
         }
         let t = try store.tree(projectID: pid)
         tree = t
         if selectedNodeID == nil || node(selectedNodeID!) == nil { selectedNodeID = t.id }
+        history = try store.history(projectID: pid)
         try refreshSelection()
     }
 

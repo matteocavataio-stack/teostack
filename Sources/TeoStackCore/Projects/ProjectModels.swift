@@ -59,6 +59,27 @@ public struct ClipRecord: Identifiable, Equatable {
     public var dayName: String
 }
 
+/// Voce della cronologia di un progetto.
+public struct HistoryEvent: Identifiable, Equatable {
+    public enum Severity { case info, success, warning, error }
+
+    public let id: Int64
+    public let projectID: Int64
+    public let date: Date
+    public let kind: String
+    public let title: String
+    public let detail: String?
+
+    public var severity: Severity {
+        switch kind {
+        case "offloadCompleted": return .success
+        case "offloadProblems", "offloadNotStarted": return .error
+        case "offloadCancelled", "nodeDeleted": return .warning
+        default: return .info
+        }
+    }
+}
+
 /// Dove va un offload: su disco viene creata SOLO la cartella del bin = <base>/<Bin>.
 /// Progetto, Library e giorno esistono nel programma ma non creano cartelle sui dischi.
 public struct BinTarget: Equatable {

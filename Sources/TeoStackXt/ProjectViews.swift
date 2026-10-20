@@ -352,4 +352,101 @@ struct ClipTableView: View {
         return text == ClipColumns.notAvailable ? Color.secondary : Color.primary
     }
 }
+
+// MARK: - Cronologia del progetto (colonna a destra)
+
+struct HistoryView: View {
+    @ObservedObject var projects: ProjectsViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Cronologia").font(.headline)
+                Spacer()
+                if let p = projects.selectedProject {
+                    Text(p.name).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            .padding(10)
+            Divider()
+            if projects.selectedProject == nil {
+                Text("Seleziona un progetto")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if projects.history.isEmpty {
+                Text("Nessuna attività registrata")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(projects.history) { event in
+                    HistoryRow(event: event)
+                }
+                .listStyle(.plain)
+            }
+        }
+    }
+}
+
+struct HistoryRow: View {
+    let event: HistoryEvent
+
+    private static let formatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "it_IT")
+        f.dateFormat = "dd/MM/yyyy HH:mm:ss"
+        return f
+    }()
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon)
+                .foregroundStyle(color)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Self.formatter.string(from: event.date))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Text(event.title)
+                    .font(.callout)
+                    .foregroundStyle(event.severity == .error ? Color.red : Color.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let detail = event.detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+        .padding(.vertical, 3)
+    }
+
+    private var color: Color {
+        switch event.severity {
+        case .success: return .green
+        case .warning: return .orange
+        case .error: return .red
+        case .info: return .secondary
+        }
+    }
+
+    private var icon: String {
+        switch event.kind {
+        case "projectCreated": return "folder.badge.plus"
+        case "projectRenamed", "nodeRenamed": return "pencil"
+        case "dayCreated": return "calendar.badge.plus"
+        case "binCreated": return "film"
+        case "nodeDeleted": return "trash"
+        case "offloadStarted": return "arrow.right.circle"
+        case "offloadResumed": return "arrow.clockwise"
+        case "offloadCopyDone": return "doc.on.doc"
+        case "offloadCompleted": return "checkmark.seal.fill"
+        case "offloadProblems": return "exclamationmark.triangle.fill"
+        case "offloadCancelled": return "xmark.circle"
+        case "offloadNotStarted": return "exclamationmark.octagon.fill"
+        default: return "circle"
+        }
+    }
+}
 #endif

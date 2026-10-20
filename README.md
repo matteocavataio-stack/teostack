@@ -38,6 +38,14 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
   Camera, Codec, Risoluzione, Sensor FPS, ND Filter, Look Info, Lente, ISO, WB, Timecode). Clic sull'intestazione per ordinare.
   I metadata non ancora letti mostrano **N/D** (verranno popolati nella fase c).
 
+## Cronologia del progetto
+
+Colonna a destra (pulsante «Nascondi/Mostra cronologia») con tutte le operazioni del progetto selezionato, dalla più recente:
+creazione e rinomina del progetto, giorni e bin creati / rinominati / eliminati (con quanti record eliminati), offload avviato,
+ripreso, fine copia, completato (tutti OK), con problemi (MISMATCH/ERRORI con nome file), annullato, non avviato (con i motivi).
+Le voci sono salvate nel database, restano dopo il riavvio e sono per progetto. Eliminando il progetto si elimina anche la sua cronologia.
+Le fasi successive (metadata, report) aggiungeranno le loro voci.
+
 ## Come funziona la sicurezza
 
 1. La sorgente è aperta solo con `O_RDONLY`; non viene mai scritto, rinominato o cancellato nulla su di essa.

@@ -78,6 +78,19 @@ public final class ProjectStore {
                 CREATE INDEX clip_bin ON clip(binID);
                 """)
         }
+        m.registerMigration("v2-history") { db in
+            try db.execute(sql: """
+                CREATE TABLE event (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    projectID INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+                    at REAL NOT NULL,
+                    kind TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    detail TEXT
+                );
+                CREATE INDEX event_project ON event(projectID, at);
+                """)
+        }
         return m
     }
 
@@ -87,6 +100,15 @@ public final class ProjectStore {
         do { return try body() }
         catch let e as ProjectStoreError { throw e }
         catch { throw ProjectStoreError.database("\(error)") }
+    }
+
+    private static func log(_ db: Database, projectID: Int64, kind: String, title: String, detail: String? = nil) throws {
+        try db.execute(sql: "INSERT INTO event(projectID, at, kind, title, detail) VALUES (?, ?, ?, ?, ?)",
+                       arguments: [projectID, Date().timeIntervalSince1970, kind, title, detail])
+    }
+
+    private static func projectID(ofNode id: Int64, _ db: Database) throws -> Int64? {
+        try Int64.fetchOne(db, sql: "SELECT projectID FROM node WHERE id = ?", arguments: [id])
     }
 
     private static func date(_ v: Double) -> Date { Date(timeIntervalSince1970: v) }
@@ -114,6 +136,7 @@ public final class ProjectStore {
                 let id = db.lastInsertedRowID
                 try db.execute(sql: "INSERT INTO node(projectID, parentID, kind, name, createdAt) VALUES (?, NULL, 'library', 'Library', ?)",
                                arguments: [id, createdAt.timeIntervalSince1970])
+                try ProjectStore.log(db, projectID: id, kind: "projectCreated", title: "Progetto «\(name)» creato")
                 return Project(id: id, name: name, createdAt: createdAt)
             }
         }
@@ -126,8 +149,13 @@ public final class ProjectStore {
                 if try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM project WHERE name = ? AND id <> ?", arguments: [name, id]) ?? 0 > 0 {
                     throw ProjectStoreError.duplicateName("Esiste già un progetto chiamato «\(name)».")
                 }
+                guard let old = try String.fetchOne(db, sql: "SELECT name FROM project WHERE id = ?", arguments: [id]) else {
+                    throw ProjectStoreError.notFound("Progetto non trovato.")
+                }
                 try db.execute(sql: "UPDATE project SET name = ? WHERE id = ?", arguments: [name, id])
-                if db.changesCount == 0 { throw ProjectStoreError.notFound("Progetto non trovato.") }
+                if old != name {
+                    try ProjectStore.log(db, projectID: id, kind: "projectRenamed", title: "Progetto rinominato: «\(old)» → «\(name)»")
+                }
             }
         }
     }
@@ -216,6 +244,12 @@ public final class ProjectStore {
                 let projectID: Int64 = parent["projectID"]
                 try db.execute(sql: "INSERT INTO node(projectID, parentID, kind, name, createdAt) VALUES (?, ?, ?, ?, ?)",
                                arguments: [projectID, parentID, kind.rawValue, name, Date().timeIntervalSince1970])
+                if kind == .day {
+                    try ProjectStore.log(db, projectID: projectID, kind: "dayCreated", title: "Cartella giorno «\(name)» creata")
+                } else {
+                    let parentName = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [parentID]) ?? ""
+                    try ProjectStore.log(db, projectID: projectID, kind: "binCreated", title: "Bin «\(name)» creato in «\(parentName)»")
+                }
                 return TreeNode(id: db.lastInsertedRowID, projectID: projectID, parentID: parentID, kind: kind,
                                 name: name, clipCount: 0, children: kind == .bin ? nil : [])
             }
@@ -237,7 +271,13 @@ public final class ProjectStore {
                 if try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM node WHERE parentID IS ? AND name = ? AND id <> ?", arguments: [parent, name, id]) ?? 0 > 0 {
                     throw ProjectStoreError.duplicateName("Esiste già «\(name)» in questa cartella.")
                 }
+                let old = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [id]) ?? ""
                 try db.execute(sql: "UPDATE node SET name = ? WHERE id = ?", arguments: [name, id])
+                if old != name, let pid = try ProjectStore.projectID(ofNode: id, db) {
+                    let what = NodeKind(rawValue: row["kind"]) == .day ? "Cartella giorno" : "Bin"
+                    try ProjectStore.log(db, projectID: pid, kind: "nodeRenamed", title: "\(what) rinominato: «\(old)» → «\(name)»",
+                                         detail: "Rinominato solo nel programma: le cartelle già create sui dischi non sono state rinominate.")
+                }
             }
         }
     }
@@ -270,7 +310,18 @@ public final class ProjectStore {
                 if NodeKind(rawValue: kind) == .library {
                     throw ProjectStoreError.invalidOperation("La Library non si può eliminare (elimina il progetto).")
                 }
+                let name = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [id]) ?? ""
+                let pid = try ProjectStore.projectID(ofNode: id, db)
+                let sub = "WITH RECURSIVE sub(id) AS (SELECT id FROM node WHERE id = ? UNION ALL SELECT n.id FROM node n JOIN sub ON n.parentID = sub.id)"
+                let bins = try Int.fetchOne(db, sql: sub + " SELECT COUNT(*) FROM node WHERE id IN (SELECT id FROM sub) AND kind = 'bin'", arguments: [id]) ?? 0
+                let offloads = try Int.fetchOne(db, sql: sub + " SELECT COUNT(*) FROM offload WHERE binID IN (SELECT id FROM sub)", arguments: [id]) ?? 0
+                let clips = try Int.fetchOne(db, sql: sub + " SELECT COUNT(*) FROM clip WHERE binID IN (SELECT id FROM sub)", arguments: [id]) ?? 0
                 try db.execute(sql: "DELETE FROM node WHERE id = ?", arguments: [id])
+                if let pid {
+                    let what = NodeKind(rawValue: kind) == .day ? "Cartella giorno «\(name)» eliminata" : "Bin «\(name)» eliminato"
+                    try ProjectStore.log(db, projectID: pid, kind: "nodeDeleted", title: what,
+                                         detail: "Eliminati dal programma: \(bins) bin, \(offloads) offload, \(clips) file registrati. I file sui dischi non sono stati toccati.")
+                }
             }
         }
     }
@@ -296,11 +347,18 @@ public final class ProjectStore {
     public func beginOffload(jobID: UUID, binID: Int64, sourcePath: String, destinations: [String], startedAt: Date = Date()) throws {
         try wrap {
             try db.write { db in
+                let existed = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM offload WHERE jobID = ?", arguments: [jobID.uuidString]) ?? 0 > 0
                 try db.execute(sql: """
                     INSERT INTO offload(jobID, binID, sourcePath, destinationsJSON, startedAt, outcome)
                     VALUES (?, ?, ?, ?, ?, 'running')
                     ON CONFLICT(jobID) DO UPDATE SET outcome = 'running', finishedAt = NULL
                     """, arguments: [jobID.uuidString, binID, sourcePath, ProjectStore.json(destinations), startedAt.timeIntervalSince1970])
+                if let pid = try ProjectStore.projectID(ofNode: binID, db) {
+                    let binName = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [binID]) ?? ""
+                    try ProjectStore.log(db, projectID: pid, kind: existed ? "offloadResumed" : "offloadStarted",
+                                         title: existed ? "Offload ripreso nel bin «\(binName)»" : "Offload avviato nel bin «\(binName)»",
+                                         detail: "Sorgente: \(sourcePath)\n" + destinations.enumerated().map { "Destinazione \($0.offset + 1): \($0.element)" }.joined(separator: "\n"))
+                }
             }
         }
     }
@@ -312,13 +370,51 @@ public final class ProjectStore {
             try db.write { db in
                 guard let offloadID = try Int64.fetchOne(db, sql: "SELECT id FROM offload WHERE jobID = ?", arguments: [result.job.id.uuidString]),
                       let binID = try Int64.fetchOne(db, sql: "SELECT binID FROM offload WHERE id = ?", arguments: [offloadID]) else { return }
+                let pid = try ProjectStore.projectID(ofNode: binID, db)
+                let binName = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [binID]) ?? ""
                 if result.outcome == .preflightFailed {
                     try db.execute(sql: "DELETE FROM offload WHERE id = ? AND NOT EXISTS (SELECT 1 FROM clip WHERE offloadID = ?)", arguments: [offloadID, offloadID])
+                    if let pid {
+                        try ProjectStore.log(db, projectID: pid, kind: "offloadNotStarted",
+                                             title: "Offload NON avviato nel bin «\(binName)»: controlli preliminari falliti",
+                                             detail: result.preflightErrors.joined(separator: "\n"))
+                    }
                     return
                 }
                 let total = result.files.reduce(Int64(0)) { $0 + $1.size }
                 try db.execute(sql: "UPDATE offload SET outcome = ?, finishedAt = ?, allOK = ?, totalBytes = ? WHERE id = ?",
                                arguments: [result.outcome.rawValue, finishedAt.timeIntervalSince1970, result.allOK ? 1 : 0, total, offloadID])
+                if let pid {
+                    let nDest = result.job.destinationRoots.count
+                    let mismatches = result.files.reduce(0) { $0 + $1.destinations.filter { $0.status == .mismatch }.count }
+                    let errors = result.files.reduce(0) { $0 + $1.destinations.filter { $0.status == .error }.count }
+                    let okFiles = result.files.filter { $0.destinations.allSatisfy { $0.status == .ok } }.count
+                    let duration = Format.duration(result.elapsed)
+                    switch result.outcome {
+                    case .cancelled:
+                        try ProjectStore.log(db, projectID: pid, kind: "offloadCancelled",
+                                             title: "Offload annullato nel bin «\(binName)»",
+                                             detail: "File parziali rimossi dalle destinazioni. \(okFiles) file su \(result.files.count) già verificati OK restano. Durata \(duration). «Riprendi» continua da dove si è fermato.")
+                    case .completed where result.allOK:
+                        try ProjectStore.log(db, projectID: pid, kind: "offloadCompleted",
+                                             title: "Offload completato nel bin «\(binName)»: \(result.files.count) file, \(Format.bytes(total)), tutti OK",
+                                             detail: "Riletti dal disco con XXH64 identico alla sorgente su \(nDest) destinazione/i. Durata \(duration)\(result.skippedAlreadyVerified > 0 ? ". \(result.skippedAlreadyVerified) file già verificati in precedenza" : "").")
+                    default:
+                        var lines: [String] = []
+                        for f in result.files {
+                            for (d, r) in f.destinations.enumerated() where r.status != .ok {
+                                lines.append("\(f.relativePath) — destinazione \(d + 1): \(r.status.label)\(r.message.map { ": \($0)" } ?? "")")
+                            }
+                        }
+                        let shown = lines.prefix(8).joined(separator: "\n") + (lines.count > 8 ? "\n… e altri \(lines.count - 8)" : "")
+                        let dead: [String] = result.destinationErrors.enumerated().compactMap { (index, message) in
+                            message.map { "Destinazione \(index + 1) interrotta: \($0)" }
+                        }
+                        try ProjectStore.log(db, projectID: pid, kind: "offloadProblems",
+                                             title: "Offload terminato con PROBLEMI nel bin «\(binName)»: \(mismatches) MISMATCH, \(errors) ERRORI",
+                                             detail: (dead + [shown]).filter { !$0.isEmpty }.joined(separator: "\n"))
+                    }
+                }
                 for f in result.files {
                     let statuses = f.destinations.map { $0.status }
                     let aggregate: String
@@ -393,6 +489,37 @@ public final class ProjectStore {
                 var current = ProjectStore.decode([String: String].self, text, default: [:])
                 for (k, v) in values { current[k] = v }
                 try db.execute(sql: "UPDATE clip SET metadataJSON = ? WHERE id = ?", arguments: [ProjectStore.json(current), clipID])
+            }
+        }
+    }
+
+    // MARK: Cronologia
+
+    /// Aggiunge una voce di cronologia legata a un offload (es. fine della fase di copia).
+    public func logOffloadEvent(jobID: UUID, kind: String, title: String, detail: String? = nil) throws {
+        try wrap {
+            try db.write { db in
+                guard let binID = try Int64.fetchOne(db, sql: "SELECT binID FROM offload WHERE jobID = ?", arguments: [jobID.uuidString]),
+                      let pid = try ProjectStore.projectID(ofNode: binID, db) else { return }
+                try ProjectStore.log(db, projectID: pid, kind: kind, title: title, detail: detail)
+            }
+        }
+    }
+
+    /// Aggiunge una voce libera alla cronologia del progetto (usata anche dalle fasi successive: metadata, report).
+    public func logEvent(projectID: Int64, kind: String, title: String, detail: String? = nil) throws {
+        try wrap { try db.write { db in try ProjectStore.log(db, projectID: projectID, kind: kind, title: title, detail: detail) } }
+    }
+
+    /// Cronologia del progetto, dalla più recente.
+    public func history(projectID: Int64, limit: Int = 500) throws -> [HistoryEvent] {
+        try wrap {
+            try db.read { db in
+                try Row.fetchAll(db, sql: "SELECT * FROM event WHERE projectID = ? ORDER BY at DESC, id DESC LIMIT ?",
+                                 arguments: [projectID, limit]).map {
+                    HistoryEvent(id: $0["id"], projectID: $0["projectID"], date: ProjectStore.date($0["at"]),
+                                 kind: $0["kind"], title: $0["title"], detail: $0["detail"])
+                }
             }
         }
     }

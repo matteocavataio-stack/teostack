@@ -13,6 +13,7 @@ struct ContentView: View {
     @StateObject private var app = AppModel()
     @State private var request: NameRequest?
     @State private var tab: MainTab = .offload
+    @AppStorage("showHistory") private var showHistory = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,12 +23,16 @@ struct ContentView: View {
                 SidebarView(projects: app.projects, request: $request)
                     .frame(minWidth: 220, idealWidth: 260, maxWidth: 420)
                 VStack(spacing: 0) {
-                    Picker("", selection: $tab) {
-                        ForEach(MainTab.allCases) { Text($0.rawValue).tag($0) }
+                    HStack {
+                        Picker("", selection: $tab) {
+                            ForEach(MainTab.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(maxWidth: 260)
+                        Spacer()
+                        Button(showHistory ? "Nascondi cronologia" : "Mostra cronologia") { showHistory.toggle() }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(maxWidth: 260)
                     .padding(8)
                     switch tab {
                     case .offload: OffloadView(vm: app.offload, projects: app.projects)
@@ -35,9 +40,13 @@ struct ContentView: View {
                     }
                 }
                 .frame(minWidth: 760)
+                if showHistory {
+                    HistoryView(projects: app.projects)
+                        .frame(minWidth: 260, idealWidth: 320, maxWidth: 520)
+                }
             }
         }
-        .frame(minWidth: 1100, minHeight: 760)
+        .frame(minWidth: 1280, minHeight: 760)
         .onReceive(app.projects.$binTarget) { app.offload.target = $0 }
         .sheet(item: $request) { req in
             NameSheet(request: req, onSubmit: { submit(req, $0) }, onClose: { request = nil })

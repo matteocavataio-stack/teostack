@@ -207,6 +207,16 @@ final class OffloadViewModel: ObservableObject {
             guard let self else { return }
             self.pendingLock.lock(); self.pendingUpdates.append(update); self.pendingLock.unlock()
         }
+        let startedAt = Date()
+        let jobID = job.id
+        engine.onPhase = { [weak self] phase in
+            guard phase == .verifying, let self else { return }
+            let seconds = Date().timeIntervalSince(startedAt)
+            try? self.store?.logOffloadEvent(jobID: jobID, kind: "offloadCopyDone",
+                                             title: "Copia completata: inizia la verifica (rilettura dal disco)",
+                                             detail: "Durata copia \(Format.duration(seconds))")
+            DispatchQueue.main.async { self.onRecorded?() }
+        }
         engine.onSnapshot = { [weak self] snap in
             DispatchQueue.main.async {
                 self?.flushUpdates()
