@@ -57,6 +57,8 @@ public struct ClipRecord: Identifiable, Equatable {
     public var offloadDate: Date
     public var binName: String
     public var dayName: String
+    /// Data di modifica del file (dalla sorgente); nil per gli offload registrati prima che fosse salvata.
+    public var modifiedAt: Date? = nil
 }
 
 /// Voce della cronologia di un progetto.
@@ -131,6 +133,8 @@ public enum NameValidator {
 /// Elenco modificabile: è un valore predefinito, da confermare con la struttura reale delle schede.
 public enum MediaClassifier {
     public static var mediaExtensions: Set<String> = ["ari", "arx", "mov", "mxf", "mp4"]
+    /// Clip audio (nei report compaiono come «Audio Clips»).
+    public static var audioExtensions: Set<String> = ["wav", "bwf", "aif", "aiff", "mp3", "m4a", "aac", "flac"]
 
     public static func isMedia(relativePath: String) -> Bool {
         mediaExtensions.contains((relativePath as NSString).pathExtension.lowercased())

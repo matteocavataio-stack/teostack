@@ -95,6 +95,9 @@ public final class ProjectStore {
             // Scelta dell'utente: la cronologia mostra solo gli offload completati.
             try db.execute(sql: "DELETE FROM event WHERE kind <> 'offloadCompleted'")
         }
+        m.registerMigration("v4-clip-modified-date") { db in
+            try db.execute(sql: "ALTER TABLE clip ADD COLUMN modifiedAt REAL")
+        }
         return m
     }
 
@@ -432,14 +435,16 @@ public final class ProjectStore {
                     else if !statuses.isEmpty && statuses.allSatisfy({ $0 == .ok }) { aggregate = "ok" }
                     else { aggregate = "pending" }
                     try db.execute(sql: """
-                        INSERT INTO clip(offloadID, binID, relativePath, name, size, sourceHash, status, destStatusJSON, isMedia)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO clip(offloadID, binID, relativePath, name, size, sourceHash, status, destStatusJSON, isMedia, modifiedAt)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ON CONFLICT(offloadID, relativePath) DO UPDATE SET
                           size = excluded.size, sourceHash = excluded.sourceHash,
-                          status = excluded.status, destStatusJSON = excluded.destStatusJSON
+                          status = excluded.status, destStatusJSON = excluded.destStatusJSON,
+                          modifiedAt = COALESCE(excluded.modifiedAt, clip.modifiedAt)
                         """, arguments: [offloadID, binID, f.relativePath, (f.relativePath as NSString).lastPathComponent, f.size,
                                          f.sourceHash, aggregate, ProjectStore.json(statuses.map { $0.rawValue }),
-                                         MediaClassifier.isMedia(relativePath: f.relativePath) ? 1 : 0])
+                                         MediaClassifier.isMedia(relativePath: f.relativePath) ? 1 : 0,
+                                         f.modificationDate?.timeIntervalSince1970])
                 }
             }
         }
@@ -482,7 +487,8 @@ public final class ProjectStore {
                                destinationStatuses: ProjectStore.decode([String].self, $0["destStatusJSON"], default: []),
                                isMedia: ($0["isMedia"] as Int) == 1,
                                metadata: ProjectStore.decode([String: String].self, $0["metadataJSON"], default: [:]),
-                               offloadDate: ProjectStore.date($0["offloadDate"]), binName: $0["binName"], dayName: $0["dayName"])
+                               offloadDate: ProjectStore.date($0["offloadDate"]), binName: $0["binName"], dayName: $0["dayName"],
+                               modifiedAt: ($0["modifiedAt"] as Double?).map(ProjectStore.date))
                 }
             }
         }

@@ -21,7 +21,7 @@ public enum ARTMetadataParser {
         var out: [String: String] = [:]
 
         let camera = payload(json, "descriptiveMetadataSets", "Camera Device")
-        if let v = string(camera["cameraModel"]) { out["camera"] = v }
+        if let v = string(camera["cameraModel"]) { out["camera"] = v; out["manufacturer"] = "ARRI" }   // art-cmd legge solo clip ARRI
         if let v = string(camera["cameraSerialNumber"]) { out["cameraSerial"] = v }
         if let v = string(camera["cameraSoftwarePackageName"]) { out["firmware"] = v }
 
@@ -33,6 +33,12 @@ public enum ARTMetadataParser {
             out["resolution"] = "\(Int(w))x\(Int(h))"
         }
 
+        let audio = payload(json, "clipBasedMetadataSets", "Audio")
+        if let v = string(audio["audioCodec"]) { out["audioCodec"] = v }
+        if let v = number(audio["audioChannels"]) { out["audioChannels"] = String(Int(v)) }
+        if let v = number(audio["audioSampleRate"]) { out["audioSampleRate"] = String(Int(v)) }
+        if let v = number(audio["audioBitDepth"]) { out["audioBitDepth"] = String(Int(v)) }
+
         let color = payload(json, "clipBasedMetadataSets", "Color")
         if let look = color["lookInfo"] as? [String: Any], let name = string(look["lookFilename"]) { out["lookInfo"] = name }
         if let enc = color["sceneColorEncoding"] as? [String: Any],
@@ -42,9 +48,11 @@ public enum ARTMetadataParser {
 
         let lens = payload(json, "descriptiveMetadataSets", "Lens Device")
         if let v = string(lens["lensModel"]) { out["lens"] = v }
+        if let v = string(lens["lensSerialNumber"]) { out["lensSerial"] = v }
 
         let slate = payload(json, "descriptiveMetadataSets", "Slate Info")
         if let v = string(slate["reelName"]) { out["reel"] = v }
+        if let v = string(slate["cameraIndex"]) { out["cameraIndex"] = v }
         if let v = string(slate["scene"]) { out["scene"] = v }
         if let v = string(slate["take"]) { out["take"] = v }
         if let v = string(slate["production"]) { out["production"] = v }
@@ -71,9 +79,18 @@ public enum ARTMetadataParser {
                 var text = "\(Int(k)) K"
                 if let tint = number(w["whiteBalanceTint"]), abs(tint) > 0.0001 { text += String(format: ", tint %+.1f", tint) }
                 out["whiteBalance"] = text
+                if let tint = number(w["whiteBalanceTint"]) { out["tint"] = trimmed(tint, decimals: 1) }
+            }
+            if let positional = sets["Positional"] as? [String: Any], let o = positional["orientation"] as? [String: Any] {
+                if let tilt = number(o["tilt"]) { out["tilt"] = trimmed(tilt, decimals: 1) }
+                if let roll = number(o["roll"]) { out["roll"] = trimmed(roll, decimals: 1) }
             }
             if let l = sets["Lens State"] as? [String: Any], let um = number(l["lensFocalLength"]), um > 0 {
                 out["focalLength"] = String(format: "%.0f mm", um / 1000)
+            }
+            // distanza di messa a fuoco: lensFocusDistanceMetric è in mm; 0 = non disponibile, -1 = infinito (schema ARRI)
+            if let l = sets["Lens State"] as? [String: Any], let mm = number(l["lensFocusDistanceMetric"]), mm > 0 {
+                out["focusDistance"] = String(format: "%.2f m", mm / 1000)
             }
         }
         return out

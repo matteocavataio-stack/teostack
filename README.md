@@ -10,8 +10,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 | a | Offload + XXH64 + UI base | **fatta** (nucleo testato su Linux; UI da compilare su Mac) |
 | b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
 | c | Metadata ARRI / Sony Venice | **ARRI fatta** (ExifTool + art-cmd, testata su dati reali ALEXA 35); Sony in attesa di dati di esempio |
-| d | Report fase 1 (menu «Esporta report», template Classic) | **fatta** (PDF, HTML, CSV, XML, JSON, ASC MHL; testati su Linux, UI da compilare su Mac) |
-| e | Report fase 2 (thumbnail, contact print) | da fare |
+| d | Report: i 5 PDF del formato Silverstack «Classic» (Shooting Day, Clips, Volume, Thumbnail, Contact Print) | **fatta** (generazione testata su Linux e confrontata con i PDF di riferimento; UI da compilare su Mac) |
 
 ## Struttura
 
@@ -66,16 +65,25 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 ## Report (fase d)
 
 Menu **Report → Esporta report…** (⇧⌘E) oppure pulsante «Esporta report…» in alto. Ambito = elemento selezionato nella sidebar (progetto, giorno o bin).
-Template **Classic**, formato **PDF** (A4 orizzontale, pagine numerate). Campi: nome progetto, operatore (ricordato), note.
+Si scelgono quali report creare e la cartella: **ogni report è un PDF separato**, con nome `<Report_Name>-<bin>-<aaaa-mm-gg-HHmm>.pdf`
+(es. `Clips_Report-A_9001_1C3S-2026-10-20-1455.pdf`). Un file esistente non viene mai sovrascritto (si aggiunge « 2»).
 
-Sezioni principali: **Shooting Day** (per giorno: clip, file, dimensione, durata, backup, formati), **Clips** (tabella con le colonne visibili nel tab Clip),
-**Volume** (una tabella per ogni cartella/volume di destinazione con TUTTI i file, XXH64, stato e posizione).
-Riepiloghi opzionali: **Production Info**, **Clips Overview**, **Camera Summary**, **Video Formats**, **Note**.
+| Report | Contenuto (stesso impaginato dei PDF di riferimento) |
+|--------|-------------------------------------------------------|
+| Shooting Day | Production Info, Clips Overview, Workflow, Labels & Flags, Ratings, Backups, Bins, Video Reels, Camera Sums, Video Formats, Audio Tapes |
+| Clips | una pagina larga con TUTTE le 150 colonne di Silverstack e una riga per file (anteprima o icona, flag, stelle, label, timecode, camera, lente, hash…) |
+| Volume | una pagina per volume (sorgente e ogni destinazione): cartelle e file con `xxHash64` e `xxHash64BE` |
+| Thumbnail | una scheda per file: anteprima (o icona) e tutti i campi |
+| Contact Print | griglia 4 colonne di anteprime dei clip video con il nome sotto |
 
-- Nessun valore inventato: dati assenti → «N/D»; una durata totale con clip senza durata è indicata come «parziale».
-- «Backup»: una copia conta come verificata solo se TUTTI i file sono OK su quella destinazione; altrimenti il report elenca MISMATCH/ERRORI.
-- PDF generato dall'app senza librerie esterne (font standard Helvetica, accenti italiani supportati); controllato con `pdftotext` e `pdfinfo`.
-- Gli altri formati (HTML, CSV, XML, JSON, ASC MHL) sono stati rimossi per scelta dell'utente.
+- Nessun valore inventato: i campi che l'app non conosce (es. ShotID/ShotHub, Play Status, Wild Track, Missing) restano **vuoti**, non «N/D» né valori finti.
+  Compaiono solo dati letti dai clip (ExifTool / art-cmd) o calcolati dall'offload (dimensioni, date, volumi, backup, verifica, XXH64).
+- «Verified Backups» conta solo i file riletti dal disco con XXH64 identico alla sorgente.
+- Le anteprime nei report sono quelle già generate nel tab Clip; senza anteprima un clip mostra «No preview».
+- Le etichette dei report sono in inglese come nei PDF di riferimento; il piè di pagina dice «TeoStackXt».
+- Font: DejaVu Sans Mono incorporato (sottoinsieme, licenza in `THIRD_PARTY_LICENSES.md`) con le stesse misure di Menlo; Helvetica per intestazione e piè di pagina.
+  Le forme dei caratteri differiscono leggermente da quelle dei riferimenti, le posizioni coincidono entro circa 1 pt.
+- PDF scritto dall'app senza librerie esterne; verificato con `pdftotext`, `pdfinfo` e confronto numerico con i PDF di riferimento.
 
 ## Anteprima del primo fotogramma
 

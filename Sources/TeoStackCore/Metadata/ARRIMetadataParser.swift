@@ -15,6 +15,7 @@ public enum ARRIMetadataParser {
         var out: [String: String] = [:]
 
         if let v = string(tags["MXF:ApplicationName"]) { out["camera"] = v }
+        if let v = string(tags["MXF:ApplicationSupplierName"]) { out["manufacturer"] = v }
         if let v = string(tags["MXF:ApplicationVersionString"]) { out["firmware"] = v }
 
         if let size = string(tags["Composite:ImageSize"]) {

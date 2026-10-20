@@ -85,6 +85,8 @@ public struct FileResult: Codable {
     /// XXH64 calcolato sulla sorgente durante l'unica lettura. nil se la sorgente non è stata letta con successo.
     public var sourceHash: String?
     public var destinations: [DestFileResult]
+    /// Data di modifica del file sulla sorgente (la stessa viene riportata sulle copie).
+    public var modificationDate: Date?
 }
 
 public enum OffloadOutcome: String, Codable {

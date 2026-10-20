@@ -83,7 +83,7 @@ public final class OffloadEngine {
         let blank = DestFileResult()
         var initial = scan.files.map {
             FileResult(relativePath: $0.relativePath, size: $0.size, sourceHash: nil,
-                       destinations: Array(repeating: blank, count: n))
+                       destinations: Array(repeating: blank, count: n), modificationDate: $0.modificationDate)
         }
         var hashes: [String: String] = [:]
         if let resume, resume.job.destinationRoots.map({ $0.standardizedFileURL.path }) == job.destinationRoots.map({ $0.standardizedFileURL.path }) {
