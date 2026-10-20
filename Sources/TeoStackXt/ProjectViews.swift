@@ -492,6 +492,7 @@ struct ClipTableView: View {
 
 struct HistoryView: View {
     @ObservedObject var projects: ProjectsViewModel
+    @State private var confirmClear = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -501,8 +502,17 @@ struct HistoryView: View {
                 if let p = projects.selectedProject {
                     Text(p.name).foregroundStyle(.secondary).lineLimit(1)
                 }
+                Button("Cancella…", role: .destructive) { confirmClear = true }
+                    .disabled(projects.history.isEmpty)
+                    .help("Cancella la cronologia di questo progetto")
             }
             .padding(10)
+            .alert("Cancellare la cronologia di «\(projects.selectedProject?.name ?? "")»?", isPresented: $confirmClear) {
+                Button("Cancella", role: .destructive) { projects.clearHistory() }
+                Button("Annulla", role: .cancel) {}
+            } message: {
+                Text("Verranno cancellate \(projects.history.count) voci di cronologia di questo progetto. Clip, offload e file sui dischi non vengono toccati. L'operazione non si può annullare.")
+            }
             Divider()
             if projects.selectedProject == nil {
                 Text("Seleziona un progetto")

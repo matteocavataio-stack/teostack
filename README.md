@@ -111,6 +111,7 @@ Colonna a destra (pulsante «Nascondi/Mostra cronologia») per il progetto selez
 Problemi (MISMATCH/ERRORE), annullamenti e operazioni su giorni/bin non compaiono nella cronologia (restano visibili nella finestra
 principale e nella tabella clip). Per registrarne altri basta aggiungere il tipo a `ProjectStore.recordedEventKinds`.
 Le voci sono salvate nel database, restano dopo il riavvio e sono per progetto; eliminando il progetto si elimina la sua cronologia.
+Il pulsante **Cancella…** in cima alla colonna svuota la cronologia del progetto selezionato (dopo conferma): clip, offload e file sui dischi non vengono toccati.
 
 ## Come funziona la sicurezza
 

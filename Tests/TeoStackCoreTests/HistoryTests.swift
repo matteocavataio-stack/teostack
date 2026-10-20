@@ -142,4 +142,20 @@ final class HistoryTests: XCTestCase {
     func testOnlyCompletedKindIsEnabled() {
         XCTAssertEqual(ProjectStore.recordedEventKinds, ["offloadCompleted"])
     }
+
+    func testClearHistoryOnlyRemovesThisProjectsEvents() throws {
+        let (p1, bin1) = try setupBin("Uno")
+        let (p2, bin2) = try setupBin("Due")
+        try runOffload(bin: bin1, to: destBase.appendingPathComponent("a"))
+        try runOffload(bin: bin2, to: destBase.appendingPathComponent("b"))
+        XCTAssertEqual(try store.history(projectID: p1.id).count, 1)
+        XCTAssertEqual(try store.history(projectID: p2.id).count, 1)
+
+        XCTAssertEqual(try store.clearHistory(projectID: p1.id), 1)
+        XCTAssertTrue(try store.history(projectID: p1.id).isEmpty)
+        XCTAssertEqual(try store.history(projectID: p2.id).count, 1, "gli altri progetti non cambiano")
+        XCTAssertFalse(try store.clips(underNode: bin1.id).isEmpty, "i clip e gli offload restano")
+        XCTAssertEqual(try store.offloads(binID: bin1.id).count, 1)
+        XCTAssertEqual(try store.clearHistory(projectID: p1.id), 0, "già vuota")
+    }
 }

@@ -241,6 +241,11 @@ final class ProjectsViewModel: ObservableObject {
         }
     }
 
+    func clearHistory() {
+        guard let id = selectedProjectID else { return }
+        _ = mutate { try $0.clearHistory(projectID: id) }
+    }
+
     func deletionImpact(id: Int64) -> ProjectStore.DeletionImpact? {
         try? store?.deletionImpact(nodeID: id)
     }

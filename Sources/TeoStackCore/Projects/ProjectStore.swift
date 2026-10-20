@@ -560,6 +560,18 @@ public final class ProjectStore {
         try wrap { try db.write { db in try ProjectStore.log(db, projectID: projectID, kind: kind, title: title, detail: detail) } }
     }
 
+    /// Cancella la cronologia del progetto (solo le voci di cronologia: clip, offload e file sui dischi non vengono toccati).
+    /// Restituisce quante voci sono state cancellate.
+    @discardableResult
+    public func clearHistory(projectID: Int64) throws -> Int {
+        try wrap {
+            try db.write { db in
+                try db.execute(sql: "DELETE FROM event WHERE projectID = ?", arguments: [projectID])
+                return db.changesCount
+            }
+        }
+    }
+
     /// Cronologia del progetto, dalla più recente.
     public func history(projectID: Int64, limit: Int = 500) throws -> [HistoryEvent] {
         try wrap {
