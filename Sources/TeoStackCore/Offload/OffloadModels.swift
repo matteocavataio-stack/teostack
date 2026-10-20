@@ -58,12 +58,16 @@ public struct OffloadJob: Codable {
     public var sourceURL: URL
     /// Cartelle finali di destinazione (1...3). Il contenuto della sorgente viene copiato DENTRO ciascuna.
     public var destinationRoots: [URL]
+    /// Cartelle base scelte dall'utente (il disco): devono esistere; sotto di esse le cartelle mancanti vengono create.
+    /// Se assente, la cartella di destinazione o la sua cartella superiore deve già esistere.
+    public var destinationBases: [URL]?
     public var createdAt: Date
 
-    public init(id: UUID = UUID(), sourceURL: URL, destinationRoots: [URL], createdAt: Date = Date()) {
+    public init(id: UUID = UUID(), sourceURL: URL, destinationRoots: [URL], destinationBases: [URL]? = nil, createdAt: Date = Date()) {
         self.id = id
         self.sourceURL = sourceURL
         self.destinationRoots = destinationRoots
+        self.destinationBases = destinationBases
         self.createdAt = createdAt
     }
 }

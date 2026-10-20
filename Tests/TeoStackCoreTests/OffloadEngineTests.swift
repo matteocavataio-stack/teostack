@@ -22,7 +22,7 @@ final class OffloadEngineTests: XCTestCase {
         return dests
     }
 
-    private func makeEngine(dests: [URL], resume: OffloadJournal? = nil,
+    private func makeEngine(dests: [URL], bases: [URL]? = nil, resume: OffloadJournal? = nil,
                             configure: (inout OffloadEngine.Configuration) -> Void = { _ in }) throws -> OffloadEngine {
         var config = OffloadEngine.Configuration()
         config.chunkSize = 1 * 1024 * 1024          // più chunk per file nei test
@@ -30,7 +30,7 @@ final class OffloadEngineTests: XCTestCase {
         config.progressInterval = 0.05
         configure(&config)
         let scan = try SourceScanner.scan(root: card.root)
-        let job = resume?.job ?? OffloadJob(sourceURL: card.root, destinationRoots: dests)
+        let job = resume?.job ?? OffloadJob(sourceURL: card.root, destinationRoots: dests, destinationBases: bases)
         return OffloadEngine(job: job, scan: scan, configuration: config, resume: resume)
     }
 
@@ -212,6 +212,45 @@ final class OffloadEngineTests: XCTestCase {
         XCTAssertFalse(result.allOK)
         XCTAssertTrue(result.preflightErrors.contains { $0.contains("Destinazione 2") && $0.contains("spazio insufficiente") })
         XCTAssertFalse(FileManager.default.fileExists(atPath: dests[0].path), "nessuna copia deve essere iniziata")
+    }
+
+    /// Struttura progetto: la base (disco) esiste, Progetto/Giorno/Bin no e vengono creati.
+    func testMissingProjectFoldersUnderExistingBaseAreCreated() throws {
+        let base = destRoot.appendingPathComponent("DISCO")
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let root = base.appendingPathComponent("Film/DAY01_20261020/A001", isDirectory: true)
+        let result = try makeEngine(dests: [root], bases: [base]).run()
+        XCTAssertEqual(result.outcome, .completed)
+        XCTAssertTrue(result.allOK)
+        XCTAssertTrue(TestSupport.contentsEqual(card.root.appendingPathComponent("CLIP/C0001.MXF"), root.appendingPathComponent("CLIP/C0001.MXF")))
+    }
+
+    func testMissingBaseMeansDiskUnplugged() throws {
+        let base = destRoot.appendingPathComponent("DISCO-SCOLLEGATO")     // non esiste
+        let root = base.appendingPathComponent("Film/DAY01/A001", isDirectory: true)
+        let result = try makeEngine(dests: [root], bases: [base]).run()
+        XCTAssertEqual(result.outcome, .preflightFailed)
+        XCTAssertTrue(result.preflightErrors.first?.contains("non è raggiungibile") == true)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: base.path), "non deve creare la base al posto del disco")
+    }
+
+    func testDestinationOutsideBaseIsRefused() throws {
+        let base = destRoot.appendingPathComponent("DISCO")
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let result = try makeEngine(dests: [destRoot.appendingPathComponent("ALTROVE/x")], bases: [base]).run()
+        XCTAssertEqual(result.outcome, .preflightFailed)
+    }
+
+    func testCancelRemovesFoldersCreatedUnderBase() throws {
+        let base = destRoot.appendingPathComponent("DISCO")
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let root = base.appendingPathComponent("Film/DAY01/A001", isDirectory: true)
+        let engine = try makeEngine(dests: [root], bases: [base])
+        var copied = 0
+        engine.onFileUpdate = { if $0.status == .copied { copied += 1; if copied == 2 { engine.cancel() } } }
+        XCTAssertEqual(engine.run().outcome, .cancelled)
+        XCTAssertEqual(TestSupport.allFiles(under: base), [], "Annulla deve togliere anche Film/DAY01/A001 create dall'offload")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: base.path), "la cartella base scelta dall'utente resta")
     }
 
     func testUnreachableDestinationStopsBeforeCopying() throws {

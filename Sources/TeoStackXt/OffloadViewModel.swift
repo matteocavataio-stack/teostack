@@ -126,8 +126,9 @@ final class OffloadViewModel: ObservableObject {
 
     func start() {
         guard canStart, let scan, let source = sourceURL, let target else { return }
-        let roots = destinations.compactMap { $0.url.map { target.destinationRoot(under: $0) } }
-        let job = OffloadJob(sourceURL: source, destinationRoots: roots)
+        let bases = destinations.compactMap { $0.url }
+        let roots = bases.map { target.destinationRoot(under: $0) }
+        let job = OffloadJob(sourceURL: source, destinationRoots: roots, destinationBases: bases)
         guard register(job: job, binID: target.binID) else { return }
         run(job: job, scan: scan, resume: nil)
     }

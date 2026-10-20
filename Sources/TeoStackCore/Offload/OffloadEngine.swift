@@ -188,16 +188,36 @@ public final class OffloadEngine {
                 errors.append("\(label): si trova dentro la sorgente. La sorgente non deve mai essere modificata.")
                 continue
             }
-            let parent = (path as NSString).deletingLastPathComponent
             var isDir: ObjCBool = false
-            let rootExists = FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
-            let parentExists = FileManager.default.fileExists(atPath: parent, isDirectory: &isDir)
-            if !rootExists && !parentExists {
-                errors.append("\(label): cartella non raggiungibile «\(path)» (disco scollegato?).")
-                continue
+            let writableAnchor: String       // cartella esistente su cui devo poter scrivere
+            if let bases = job.destinationBases, d < bases.count {
+                let basePath = bases[d].standardizedFileURL.path
+                guard FileManager.default.fileExists(atPath: basePath, isDirectory: &isDir), isDir.boolValue else {
+                    errors.append("\(label): la cartella base «\(basePath)» non è raggiungibile (disco scollegato?).")
+                    continue
+                }
+                if !(path == basePath || path.hasPrefix(basePath + "/")) {
+                    errors.append("\(label): la cartella di destinazione non si trova dentro la cartella base scelta.")
+                    continue
+                }
+                // la parte esistente più profonda del percorso (tra la base e la destinazione)
+                var anchor = path
+                while anchor != basePath && !FileManager.default.fileExists(atPath: anchor) {
+                    anchor = (anchor as NSString).deletingLastPathComponent
+                }
+                writableAnchor = anchor
+            } else {
+                let parent = (path as NSString).deletingLastPathComponent
+                let rootExists = FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
+                let parentExists = FileManager.default.fileExists(atPath: parent, isDirectory: &isDir)
+                if !rootExists && !parentExists {
+                    errors.append("\(label): cartella non raggiungibile «\(path)» (disco scollegato?).")
+                    continue
+                }
+                writableAnchor = rootExists ? path : parent
             }
-            if access(rootExists ? path : parent, W_OK) != 0 {
-                errors.append("\(label): nessun permesso di scrittura su «\(rootExists ? path : parent)».")
+            if access(writableAnchor, W_OK) != 0 {
+                errors.append("\(label): nessun permesso di scrittura su «\(writableAnchor)».")
                 continue
             }
             var needed: Int64 = 0
@@ -511,9 +531,8 @@ public final class OffloadEngine {
             if st.isDirectory { return }
             throw DiskIOError(code: ENOTDIR, operation: "Creazione cartella", path: path)
         }
-        let root = job.destinationRoots[d].standardizedFileURL.path
         let parent = (path as NSString).deletingLastPathComponent
-        if path != root && parent != path { try ensureDirectory(parent, destination: d) }
+        if parent != path { try ensureDirectory(parent, destination: d) }   // risale fino alla prima cartella esistente
         if mkdir(path, 0o755) != 0 && errno != EEXIST {
             throw DiskIOError(code: errno, operation: "Creazione cartella", path: path)
         }
