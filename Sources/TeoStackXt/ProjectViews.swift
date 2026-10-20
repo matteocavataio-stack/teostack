@@ -129,16 +129,25 @@ struct ProjectBar: View {
                 if let p = projects.selectedProject { request = .renameProject(p.name) }
             }
             .disabled(projects.selectedProject == nil)
-            Button("Elimina") { confirmDelete = true }
+            Button("Elimina progetto…", role: .destructive) { confirmDelete = true }
                 .disabled(projects.selectedProject == nil)
+                .help("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.")
         }
         .padding(10)
         .alert("Eliminare il progetto «\(projects.selectedProject?.name ?? "")»?", isPresented: $confirmDelete) {
             Button("Elimina", role: .destructive) { projects.deleteProject() }
             Button("Annulla", role: .cancel) {}
         } message: {
-            Text("Vengono eliminati solo i record nel programma (giorni, bin, offload, clip). I file già copiati sui dischi NON vengono toccati.")
+            Text(projectDeleteMessage())
         }
+    }
+
+    private func projectDeleteMessage() -> String {
+        var text = "Verrà eliminato l'INTERO progetto dal programma"
+        if let lib = projects.tree, let impact = projects.deletionImpact(id: lib.id) {
+            text += " (\(impact.bins) bin, \(impact.offloads) offload, \(impact.clips) file registrati)"
+        }
+        return text + ". I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale."
     }
 }
 
@@ -174,6 +183,8 @@ struct SidebarView: View {
                 Button("+ Bin") { request = .newBin("") }
                     .disabled(projects.currentDay == nil)
                 Spacer()
+                Button("Elimina selezione…", role: .destructive) { deleteTarget = selectedDeletableNode }
+                    .disabled(selectedDeletableNode == nil)
             }
             .padding(8)
         }
@@ -189,9 +200,16 @@ struct SidebarView: View {
         }
     }
 
+    /// Il giorno o il bin selezionato (la Library non si elimina).
+    private var selectedDeletableNode: TreeNode? {
+        guard let id = projects.selectedNodeID, let n = projects.node(id), n.kind != .library else { return nil }
+        return n
+    }
+
     private func deleteMessage() -> String {
         guard let t = deleteTarget, let impact = projects.deletionImpact(id: t.id) else { return "" }
-        return "Verranno eliminati dal programma \(impact.bins) bin, \(impact.offloads) offload e \(impact.clips) file registrati. I file sui dischi NON vengono toccati."
+        let what = t.kind == .day ? "la cartella giorno «\(t.name)» con i suoi \(impact.bins) bin" : "il bin «\(t.name)»"
+        return "Verrà eliminato SOLO \(what) (\(impact.offloads) offload, \(impact.clips) file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati."
     }
 
     private func icon(_ kind: NodeKind) -> String {

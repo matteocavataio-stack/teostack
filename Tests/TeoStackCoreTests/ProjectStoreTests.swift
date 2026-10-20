@@ -92,6 +92,43 @@ final class ProjectStoreTests: XCTestCase {
         XCTAssertNotNil(day2)
     }
 
+    func testDeletingOneBinKeepsSiblingsDaysAndOtherProjects() throws {
+        let card = try FakeCard.create()
+        let destBase = try TestSupport.makeTempDir("dest")
+        defer {
+            try? FileManager.default.removeItem(at: card.root.deletingLastPathComponent())
+            try? FileManager.default.removeItem(at: destBase)
+        }
+        let p = try store.createProject(name: "Film")
+        let other = try store.createProject(name: "Altro")
+        let day1 = try store.createDay(projectID: p.id, name: "D1")
+        let day2 = try store.createDay(projectID: p.id, name: "D2")
+        let binA = try store.createBin(dayID: day1.id, name: "A")
+        let binB = try store.createBin(dayID: day1.id, name: "B")
+        let binC = try store.createBin(dayID: day2.id, name: "C")
+        for (i, bin) in [binA, binB, binC].enumerated() {
+            let r = try runRealOffload(binID: bin.id, dests: [destBase.appendingPathComponent("out\(i)")], card: card)
+            XCTAssertTrue(r.allOK)
+        }
+        XCTAssertEqual(try store.projects().first { $0.id == p.id }?.clipCount, 12)
+
+        try store.deleteNode(id: binA.id)        // solo il bin selezionato
+
+        let tree = try store.tree(projectID: p.id)
+        XCTAssertEqual(tree.children?.map(\.name), ["D1", "D2"])
+        XCTAssertEqual(tree.children?[0].children?.map(\.name), ["B"])
+        XCTAssertEqual(tree.children?[1].children?.map(\.name), ["C"])
+        XCTAssertEqual(try store.clips(underNode: binB.id).count, 4)
+        XCTAssertEqual(try store.clips(underNode: binC.id).count, 4)
+        XCTAssertEqual(try store.projects().first { $0.id == p.id }?.clipCount, 8)
+        XCTAssertNotNil(other)
+
+        try store.deleteNode(id: day1.id)        // solo il giorno selezionato (con i suoi bin)
+        XCTAssertEqual(try store.tree(projectID: p.id).children?.map(\.name), ["D2"])
+        XCTAssertEqual(try store.clips(underNode: binC.id).count, 4)
+        XCTAssertEqual(try store.projects().map(\.name).sorted(), ["Altro", "Film"], "il progetto resta")
+    }
+
     func testDeletingNodesNeverTouchesTheDisk() throws {
         let dir = try TestSupport.makeTempDir("disk")
         defer { try? FileManager.default.removeItem(at: dir) }
