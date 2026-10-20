@@ -1,7 +1,4 @@
 import XCTest
-#if canImport(FoundationXML)
-import FoundationXML
-#endif
 @testable import TeoStackCore
 
 private func sampleDocument() -> ReportDocument {
@@ -11,93 +8,12 @@ private func sampleDocument() -> ReportDocument {
         blocks: [
             ReportBlock(section: .clips, title: "Clips", subtitle: "2 clip", content: .table(ReportTable(
                 columns: [ReportColumn(id: "name", title: "Nome", width: 3), ReportColumn(id: "size", title: "Dimensione", width: 1, alignment: .right)],
-                rows: [[ReportCell("A001;C001, \"x\".mov"), ReportCell("1.50 MB", raw: "1500000")],
-                       [ReportCell("Città àèìòù.mov"), ReportCell("2.00 MB", raw: "2000000")]],
-                footer: [ReportCell("Totale"), ReportCell("3.50 MB", raw: "3500000")]))),
+                rows: [[ReportCell("A001;C001, \"x\".mov"), ReportCell("1.50 MB")],
+                       [ReportCell("Città àèìòù.mov"), ReportCell("2.00 MB")]],
+                footer: [ReportCell("Totale"), ReportCell("3.50 MB")]))),
             ReportBlock(section: .productionInfo, title: "Production Info", content: .keyValues([("Regista", "N/D"), ("Luogo", "Isarwehr")])),
             ReportBlock(section: .notes, title: "Note", content: .text("Prima riga\nSeconda <riga> & fine")),
         ])
-}
-
-final class ReportExportTests: XCTestCase {
-    func testHTMLIsEscapedAndComplete() {
-        let html = ReportExporter.html(sampleDocument())
-        XCTAssertTrue(html.hasPrefix("<!DOCTYPE html>"))
-        XCTAssertTrue(html.contains("Film &lt;&amp;&gt; &quot;Uno&quot;"))
-        XCTAssertFalse(html.contains("<&>"))
-        XCTAssertTrue(html.contains("Città àèìòù.mov"))
-        XCTAssertTrue(html.contains("<th class=\"r\">Dimensione</th>"))
-        XCTAssertTrue(html.contains("<td class=\"r\">1.50 MB</td>"), "mostra il valore leggibile, non quello grezzo")
-        XCTAssertTrue(html.contains("<tfoot>"))
-        XCTAssertTrue(html.contains("Seconda &lt;riga&gt; &amp; fine"))
-        XCTAssertTrue(html.contains("Template Classic"))
-    }
-
-    func testCSVQuotingBOMAndMachineValues() throws {
-        let data = ReportExporter.csv(sampleDocument(), delimiter: ";")
-        XCTAssertEqual(Array(data.prefix(3)), [0xEF, 0xBB, 0xBF])
-        let text = String(decoding: data.dropFirst(3), as: UTF8.self)
-        XCTAssertTrue(text.contains("\"A001;C001, \"\"x\"\".mov\";1500000\r\n"), "separatore e virgolette tra apici; dimensione in byte")
-        XCTAssertTrue(text.contains("Città àèìòù.mov;2000000"))
-        XCTAssertTrue(text.contains("Totale;3500000"))
-        XCTAssertTrue(text.contains("Campo;Valore\r\nRegista;N/D\r\n"))
-        XCTAssertTrue(text.contains("Progetto;\"Film <&> \"\"Uno\"\"\""))
-        let comma = String(decoding: ReportExporter.csv(sampleDocument(), delimiter: ",").dropFirst(3), as: UTF8.self)
-        XCTAssertTrue(comma.contains("Nome,Dimensione\r\n"))
-        XCTAssertTrue(comma.contains("\"A001;C001, \"\"x\"\".mov\",1500000"))
-    }
-
-    func testJSONIsValidAndStructured() throws {
-        let data = try ReportExporter.json(sampleDocument())
-        let root = try XCTUnwrap(try JSONSerialization.jsonObject(with: data) as? [String: Any])
-        let report = try XCTUnwrap(root["report"] as? [String: Any])
-        XCTAssertEqual(report["template"] as? String, "Classic")
-        XCTAssertEqual((report["meta"] as? [String: String])?["Operatore"], "Mario Rossi")
-        let sections = try XCTUnwrap(report["sections"] as? [[String: Any]])
-        XCTAssertEqual(sections.map { $0["id"] as? String }, ["clips", "productionInfo", "notes"])
-        let rows = try XCTUnwrap(sections[0]["rows"] as? [[String: String]])
-        XCTAssertEqual(rows[0]["size"], "1500000")
-        XCTAssertEqual(rows[1]["name"], "Città àèìòù.mov")
-        XCTAssertEqual((sections[0]["footer"] as? [String: String])?["size"], "3500000")
-        XCTAssertEqual((sections[1]["items"] as? [[String: String]])?.first?["label"], "Regista")
-        XCTAssertEqual(sections[2]["text"] as? String, "Prima riga\nSeconda <riga> & fine")
-    }
-
-    private final class Collector: NSObject, XMLParserDelegate {
-        var elements: [String] = []
-        var cells: [String] = []
-        var current = ""
-        var inCell = false
-        func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName qName: String?, attributes: [String: String]) {
-            elements.append(name); if name == "cell" { inCell = true; current = "" }
-        }
-        func parser(_ parser: XMLParser, foundCharacters string: String) { if inCell { current += string } }
-        func parser(_ parser: XMLParser, didEndElement name: String, namespaceURI: String?, qualifiedName qName: String?) {
-            if name == "cell" { cells.append(current); inCell = false }
-        }
-    }
-
-    func testXMLIsWellFormedAndEscaped() throws {
-        let data = ReportExporter.xml(sampleDocument())
-        let c = Collector()
-        let parser = XMLParser(data: data)
-        parser.delegate = c
-        XCTAssertTrue(parser.parse(), "XML non valido: \(String(describing: parser.parserError))")
-        XCTAssertEqual(c.elements.first, "report")
-        XCTAssertTrue(c.cells.contains("A001;C001, \"x\".mov"))
-        XCTAssertTrue(c.cells.contains("1500000"))
-        XCTAssertTrue(c.cells.contains("Città àèìòù.mov"))
-    }
-
-    func testXMLDropsIllegalControlCharacters() {
-        var doc = sampleDocument()
-        doc.blocks = [ReportBlock(section: .notes, title: "Note", content: .text("a\u{01}b\u{0B}c\u{FFFE}d"))]
-        let c = Collector()
-        let parser = XMLParser(data: ReportExporter.xml(doc))
-        parser.delegate = c
-        XCTAssertTrue(parser.parse(), "\(String(describing: parser.parserError))")
-        XCTAssertTrue(String(decoding: ReportExporter.xml(doc), as: UTF8.self).contains("<text>abcd</text>"))
-    }
 }
 
 final class ReportPDFTests: XCTestCase {

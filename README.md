@@ -66,7 +66,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 ## Report (fase d)
 
 Menu **Report → Esporta report…** (⇧⌘E) oppure pulsante «Esporta report…» in alto. Ambito = elemento selezionato nella sidebar (progetto, giorno o bin).
-Template **Classic**. Campi: nome progetto, operatore (ricordato), note. Formati: PDF (A4 orizzontale, numerazione pagine), HTML, CSV, XML, JSON, ASC MHL.
+Template **Classic**, formato **PDF** (A4 orizzontale, pagine numerate). Campi: nome progetto, operatore (ricordato), note.
 
 Sezioni principali: **Shooting Day** (per giorno: clip, file, dimensione, durata, backup, formati), **Clips** (tabella con le colonne visibili nel tab Clip),
 **Volume** (una tabella per ogni cartella/volume di destinazione con TUTTI i file, XXH64, stato e posizione).
@@ -74,12 +74,8 @@ Riepiloghi opzionali: **Production Info**, **Clips Overview**, **Camera Summary*
 
 - Nessun valore inventato: dati assenti → «N/D»; una durata totale con clip senza durata è indicata come «parziale».
 - «Backup»: una copia conta come verificata solo se TUTTI i file sono OK su quella destinazione; altrimenti il report elenca MISMATCH/ERRORI.
-- CSV: UTF-8 con BOM, separatore `;` (Excel italiano) o `,` a scelta; in CSV/XML/JSON le dimensioni sono in byte e le durate in secondi.
 - PDF generato dall'app senza librerie esterne (font standard Helvetica, accenti italiani supportati); controllato con `pdftotext` e `pdfinfo`.
-- **ASC MHL** (v2.0, XXH64 + hash di directory + catena C4): scrive `<cartella destinazione>/ascmhl/` con i soli file verificati e ancora presenti con la
-  stessa dimensione; se `ascmhl` esiste già aggiunge una nuova generazione senza toccare le precedenti. Verificata con lo strumento ufficiale `ascmhl`
-  (`pip install ascmhl`; i test lo usano se lo trovano nel PATH o in `ASCMHL_BIN`). Scrive solo sulle destinazioni, mai sulla sorgente.
-- La fase 2 (thumbnail e contact print) non è ancora presente.
+- Gli altri formati (HTML, CSV, XML, JSON, ASC MHL) sono stati rimossi per scelta dell'utente.
 
 ## Cronologia del progetto
 

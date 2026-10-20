@@ -47,41 +47,13 @@ public struct ReportOptions {
     }
 }
 
-public enum ReportFormat: String, CaseIterable, Identifiable {
-    case pdf, html, csv, xml, json, ascmhl
-
-    public var id: String { rawValue }
-
-    public var title: String {
-        switch self {
-        case .pdf: return "PDF"
-        case .html: return "HTML"
-        case .csv: return "CSV"
-        case .xml: return "XML"
-        case .json: return "JSON"
-        case .ascmhl: return "ASC MHL"
-        }
-    }
-
-    public var fileExtension: String? {
-        switch self {
-        case .ascmhl: return nil
-        default: return rawValue
-        }
-    }
-}
-
-/// Cella di tabella: testo da mostrare e, se serve, il valore "grezzo" per i formati per macchine (CSV/JSON/XML).
+/// Cella di tabella: il testo mostrato nel report.
 public struct ReportCell: Equatable {
     public var display: String
-    public var raw: String?
 
-    public init(_ display: String, raw: String? = nil) {
+    public init(_ display: String) {
         self.display = display
-        self.raw = raw
     }
-
-    public var machine: String { raw ?? display }
 }
 
 public enum ReportAlignment { case left, right }

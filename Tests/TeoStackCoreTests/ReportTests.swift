@@ -95,9 +95,8 @@ final class ReportBuilderTests: ReportTestCase {
         XCTAssertEqual(row[0], "DAY01_20261020")
         XCTAssertEqual(row[1], "4")                                          // clip video
         XCTAssertEqual(row[2], String(card.files.count))                     // tutti i file, anche XML ecc.
-        XCTAssertEqual(t.rows[0][3].raw, String(card.files.reduce(0) { $0 + $1.size }))
+        XCTAssertEqual(t.rows[0][3].display, Format.bytes(Int64(card.files.reduce(0) { $0 + $1.size })))
         XCTAssertEqual(row[4], "00:00:28")                                   // 4 × 6,875 s = 27,5 s
-        XCTAssertEqual(t.rows[0][4].raw, "27.500")
         XCTAssertEqual(row[5], "2 copie verificate (tutti OK)")
         XCTAssertEqual(row[6], "ARRIRAW uncompressed 2048x1152 24 fps")
         XCTAssertNil(t.footer, "il totale compare solo con più giorni")
@@ -153,7 +152,7 @@ final class ReportBuilderTests: ReportTestCase {
         XCTAssertEqual(t.rows[0][2].display, "ARRI SZ65-300 T2.8")
         XCTAssertEqual(t.rows[0][3].display, "ND 1.2")
         XCTAssertEqual(t.rows[0][5].display, "5600 K")
-        XCTAssertEqual(t.rows[0][7].raw.flatMap(Int64.init), 3_000_000)
+        XCTAssertEqual(t.rows[0][7].display, "3.00 MB")
         XCTAssertEqual(t.rows[0][8].display.count, 16)
         // metadata non letti → N/D
         let t2 = try table(try build([.clips], columns: ["name", "codec"]), .clips)
@@ -179,7 +178,7 @@ final class ReportBuilderTests: ReportTestCase {
         XCTAssertEqual(mxf[1].display, destinations[0].appendingPathComponent("CLIP").path)
         XCTAssertEqual(mxf[4].display, "OK")
         XCTAssertEqual(t.footer?[0].display, "Totale: \(card.files.count) file")
-        XCTAssertEqual(t.footer?[2].raw, String(card.files.reduce(0) { $0 + $1.size }))
+        XCTAssertEqual(t.footer?[2].display, Format.bytes(Int64(card.files.reduce(0) { $0 + $1.size })))
     }
 
     func testVolumeNameFromVolumesPath() {

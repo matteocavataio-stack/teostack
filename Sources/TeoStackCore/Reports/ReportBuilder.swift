@@ -85,10 +85,10 @@ public enum ReportBuilder {
         if known.isEmpty { return ReportCell(nd) }
         let total = known.reduce(0, +)
         let text = hms(total) + (known.count < clips.count ? " (parziale: \(known.count)/\(clips.count) clip)" : "")
-        return ReportCell(text, raw: String(format: "%.3f", total))
+        return ReportCell(text)
     }
 
-    static func sizeCell(_ bytes: Int64) -> ReportCell { ReportCell(Format.bytes(bytes), raw: String(bytes)) }
+    static func sizeCell(_ bytes: Int64) -> ReportCell { ReportCell(Format.bytes(bytes)) }
 
     static func distinct(_ values: [String]) -> [String] {
         var seen = Set<String>(), out: [String] = []
@@ -180,12 +180,7 @@ public enum ReportBuilder {
             ReportColumn(id: c.id, title: c.title, width: max(0.6, c.width / 100), alignment: c.id == "size" ? .right : .left)
         }
         let rows = media.map { clip in
-            cols.map { col -> ReportCell in
-                let text = ClipColumns.value(col, of: clip)
-                if col.id == "size" { return ReportCell(text, raw: String(clip.size)) }
-                if col.id == "duration", let s = clip.metadata["durationSeconds"] { return ReportCell(text, raw: s) }
-                return ReportCell(text)
-            }
+            cols.map { ReportCell(ClipColumns.value($0, of: clip)) }
         }
         return ReportBlock(section: .clips, title: "Clips", subtitle: "\(media.count) clip", content: .table(ReportTable(columns: columns, rows: rows)))
     }
@@ -224,7 +219,7 @@ public enum ReportBuilder {
             let rows = entries.map { e -> [ReportCell] in
                 let folder = (e.path as NSString).deletingLastPathComponent
                 return [ReportCell(e.clip.name), ReportCell(folder), sizeCell(e.clip.size),
-                        ReportCell(e.clip.sourceHash ?? nd), ReportCell(ClipColumns.statusLabel(e.status), raw: e.status)]
+                        ReportCell(e.clip.sourceHash ?? nd), ReportCell(ClipColumns.statusLabel(e.status))]
             }
             let total = entries.reduce(Int64(0)) { $0 + $1.clip.size }
             let footer = [ReportCell("Totale: \(entries.count) file"), ReportCell(""), sizeCell(total), ReportCell(""), ReportCell("")]
