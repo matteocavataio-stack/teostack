@@ -40,7 +40,8 @@ let package = Package(
         .testTarget(
             name: "TeoStackCoreTests",
             dependencies: ["TeoStackCore"],
-            path: "Tests/TeoStackCoreTests"
+            path: "Tests/TeoStackCoreTests",
+            exclude: ["Fixtures"]
         ),
     ]
 )

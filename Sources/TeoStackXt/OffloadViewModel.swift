@@ -37,6 +37,7 @@ final class OffloadViewModel: ObservableObject {
     @Published var target: BinTarget?
     var store: ProjectStore?
     var onRecorded: (() -> Void)?
+    var onOffloadFinished: ((UUID) -> Void)?
 
     private var scan: ScanResult?
     private var engine: OffloadEngine?
@@ -245,6 +246,7 @@ final class OffloadViewModel: ObservableObject {
             errorMessage = "L'offload è terminato ma non sono riuscito a registrarlo nel progetto: \(error)"
         }
         onRecorded?()
+        if result.outcome == .completed { onOffloadFinished?(result.job.id) }
         if result.outcome == .preflightFailed {
             errorMessage = result.preflightErrors.joined(separator: "\n")
         }

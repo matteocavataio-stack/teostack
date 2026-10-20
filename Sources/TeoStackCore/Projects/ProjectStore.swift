@@ -532,4 +532,20 @@ public final class ProjectStore {
             }
         }
     }
+
+    /// Cartelle di destinazione dell'offload (nell'ordine delle destinazioni).
+    public func destinationRoots(offloadID: Int64) throws -> [String] {
+        try wrap {
+            try db.read { db in
+                let text = try String.fetchOne(db, sql: "SELECT destinationsJSON FROM offload WHERE id = ?", arguments: [offloadID]) ?? "[]"
+                return ProjectStore.decode([String].self, text, default: [])
+            }
+        }
+    }
+
+    /// Clip registrate per un offload (per leggere i metadata subito dopo la copia).
+    public func clips(forJobID jobID: UUID) throws -> [ClipRecord] {
+        guard let record = try offloadRecord(jobID: jobID) else { return [] }
+        return try clips(underNode: record.binID, mediaOnly: true).filter { $0.offloadID == record.id }
+    }
 }

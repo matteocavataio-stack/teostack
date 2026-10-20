@@ -9,7 +9,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 |------|-----------|-------|
 | a | Offload + XXH64 + UI base | **fatta** (nucleo testato su Linux; UI da compilare su Mac) |
 | b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
-| c | Metadata ARRI / Sony Venice | da fare (servono informazioni, vedi domande) |
+| c | Metadata ARRI / Sony Venice | **ARRI (ExifTool) fatta**; ARRI Meta Extract e Sony in attesa di dati di esempio |
 | d | Report fase 1 | da fare |
 | e | Report fase 2 (thumbnail, contact print) | da fare |
 
@@ -37,6 +37,21 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 - **Tabella clip:** colonne configurabili dal menu «Colonne» (Nome, Giorno, Bin, Dimensione, XXH64, Stato, Offload, Percorso e i metadata
   Camera, Codec, Risoluzione, Sensor FPS, ND Filter, Look Info, Lente, ISO, WB, Timecode). Clic sull'intestazione per ordinare.
   I metadata non ancora letti mostrano **N/D** (verranno popolati nella fase c).
+
+## Metadata (fase c)
+
+- **Programmi esterni** (non inclusi nell'app): ExifTool (necessario) e ffprobe (consigliato). All'avvio l'app li cerca in `/opt/homebrew/bin`,
+  `/usr/local/bin`, `/opt/local/bin`, `/usr/bin` e nel PATH; se mancano mostra un avviso arancione con le istruzioni di installazione e «Ricontrolla».
+  - ExifTool: installer `.pkg` da SourceForge (vedi avviso nell'app) → `/usr/local/bin/exiftool`.
+  - ffprobe: build per Intel da evermeet.cx → `/usr/local/bin/ffprobe`.
+- **Quando vengono letti:** automaticamente dopo ogni offload completato, sui clip con tutte le destinazioni OK, oppure con il pulsante
+  «Leggi metadata» nel tab Clip. Si legge la **copia verificata** sul disco di destinazione, mai la scheda sorgente, e solo in lettura.
+- **Un modulo parser per famiglia di camera:** `ARRIMetadataParser` (riconosce `MXF:ApplicationSupplierName = ARRI`). Sony Venice: da scrivere
+  quando avrò un XML sidecar e un output ExifTool/ffprobe reali.
+- **ARRI, cosa ExifTool dà davvero** (verificato su un clip ALEXA 35, fixture in `Tests/TeoStackCoreTests/Fixtures`): camera, firmware, risoluzione,
+  durata, FPS del file, timecode iniziale, data di ripresa. **ISO, WB, lente, ND, look info e sensor FPS non ci sono**: restano **N/D**
+  finché non si collega ARRI Meta Extract. Con timecode drop-frame il timecode resta N/D (non si calcola un valore dubbio).
+- Formati non riconosciuti: nessun valore scritto (N/D) e conteggiati nel messaggio «Metadata: N clip letti, M formato non supportato».
 
 ## Cronologia del progetto
 

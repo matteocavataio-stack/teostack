@@ -6,12 +6,32 @@ import TeoStackCore
 final class AppModel: ObservableObject {
     let projects: ProjectsViewModel
     let offload: OffloadViewModel
+    let tools: ToolsViewModel
 
     init() {
         projects = ProjectsViewModel()
         offload = OffloadViewModel()
+        tools = ToolsViewModel()
         offload.store = projects.store
         offload.onRecorded = { [weak projects] in projects?.reload() }
+        // Dopo un offload completato i metadata dei clip verificati vengono letti automaticamente.
+        offload.onOffloadFinished = { [weak projects] jobID in projects?.importMetadata(forJobID: jobID) }
+    }
+}
+
+/// Presenza dei programmi esterni (ExifTool, ffprobe). L'app non li include: se mancano avvisa.
+final class ToolsViewModel: ObservableObject {
+    @Published var statuses: [ToolStatus] = []
+
+    init() { recheck() }
+
+    var missing: [ToolStatus] { statuses.filter { !$0.isAvailable } }
+
+    func recheck() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let found = ExternalTools.detectAll()
+            DispatchQueue.main.async { self?.statuses = found }
+        }
     }
 }
 
@@ -27,6 +47,8 @@ final class ProjectsViewModel: ObservableObject {
     @Published var binTarget: BinTarget?
     @Published var showAllFiles = false
     @Published var errorMessage: String?
+    @Published var metadataStatus: String?
+    @Published var isReadingMetadata = false
 
     private static let lastProjectKey = "lastProjectID"
 
@@ -184,6 +206,45 @@ final class ProjectsViewModel: ObservableObject {
 
     func offloadCount(binID: Int64) -> Int {
         (try? store?.offloads(binID: binID).count) ?? 0
+    }
+
+    // MARK: Metadata
+
+    /// Legge i metadata dei clip di un offload appena concluso.
+    func importMetadata(forJobID jobID: UUID) {
+        guard let store else { return }
+        runMetadataImport(clips: (try? store.clips(forJobID: jobID)) ?? [])
+    }
+
+    /// Rilegge i metadata di tutti i clip mostrati (selezione corrente).
+    func readMetadataForSelection() {
+        runMetadataImport(clips: clips)
+    }
+
+    private func runMetadataImport(clips: [ClipRecord]) {
+        guard let store, !clips.isEmpty, !isReadingMetadata else { return }
+        guard let runner = ExifToolRunner.locate() else {
+            metadataStatus = "ExifTool non è installato: metadata non letti (vedi l'avviso in alto per installarlo)."
+            return
+        }
+        isReadingMetadata = true
+        metadataStatus = "Lettura metadata…"
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            do {
+                let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: runner) { done, total in
+                    DispatchQueue.main.async { self?.metadataStatus = "Lettura metadata… \(done)/\(total)" }
+                }
+                DispatchQueue.main.async { self?.finishMetadataImport("Metadata: \(summary.text)") }
+            } catch {
+                DispatchQueue.main.async { self?.finishMetadataImport("Metadata non letti: \(error)") }
+            }
+        }
+    }
+
+    private func finishMetadataImport(_ text: String) {
+        isReadingMetadata = false
+        metadataStatus = text
+        run { try refreshSelection() }
     }
 
     // MARK: Interni

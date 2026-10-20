@@ -272,6 +272,9 @@ struct ClipTableView: View {
                        isOn: Binding(get: { projects.showAllFiles }, set: { projects.setShowAllFiles($0) }))
                     .toggleStyle(.checkbox)
                 Spacer()
+                Button("Leggi metadata") { projects.readMetadataForSelection() }
+                    .disabled(projects.isReadingMetadata || projects.clips.isEmpty)
+                    .help("Rilegge i metadata dei clip mostrati con ExifTool (dalla copia verificata sul disco di destinazione).")
                 Menu("Colonne") {
                     Section("Dati dell'offload") {
                         ForEach(ClipColumns.all.filter { !$0.isMetadata }) { c in
@@ -286,6 +289,12 @@ struct ClipTableView: View {
                 }
                 .fixedSize()
             }
+            if let status = projects.metadataStatus {
+                Text(status).font(.caption).foregroundStyle(.secondary)
+            }
+            Text("Metadata letti con ExifTool: camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. ISO, WB, lente, ND, look e sensor FPS richiedono ARRI Meta Extract (non ancora collegato) e mostrano N/D.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             if projects.clips.isEmpty {
                 Text("Nessuna clip: esegui un offload in un bin di questo progetto.")
                     .foregroundStyle(.secondary)
@@ -446,6 +455,46 @@ struct HistoryRow: View {
         case "offloadCancelled": return "xmark.circle"
         case "offloadNotStarted": return "exclamationmark.octagon.fill"
         default: return "circle"
+        }
+    }
+}
+
+// MARK: - Avviso programmi esterni mancanti
+
+struct DependencyBanner: View {
+    @ObservedObject var tools: ToolsViewModel
+    @State private var expanded = false
+
+    var body: some View {
+        if !tools.missing.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("Programmi esterni mancanti: " + tools.missing.map { $0.tool.displayName }.joined(separator: ", ")
+                         + (tools.missing.contains { $0.tool.isRequired } ? " — senza ExifTool i metadata non vengono letti." : "."))
+                        .font(.callout.bold())
+                    Spacer()
+                    Button(expanded ? "Nascondi istruzioni" : "Come installarli") { expanded.toggle() }
+                    Button("Ricontrolla") { tools.recheck() }
+                }
+                if expanded {
+                    ForEach(tools.missing) { status in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(status.tool.displayName): \(status.tool.purpose)").font(.caption.bold())
+                            Text(status.tool.installInstructions)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                                .padding(6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(RoundedRectangle(cornerRadius: 4).fill(Color.secondary.opacity(0.12)))
+                        }
+                    }
+                    Text("Si incolla nel Terminale, una riga alla volta. Poi premi «Ricontrolla».")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(10)
+            .background(Color.orange.opacity(0.15))
         }
     }
 }

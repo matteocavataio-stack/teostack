@@ -19,6 +19,7 @@ struct ContentView: View {
         VStack(spacing: 0) {
             ProjectBar(projects: app.projects, request: $request)
             Divider()
+            DependencyBanner(tools: app.tools)
             HSplitView {
                 SidebarView(projects: app.projects, request: $request)
                     .frame(minWidth: 220, idealWidth: 260, maxWidth: 420)
