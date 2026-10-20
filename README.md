@@ -8,7 +8,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 | Fase | Contenuto | Stato |
 |------|-----------|-------|
 | a | Offload + XXH64 + UI base | **fatta** (nucleo testato su Linux; UI da compilare su Mac) |
-| b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin) | da fare |
+| b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
 | c | Metadata ARRI / Sony Venice | da fare (servono informazioni, vedi domande) |
 | d | Report fase 1 | da fare |
 | e | Report fase 2 (thumbnail, contact print) | da fare |
@@ -19,6 +19,24 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 - `Sources/TeoStackCore` – logica senza interfaccia: XXH64, I/O (F_NOCACHE), scansione sorgente, motore di offload, registro per «Riprendi».
 - `Sources/TeoStackXt` – app SwiftUI (solo macOS).
 - `Tests/TeoStackCoreTests` – test automatici.
+
+## Progetti (fase b)
+
+- Database SQLite in `~/Library/Application Support/TeoStackXt/teostack.sqlite` (libreria GRDB).
+- Struttura: Progetto → Library → cartelle giorno (es. `DAY01_20261016`) → bin (es. `A_0001_1DET`). Sidebar ad albero con conteggio clip.
+- Crea / rinomina / elimina giorni e bin (clic destro nella sidebar o pulsanti «+ Giorno», «+ Bin»). Selettore progetto in alto
+  (nome, data creazione, numero clip) e «Nuovo progetto».
+- **Eliminare o rinominare nel programma non tocca mai i file sui dischi.** Le finestre di conferma lo dicono.
+- I nomi diventano cartelle: sono vietati `/ \ : * ? " < > |`, i nomi che iniziano/finiscono con punto e quelli oltre 100 caratteri.
+- **Offload:** scegli un bin nella sidebar, poi le cartelle base dei dischi. I file finiscono in
+  `<cartella base>/<Progetto>/<Giorno>/<Bin>/…` (la Library è solo logica, non crea una cartella). L'offload viene registrato nel bin
+  all'avvio e aggiornato alla fine (anche se annullato o con errori). «Riprendi» riusa lo stesso record.
+- **Clip:** contano come clip solo i file con estensione `ari, arx, mov, mxf, mp4` (valore predefinito modificabile in
+  `MediaClassifier`) **e** con tutte le destinazioni OK. Gli altri file (XML, sidecar…) sono registrati e visibili con
+  «Mostra anche i file non video». Un file MISMATCH/ERRORE è registrato ma non conta come clip.
+- **Tabella clip:** colonne configurabili dal menu «Colonne» (Nome, Giorno, Bin, Dimensione, XXH64, Stato, Offload, Percorso e i metadata
+  Camera, Codec, Risoluzione, Sensor FPS, ND Filter, Look Info, Lente, ISO, WB, Timecode). Clic sull'intestazione per ordinare.
+  I metadata non ancora letti mostrano **N/D** (verranno popolati nella fase c).
 
 ## Come funziona la sicurezza
 

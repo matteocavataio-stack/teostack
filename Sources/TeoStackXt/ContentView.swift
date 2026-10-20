@@ -3,26 +3,104 @@ import SwiftUI
 import UniformTypeIdentifiers
 import TeoStackCore
 
+enum MainTab: String, CaseIterable, Identifiable {
+    case offload = "Offload"
+    case clips = "Clip"
+    var id: String { rawValue }
+}
+
 struct ContentView: View {
-    @StateObject private var vm = OffloadViewModel()
+    @StateObject private var app = AppModel()
+    @State private var request: NameRequest?
+    @State private var tab: MainTab = .offload
 
     var body: some View {
         VStack(spacing: 0) {
+            ProjectBar(projects: app.projects, request: $request)
+            Divider()
+            HSplitView {
+                SidebarView(projects: app.projects, request: $request)
+                    .frame(minWidth: 220, idealWidth: 260, maxWidth: 420)
+                VStack(spacing: 0) {
+                    Picker("", selection: $tab) {
+                        ForEach(MainTab.allCases) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(maxWidth: 260)
+                    .padding(8)
+                    switch tab {
+                    case .offload: OffloadView(vm: app.offload, projects: app.projects)
+                    case .clips: ClipTableView(projects: app.projects)
+                    }
+                }
+                .frame(minWidth: 760)
+            }
+        }
+        .frame(minWidth: 1100, minHeight: 760)
+        .onReceive(app.projects.$binTarget) { app.offload.target = $0 }
+        .sheet(item: $request) { req in
+            NameSheet(request: req, onSubmit: { submit(req, $0) }, onClose: { request = nil })
+        }
+        .alert("Errore", isPresented: Binding(get: { app.projects.errorMessage != nil || app.offload.errorMessage != nil },
+                                              set: { if !$0 { app.projects.errorMessage = nil; app.offload.errorMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text([app.projects.errorMessage, app.offload.errorMessage].compactMap { $0 }.joined(separator: "\n"))
+        }
+    }
+
+    private func submit(_ req: NameRequest, _ name: String) -> String? {
+        switch req {
+        case .newProject: return app.projects.createProject(name: name)
+        case .renameProject: return app.projects.renameProject(name: name)
+        case .newDay: return app.projects.createDay(name: name)
+        case .newBin: return app.projects.createBin(name: name)
+        case .renameNode(let id, _): return app.projects.renameNode(id: id, name: name)
+        }
+    }
+}
+
+struct OffloadView: View {
+    @ObservedObject var vm: OffloadViewModel
+    @ObservedObject var projects: ProjectsViewModel
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TargetBar(vm: vm, projects: projects)
+            Divider()
             SourcePanel(vm: vm)
-                .frame(minHeight: 260)
+                .frame(minHeight: 220)
             Divider()
             DestinationsPanel(vm: vm)
                 .frame(minHeight: 230)
             Divider()
             ControlBar(vm: vm)
         }
-        .frame(minWidth: 900, minHeight: 720)
-        .alert("Errore", isPresented: Binding(get: { vm.errorMessage != nil },
-                                              set: { if !$0 { vm.errorMessage = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(vm.errorMessage ?? "")
+    }
+}
+
+/// Mostra in quale bin del progetto verrà registrato l'offload e dove finiranno i file sui dischi.
+struct TargetBar: View {
+    @ObservedObject var vm: OffloadViewModel
+    @ObservedObject var projects: ProjectsViewModel
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("Destinazione nel progetto:").font(.headline)
+            if let t = vm.target {
+                Text("\(t.projectName) › \(t.dayName) › \(t.binName)").bold()
+                let n = projects.offloadCount(binID: t.binID)
+                if n > 0 {
+                    Text("(il bin contiene già \(n) offload)").foregroundStyle(.orange).font(.callout)
+                }
+            } else {
+                Text("seleziona un bin nella barra laterale (o creane uno con «+ Giorno» e «+ Bin»)")
+                    .foregroundStyle(.red)
+            }
+            Spacer()
         }
+        .padding(10)
     }
 }
 
@@ -120,7 +198,7 @@ struct DestinationsPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Destinazioni").font(.headline)
+                Text("Destinazioni (cartella base del disco: dentro verrà creato Progetto/Giorno/Bin)").font(.headline)
                 Spacer()
                 Button("Aggiungi destinazione") { vm.addDestination() }
                     .disabled(vm.destinations.count >= 3 || vm.isRunning)

@@ -8,6 +8,9 @@ let package = Package(
         .library(name: "TeoStackCore", targets: ["TeoStackCore"]),
         .executable(name: "TeoStackXt", targets: ["TeoStackXt"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0"),
+    ],
     targets: [
         // Libreria xxHash ufficiale (Cyan4973/xxHash v0.8.3, BSD-2) inclusa in sorgente.
         .target(
@@ -16,10 +19,16 @@ let package = Package(
             exclude: ["LICENSE"],
             cSettings: [.unsafeFlags(["-O3"])]
         ),
+        // Solo Linux (test in ambienti senza macOS): completa il SQLite di sistema di Ubuntu. Inattivo su macOS.
+        .target(name: "CSQLiteLinuxShim", path: "Sources/CSQLiteLinuxShim"),
         // Logica indipendente dall'interfaccia: hash, offload, verifica (compilabile anche su Linux per i test).
         .target(
             name: "TeoStackCore",
-            dependencies: ["CXXHash"],
+            dependencies: [
+                "CXXHash",
+                .product(name: "GRDB", package: "GRDB.swift"),
+                .target(name: "CSQLiteLinuxShim", condition: .when(platforms: [.linux])),
+            ],
             path: "Sources/TeoStackCore"
         ),
         // App SwiftUI (solo macOS).

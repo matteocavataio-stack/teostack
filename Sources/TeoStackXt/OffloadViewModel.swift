@@ -33,6 +33,11 @@ final class OffloadViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var resumable: OffloadJournal?
 
+    /// Bin scelto nel progetto: la destinazione su disco è <cartella scelta>/<Progetto>/<Giorno>/<Bin>.
+    @Published var target: BinTarget?
+    var store: ProjectStore?
+    var onRecorded: (() -> Void)?
+
     private var scan: ScanResult?
     private var engine: OffloadEngine?
     private var activity: NSObjectProtocol?
@@ -50,7 +55,7 @@ final class OffloadViewModel: ObservableObject {
     var isRunning: Bool { runState == .running }
 
     var canStart: Bool {
-        runState == .idle && scan != nil && !rows.isEmpty
+        runState == .idle && scan != nil && !rows.isEmpty && target != nil
             && !destinations.isEmpty && destinations.allSatisfy { $0.url != nil }
     }
 
@@ -120,10 +125,11 @@ final class OffloadViewModel: ObservableObject {
     // MARK: Avvio / Annulla / Riprendi
 
     func start() {
-        guard canStart, let scan, let source = sourceURL else { return }
-        // Fase "progetti": qui la cartella di destinazione diventerà quella del bin scelto.
-        let roots = destinations.compactMap { $0.url?.appendingPathComponent(source.lastPathComponent, isDirectory: true) }
-        run(job: OffloadJob(sourceURL: source, destinationRoots: roots), scan: scan, resume: nil)
+        guard canStart, let scan, let source = sourceURL, let target else { return }
+        let roots = destinations.compactMap { $0.url.map { target.destinationRoot(under: $0) } }
+        let job = OffloadJob(sourceURL: source, destinationRoots: roots)
+        guard register(job: job, binID: target.binID) else { return }
+        run(job: job, scan: scan, resume: nil)
     }
 
     func resume() {
@@ -133,8 +139,16 @@ final class OffloadViewModel: ObservableObject {
             errorMessage = "La sorgente «\(source.path)» non è montata: inserire la scheda e riprovare."
             return
         }
+        // L'offload deve essere ancora registrato in un bin del progetto (altrimenti il bin è stato eliminato).
+        guard let record = try? store?.offloadRecord(jobID: journal.job.id) else {
+            errorMessage = "Il bin di questo offload è stato eliminato dal progetto: non posso riprenderlo registrandolo. Crea un nuovo bin e rilancia l'offload (i file già copiati e identici vengono solo verificati, mai riscritti)."
+            return
+        }
+        guard register(job: journal.job, binID: record.binID) else { return }
         sourceURL = source
-        destinations = journal.job.destinationRoots.map { DestinationSlot(url: $0.deletingLastPathComponent()) }
+        destinations = journal.job.destinationRoots.map {
+            DestinationSlot(url: $0.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent())
+        }
         runState = .scanning
         result = nil
         errorMessage = nil
@@ -157,6 +171,22 @@ final class OffloadViewModel: ObservableObject {
 
     func cancel() {
         engine?.cancel()
+    }
+
+    /// Registra l'offload nel bin PRIMA di iniziare. Se la registrazione fallisce non si parte.
+    private func register(job: OffloadJob, binID: Int64) -> Bool {
+        guard let store else {
+            errorMessage = "Database dei progetti non disponibile: offload non avviato."
+            return false
+        }
+        do {
+            try store.beginOffload(jobID: job.id, binID: binID, sourcePath: job.sourceURL.path,
+                                   destinations: job.destinationRoots.map { $0.path })
+            return true
+        } catch {
+            errorMessage = "Impossibile registrare l'offload nel progetto: \(error)"
+            return false
+        }
     }
 
     private func run(job: OffloadJob, scan: ScanResult, resume: OffloadJournal?) {
@@ -211,6 +241,10 @@ final class OffloadViewModel: ObservableObject {
         if let activity { ProcessInfo.processInfo.endActivity(activity) }
         activity = nil
         resumable = journalStore.latestResumable()
+        do { try store?.finishOffload(result) } catch {
+            errorMessage = "L'offload è terminato ma non sono riuscito a registrarlo nel progetto: \(error)"
+        }
+        onRecorded?()
         if result.outcome == .preflightFailed {
             errorMessage = result.preflightErrors.joined(separator: "\n")
         }
