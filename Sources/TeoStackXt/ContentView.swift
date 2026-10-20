@@ -14,10 +14,14 @@ struct ContentView: View {
     @State private var request: NameRequest?
     @State private var tab: MainTab = .offload
     @AppStorage("showHistory") private var showHistory = true
+    @State private var showReport = false
 
     var body: some View {
         VStack(spacing: 0) {
-            ProjectBar(projects: app.projects, request: $request)
+            ProjectBar(projects: app.projects, request: $request, showReport: $showReport)
+                .sheet(isPresented: $showReport) {
+                    ReportSheet(projects: app.projects) { showReport = false }
+                }
             Divider()
             DependencyBanner(tools: app.tools)
             HSplitView {
@@ -49,6 +53,9 @@ struct ContentView: View {
         }
         .frame(minWidth: 1280, minHeight: 760)
         .onReceive(app.projects.$binTarget) { app.offload.target = $0 }
+        .onReceive(NotificationCenter.default.publisher(for: .exportReport)) { _ in
+            if app.projects.selectedProject != nil { showReport = true }
+        }
         .sheet(item: $request) { req in
             NameSheet(request: req, onSubmit: { submit(req, $0) }, onClose: { request = nil })
         }

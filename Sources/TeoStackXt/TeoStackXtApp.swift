@@ -15,6 +15,14 @@ struct TeoStackXtApp: App {
             ContentView()
         }
         .windowResizability(.contentMinSize)
+        .commands {
+            CommandMenu("Report") {
+                Button("Esporta report…") {
+                    NotificationCenter.default.post(name: .exportReport, object: nil)
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+            }
+        }
     }
 }
 #endif

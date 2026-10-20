@@ -548,4 +548,16 @@ public final class ProjectStore {
         guard let record = try offloadRecord(jobID: jobID) else { return [] }
         return try clips(underNode: record.binID, mediaOnly: true).filter { $0.offloadID == record.id }
     }
+
+    /// Offload registrati nei bin sotto il nodo (progetto → tutti, giorno → i suoi bin, bin → i suoi), in ordine di tempo.
+    public func offloads(underNode nodeID: Int64) throws -> [OffloadRecord] {
+        try wrap {
+            try db.read { db in
+                try Row.fetchAll(db, sql: """
+                    WITH RECURSIVE sub(id) AS (SELECT id FROM node WHERE id = ? UNION ALL SELECT n.id FROM node n JOIN sub ON n.parentID = sub.id)
+                    SELECT * FROM offload WHERE binID IN (SELECT id FROM sub) ORDER BY startedAt, id
+                    """, arguments: [nodeID]).map(ProjectStore.offload)
+            }
+        }
+    }
 }

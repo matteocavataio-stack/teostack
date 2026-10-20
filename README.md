@@ -10,7 +10,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 | a | Offload + XXH64 + UI base | **fatta** (nucleo testato su Linux; UI da compilare su Mac) |
 | b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
 | c | Metadata ARRI / Sony Venice | **ARRI fatta** (ExifTool + art-cmd, testata su dati reali ALEXA 35); Sony in attesa di dati di esempio |
-| d | Report fase 1 | da fare |
+| d | Report fase 1 (menu «Esporta report», template Classic) | **fatta** (PDF, HTML, CSV, XML, JSON, ASC MHL; testati su Linux, UI da compilare su Mac) |
 | e | Report fase 2 (thumbnail, contact print) | da fare |
 
 ## Struttura
@@ -62,6 +62,24 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
   - Con timecode drop-frame (ExifTool) il timecode resta N/D (non si calcola un valore dubbio).
   - Senza art-cmd restano N/D: ISO, WB, lente, ND, look, sensor FPS, scena, take, reel, serial, codec.
 - Formati non riconosciuti: nessun valore scritto (N/D) e conteggiati nel messaggio «Metadata: N clip letti, M formato non supportato».
+
+## Report (fase d)
+
+Menu **Report → Esporta report…** (⇧⌘E) oppure pulsante «Esporta report…» in alto. Ambito = elemento selezionato nella sidebar (progetto, giorno o bin).
+Template **Classic**. Campi: nome progetto, operatore (ricordato), note. Formati: PDF (A4 orizzontale, numerazione pagine), HTML, CSV, XML, JSON, ASC MHL.
+
+Sezioni principali: **Shooting Day** (per giorno: clip, file, dimensione, durata, backup, formati), **Clips** (tabella con le colonne visibili nel tab Clip),
+**Volume** (una tabella per ogni cartella/volume di destinazione con TUTTI i file, XXH64, stato e posizione).
+Riepiloghi opzionali: **Production Info**, **Clips Overview**, **Camera Summary**, **Video Formats**, **Note**.
+
+- Nessun valore inventato: dati assenti → «N/D»; una durata totale con clip senza durata è indicata come «parziale».
+- «Backup»: una copia conta come verificata solo se TUTTI i file sono OK su quella destinazione; altrimenti il report elenca MISMATCH/ERRORI.
+- CSV: UTF-8 con BOM, separatore `;` (Excel italiano) o `,` a scelta; in CSV/XML/JSON le dimensioni sono in byte e le durate in secondi.
+- PDF generato dall'app senza librerie esterne (font standard Helvetica, accenti italiani supportati); controllato con `pdftotext` e `pdfinfo`.
+- **ASC MHL** (v2.0, XXH64 + hash di directory + catena C4): scrive `<cartella destinazione>/ascmhl/` con i soli file verificati e ancora presenti con la
+  stessa dimensione; se `ascmhl` esiste già aggiunge una nuova generazione senza toccare le precedenti. Verificata con lo strumento ufficiale `ascmhl`
+  (`pip install ascmhl`; i test lo usano se lo trovano nel PATH o in `ASCMHL_BIN`). Scrive solo sulle destinazioni, mai sulla sorgente.
+- La fase 2 (thumbnail e contact print) non è ancora presente.
 
 ## Cronologia del progetto
 

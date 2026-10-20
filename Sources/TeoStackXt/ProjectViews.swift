@@ -94,6 +94,7 @@ struct NameSheet: View {
 struct ProjectBar: View {
     @ObservedObject var projects: ProjectsViewModel
     @Binding var request: NameRequest?
+    @Binding var showReport: Bool
     @State private var confirmDelete = false
 
     private static let dateFormatter: DateFormatter = {
@@ -124,6 +125,8 @@ struct ProjectBar: View {
                 }
             }
             Spacer()
+            Button("Esporta report…") { showReport = true }
+                .disabled(projects.selectedProject == nil)
             Button("Nuovo progetto") { request = .newProject }
             Button("Rinomina") {
                 if let p = projects.selectedProject { request = .renameProject(p.name) }

@@ -47,6 +47,11 @@ public enum ARTMetadataParser {
         if let v = string(slate["reelName"]) { out["reel"] = v }
         if let v = string(slate["scene"]) { out["scene"] = v }
         if let v = string(slate["take"]) { out["take"] = v }
+        if let v = string(slate["production"]) { out["production"] = v }
+        if let v = string(slate["productionCompany"]) { out["productionCompany"] = v }
+        if let v = string(slate["director"]) { out["director"] = v }
+        if let v = string(slate["cinematographer"]) { out["cinematographer"] = v }
+        if let v = string(slate["location"]) { out["location"] = v }
 
         // Primo fotogramma
         if let frameBased = json["frameBasedMetadata"] as? [String: Any],
