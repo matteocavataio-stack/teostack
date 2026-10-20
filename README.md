@@ -40,11 +40,12 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 
 ## Cronologia del progetto
 
-Colonna a destra (pulsante «Nascondi/Mostra cronologia») con tutte le operazioni del progetto selezionato, dalla più recente:
-creazione e rinomina del progetto, giorni e bin creati / rinominati / eliminati (con quanti record eliminati), offload avviato,
-ripreso, fine copia, completato (tutti OK), con problemi (MISMATCH/ERRORI con nome file), annullato, non avviato (con i motivi).
-Le voci sono salvate nel database, restano dopo il riavvio e sono per progetto. Eliminando il progetto si elimina anche la sua cronologia.
-Le fasi successive (metadata, report) aggiungeranno le loro voci.
+Colonna a destra (pulsante «Nascondi/Mostra cronologia») per il progetto selezionato, dalla più recente.
+**Per scelta dell'utente registra solo gli offload completati con tutti i file OK**, per esempio:
+«Offload completato nel bin «a001»: 4 file, 8.11 GB, tutti OK — Riletti dal disco con XXH64 identico alla sorgente su 1 destinazione/i. Durata 00:00:09».
+Problemi (MISMATCH/ERRORE), annullamenti e operazioni su giorni/bin non compaiono nella cronologia (restano visibili nella finestra
+principale e nella tabella clip). Per registrarne altri basta aggiungere il tipo a `ProjectStore.recordedEventKinds`.
+Le voci sono salvate nel database, restano dopo il riavvio e sono per progetto; eliminando il progetto si elimina la sua cronologia.
 
 ## Come funziona la sicurezza
 

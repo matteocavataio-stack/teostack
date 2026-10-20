@@ -91,6 +91,10 @@ public final class ProjectStore {
                 CREATE INDEX event_project ON event(projectID, at);
                 """)
         }
+        m.registerMigration("v3-history-only-completed-offloads") { db in
+            // Scelta dell'utente: la cronologia mostra solo gli offload completati.
+            try db.execute(sql: "DELETE FROM event WHERE kind <> 'offloadCompleted'")
+        }
         return m
     }
 
@@ -102,7 +106,12 @@ public final class ProjectStore {
         catch { throw ProjectStoreError.database("\(error)") }
     }
 
+    /// Tipi di voce registrati nella cronologia. Per scelta dell'utente: SOLO gli offload completati con tutti i file OK.
+    /// Per registrare altro (es. rinomine, problemi, annullamenti) basta aggiungere il tipo qui.
+    public static let recordedEventKinds: Set<String> = ["offloadCompleted"]
+
     private static func log(_ db: Database, projectID: Int64, kind: String, title: String, detail: String? = nil) throws {
+        guard recordedEventKinds.contains(kind) else { return }
         try db.execute(sql: "INSERT INTO event(projectID, at, kind, title, detail) VALUES (?, ?, ?, ?, ?)",
                        arguments: [projectID, Date().timeIntervalSince1970, kind, title, detail])
     }
