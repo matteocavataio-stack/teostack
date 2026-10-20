@@ -38,16 +38,23 @@ cp -R "$WORK/exif/lib" "$DEST/lib"
 chmod +x "$DEST/exiftool"
 echo "ExifTool $VER"
 
-echo "== ffmpeg / ffprobe (evermeet.cx, build statiche)"
+echo "== ffmpeg / ffprobe (build statiche; evermeet.cx, altrimenti il mirror GitHub di ffbinaries)"
 for tool in ffmpeg ffprobe; do
-    URL="$(curl -fsSL --retry 5 --retry-delay 30 --max-time 60 "https://evermeet.cx/ffmpeg/info/$tool/release" | python3 -c 'import json,sys; print(json.load(sys.stdin)["download"]["zip"]["url"])')"
-    echo "$URL"
-    if ! fetch "$URL" "$(basename "$URL")"; then
+    ZIP=""
+    URL="$(curl -fsSL --max-time 60 "https://evermeet.cx/ffmpeg/info/$tool/release" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["download"]["zip"]["url"])' 2>/dev/null || true)"
+    if [ -n "$URL" ] && fetch "$URL" "$(basename "$URL")" 2; then
+        ZIP="$CACHE/$(basename "$URL")"
+    else
+        echo "evermeet.cx non disponibile: uso il mirror GitHub (ffbinaries, ffmpeg 6.1)"
+        MIRROR="https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v6.1/$tool-6.1-macos-64.zip"
+        if fetch "$MIRROR" "$tool-6.1-macos-64.zip" 3; then ZIP="$CACHE/$tool-6.1-macos-64.zip"; fi
+    fi
+    if [ -z "$ZIP" ]; then
         if [ "${ALLOW_MISSING_TOOLS:-0}" = "1" ]; then echo "ATTENZIONE: $tool non scaricato, l'app lo segnalerà come mancante"; continue; fi
-        echo "Scarica a mano $URL dal browser e copialo in $CACHE, poi rilancia lo script (oppure usa ALLOW_MISSING_TOOLS=1)."
+        echo "Impossibile scaricare $tool. Rilancia più tardi oppure usa ALLOW_MISSING_TOOLS=1."
         exit 1
     fi
-    unzip -q -o "$CACHE/$(basename "$URL")" -d "$WORK/$tool"
+    rm -rf "$WORK/$tool" && unzip -q -o "$ZIP" -d "$WORK/$tool"
     cp "$WORK/$tool/$tool" "$DEST/$tool"
     chmod +x "$DEST/$tool"
 done
@@ -56,8 +63,8 @@ cat > "$DEST/LICENSES.txt" <<'TXT'
 Programmi inclusi in TeoStackXt (Contents/Resources/tools):
 
 - ExifTool di Phil Harvey — https://exiftool.org — licenza Perl Artistic / GPL.
-- ffmpeg e ffprobe (build statiche di evermeet.cx) — https://evermeet.cx/ffmpeg — licenza GPL v3;
-  il codice sorgente è disponibile sul sito indicato e su https://ffmpeg.org.
+- ffmpeg e ffprobe (build statiche di evermeet.cx, anche ridistribuite da https://github.com/ffbinaries/ffbinaries-prebuilt) — licenza GPL v3;
+  il codice sorgente è disponibile su https://evermeet.cx/ffmpeg e su https://ffmpeg.org.
 
 art-cmd (ARRI Reference Tool) NON è incluso: lo scarica l'installer dal sito ARRI nella cartella ~/ARRI ed è soggetto alla licenza ARRI.
 TXT
