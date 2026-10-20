@@ -105,11 +105,13 @@ final class ASCMHLTests: ReportTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let files = try entries(in: root, tree: [("a.mov", 4000), ("sub/b.mxf", 9000)])
         _ = try ASCMHL.write(root: root, files: files)
-        XCTAssertEqual(try runVerify([root.path]).status, 0)
+        let before = try runVerify([root.path])        // (un XCTSkip dentro XCTAssert verrebbe scambiato per un errore: lo valuto prima)
+        XCTAssertEqual(before.status, 0, before.output)
         // corrompo un byte: lo strumento ufficiale deve accorgersene (prova che il test non è banale)
         let fd = open(root.appendingPathComponent("sub/b.mxf").path, O_RDWR)
         var b: UInt8 = 0; _ = pread(fd, &b, 1, 100); b ^= 1; _ = pwrite(fd, &b, 1, 100); close(fd)
-        XCTAssertNotEqual(try runVerify([root.path]).status, 0)
+        let after = try runVerify([root.path])
+        XCTAssertNotEqual(after.status, 0, "lo strumento ufficiale deve segnalare il byte corrotto: \(after.output)")
     }
 
     func testSecondGenerationAppendsToChainAndVerifies() throws {
