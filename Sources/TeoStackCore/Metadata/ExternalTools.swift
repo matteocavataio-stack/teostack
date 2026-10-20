@@ -1,6 +1,6 @@
 import Foundation
 
-/// Programmi esterni usati per leggere i metadata. Non vengono inclusi nell'app: se mancano l'app avvisa.
+/// Programmi esterni usati per leggere i metadata. L'installer include ExifTool, ffmpeg e ffprobe (Resources/tools); art-cmd (ARRI) viene scaricato da ARRI. Se manca qualcosa l'app avvisa.
 public enum ExternalTool: String, CaseIterable, Identifiable {
     case exiftool
     case ffprobe
@@ -99,7 +99,16 @@ public struct ToolStatus: Identifiable, Equatable {
 
 public enum ExternalTools {
     /// Cartelle dove cercare, oltre al PATH (le app lanciate dal Finder non ereditano il PATH del Terminale).
-    public static let defaultSearchDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin"]
+    public static var defaultSearchDirectories: [String] { bundledToolsDirectories + systemSearchDirectories }
+
+    static let systemSearchDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin"]
+
+    /// Strumenti inclusi nell'app installata (TeoStackXt.app/Contents/Resources/tools): hanno la precedenza su quelli di sistema.
+    public static var bundledToolsDirectories: [String] {
+        guard let resources = Bundle.main.resourcePath else { return [] }
+        let tools = resources + "/tools"
+        return FileManager.default.fileExists(atPath: tools) ? [tools] : []
+    }
 
     /// Percorso scelto a mano dall'utente per un programma (UserDefaults, chiave "toolPath.<nome>").
     public static func userPath(for tool: ExternalTool) -> String? {

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 160" width="100%" height="100%" style="background:#0b0f19; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, &#39;Space Grotesk&#39;, sans-serif;">
+  <defs>
+    <!-- Gradiente Certificazione / Checksum -->
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE" />
+      <stop offset="100%" stop-color="#4FACFE" />
+    </linearGradient>
+    
+    <!-- Gradiente Strati Stack -->
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#334155" />
+    </linearGradient>
+  </defs>
+
+  <!-- GRUPPO ICONA (Stack Schede + Perforazioni Cinema + Check Xt) -->
+  <g transform="translate(35, 25)">
+    <!-- Scheda Base dello Stack (Ombra) -->
+    <path d="M15 85 L75 110 L105 95 L45 70 Z" fill="#0F172A" stroke="#1E293B" stroke-width="2" />
+    
+    <!-- Scheda Centrale dello Stack -->
+    <path d="M15 65 L75 90 L105 75 L45 50 Z" fill="url(#cardGrad)" stroke="#475569" stroke-width="2" />
+    
+    <!-- Scheda Superiore (Master Card Cinema) -->
+    <path d="M15 45 L75 70 L105 55 L45 30 Z" fill="#1E293B" stroke="#64748B" stroke-width="2" />
+    
+    <!-- Pin di connessione / Connettori Hardware -->
+    <path d="M50 33 L60 37 M63 38 L73 42 M76 43 L86 47" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" />
+
+    <!-- Perforazioni pellicola 35mm proiettate sul bordo -->
+    <rect x="23" y="52" width="6" height="4" rx="1" fill="#94A3B8" transform="skewY(22)" />
+    <rect x="33" y="56" width="6" height="4" rx="1" fill="#94A3B8" transform="skewY(22)" />
+    <rect x="43" y="60" width="6" height="4" rx="1" fill="#94A3B8" transform="skewY(22)" />
+
+    <!-- Sigillo di Verifica / Ala "X" di Certificazione -->
+    <path d="M30 68 L52 92 L102 32" fill="none" stroke="url(#glow)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Secondo braccio sottile che chiude la X di "Xt" in prospettiva -->
+    <path d="M78 88 L98 62" fill="none" stroke="#00F2FE" stroke-width="4" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- GRUPPO TIPOGRAFIA -->
+  <g transform="translate(175, 95)">
+    <!-- "TeoStack" -->
+    <text font-size="44" font-weight="700" fill="#F8FAFC" letter-spacing="-1">
+      Teo<tspan fill="#CBD5E1">Stack</tspan>
+    </text>
+    
+    <!-- "Xt" Badge Grafico -->
+    <text x="210" y="0" font-size="44" font-weight="900" fill="url(#glow)" letter-spacing="0">
+      Xt
+    </text>
+    
+    <!-- Sottotitolo / Payoff Certificazione -->
+    <text x="3" y="24" font-size="11" font-weight="600" fill="#64748B" letter-spacing="3.5">
+      CERTIFIED CINE MEDIA CHECKSUM
+    </text>
+  </g>
+</svg>

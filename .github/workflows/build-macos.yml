@@ -1,0 +1,30 @@
+name: Build macOS installer
+
+on:
+  push:
+    branches: ["claude/**", "main"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versione Swift
+        run: swift --version
+      - name: Test (nucleo)
+        continue-on-error: true
+        run: swift test 2>&1 | tail -40
+      - name: App + installer
+        run: packaging/build-installer.sh
+      - name: Contenuto app
+        run: |
+          ls -R dist/TeoStackXt.app/Contents | head -60
+          file dist/TeoStackXt.app/Contents/MacOS/TeoStackXt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TeoStackXt-installer
+          path: |
+            dist/*.pkg
+            dist/*.dmg
+          if-no-files-found: error

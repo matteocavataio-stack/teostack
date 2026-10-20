@@ -1,0 +1,28 @@
+#!/bin/bash
+# Eseguito dall'installer dopo la copia dell'app. Non fa mai fallire l'installazione.
+LOG=/tmp/teostackxt-install.log
+exec >>"$LOG" 2>&1
+echo "== $(date) postinstall"
+
+APP="/Applications/TeoStackXt.app"
+xattr -dr com.apple.quarantine "$APP" 2>/dev/null
+
+CONSOLE_USER="$(stat -f%Su /dev/console 2>/dev/null)"
+if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then echo "nessun utente: salto art-cmd"; exit 0; fi
+USER_HOME="$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory | awk '{print $2}')"
+ARRI_DIR="$USER_HOME/ARRI"
+
+if ls "$ARRI_DIR"/art-cmd*/bin/art-cmd >/dev/null 2>&1; then echo "art-cmd già presente"; exit 0; fi
+
+# art-cmd (ARRI Reference Tool) viene scaricato dal sito ARRI, non è incluso nel pacchetto.
+URL="https://arri.canto.de/direct/other/ht9rmfr4q177f2jlct7alob95s/AXAAWD6V5zGk08YuSogjUy6PcKM/original?content-type=application%2Fzip&name=ARRIReferenceTool_CMD_1.0.0_macos_universal_data.zip"
+TMP="$(mktemp -d)"
+sudo -u "$CONSOLE_USER" mkdir -p "$ARRI_DIR"
+if curl -fsSL --max-time 900 -o "$TMP/art-cmd.zip" "$URL"; then
+    sudo -u "$CONSOLE_USER" unzip -q -o "$TMP/art-cmd.zip" -d "$ARRI_DIR" && echo "art-cmd installato in $ARRI_DIR"
+    xattr -dr com.apple.quarantine "$ARRI_DIR" 2>/dev/null
+else
+    echo "download di art-cmd non riuscito: installarlo a mano come indicato nell'app"
+fi
+rm -rf "$TMP"
+exit 0
