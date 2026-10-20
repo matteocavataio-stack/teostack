@@ -13,6 +13,8 @@ struct ReportSheet: View {
     let close: () -> Void
 
     @AppStorage("reportOperator") private var operatorName = ""
+    /// Stessa scelta del menu «Colonne» del tab Clip.
+    @AppStorage("clipColumns") private var columnsSetting = ClipColumns.defaultVisibleIDs.joined(separator: ",")
     @State private var projectName = ""
     @State private var notes = ""
     @State private var kinds: Set<ReportKind> = Set(ReportKind.allCases)
@@ -26,10 +28,29 @@ struct ReportSheet: View {
         return node.name
     }
 
+    private var scopeIsBin: Bool {
+        guard let id = projects.selectedNodeID, let node = projects.node(id) else { return true }
+        return node.kind == .bin
+    }
+
+    private var selectedColumnIDs: [String] {
+        let wanted = Set(columnsSetting.split(separator: ",").map(String.init))
+        return ReportColumnChoice.available.map(\.id).filter { wanted.contains($0) }
+    }
+
+    private func columnBinding(_ id: String) -> Binding<Bool> {
+        Binding(get: { selectedColumnIDs.contains(id) },
+                set: { on in
+                    var ids = Set(columnsSetting.split(separator: ",").map(String.init))
+                    if on { ids.insert(id) } else { ids.remove(id) }
+                    columnsSetting = ClipColumns.all.map(\.id).filter { ids.contains($0) }.joined(separator: ",")
+                })
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Esporta report (PDF)").font(.title3.bold())
-            Text("Ambito: \(scopeText)").font(.callout).foregroundStyle(.secondary)
+            Text("Ambito: \(scopeText)\(scopeIsBin ? "" : " (tutti i bin contenuti)")").font(.callout).foregroundStyle(.secondary)
 
             HStack {
                 TextField("Nome progetto", text: $projectName).textFieldStyle(.roundedBorder)
@@ -46,7 +67,18 @@ struct ReportSheet: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Text("Le anteprime dei clip compaiono nei report se sono già state generate (tab Clip).")
+            GroupBox("Colonne dei report Clips e Thumbnail (stesse del tab Clip)") {
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), alignment: .leading)], alignment: .leading, spacing: 4) {
+                        ForEach(ReportColumnChoice.available) { c in
+                            Toggle(c.title, isOn: columnBinding(c.id)).toggleStyle(.checkbox)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .frame(height: 140)
+            }
+            Text("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip).")
                 .font(.caption).foregroundStyle(.secondary)
 
             if let message {
@@ -68,7 +100,7 @@ struct ReportSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 520)
+        .frame(width: 560)
         .onAppear { projectName = projects.selectedProject?.name ?? "" }
     }
 
@@ -82,7 +114,8 @@ struct ReportSheet: View {
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let folder = panel.url else { return }
 
-        let options = ReportOptions(projectName: projectName.trimmingCharacters(in: .whitespaces), operatorName: operatorName, notes: notes)
+        let options = ReportOptions(projectName: projectName.trimmingCharacters(in: .whitespaces), operatorName: operatorName, notes: notes,
+                                    columnIDs: selectedColumnIDs)
         let chosen = ReportKind.allCases.filter { kinds.contains($0) }
         let thumbnails = projects.thumbnails
         working = true

@@ -178,3 +178,132 @@ final class ModifiedAtMigrationTests: XCTestCase {
         for c in clips { XCTAssertEqual(c.modifiedAt, ReferenceScenario.date("06/06/2025 11:36")) }
     }
 }
+
+final class ReportScopeAndColumnsTests: XCTestCase {
+    private func text(_ data: Data) -> String { String(decoding: data, as: UTF8.self) }
+
+    /// Il titolo compare come testo del PDF (le parentesi sono precedute da «\»).
+    private func shows(_ pdf: String, _ title: String) -> Bool {
+        pdf.contains("(" + title.replacingOccurrences(of: "(", with: "\\(").replacingOccurrences(of: ")", with: "\\)") + ")")
+    }
+
+    /// Aggiunge un secondo bin con un offload (file di prova con nomi propri) accanto al bin dello scenario.
+    private func addSecondBin(_ sc: ReferenceScenario, in parentID: Int64) throws -> TreeNode {
+        let bin2 = try sc.store.createBin(parentID: parentID, name: "B_0002_2XYZ")
+        let source = URL(fileURLWithPath: "/Volumes/CARD_B/B_0002_2XYZ")
+        let dest = "/Volumes/SSD_8TB_01/TEST_PROVINI/B_0002_2XYZ"
+        let job = OffloadJob(sourceURL: source, destinationRoots: [URL(fileURLWithPath: dest)])
+        try sc.store.beginOffload(jobID: job.id, binID: bin2.id, sourcePath: source.path, destinations: [dest], startedAt: sc.started)
+        let file = FileResult(relativePath: "B_0002C001_second.mxf", size: 5_000_000_000, sourceHash: "0123456789abcdef",
+                              destinations: [DestFileResult(status: .ok, destHash: "0123456789abcdef", message: nil)], modificationDate: sc.started)
+        try sc.store.finishOffload(OffloadResult(job: job, outcome: .completed, files: [file], preflightErrors: [], destinationErrors: [nil],
+                                                 skippedAlreadyVerified: 0, elapsed: 30), finishedAt: sc.started.addingTimeInterval(30))
+        return bin2
+    }
+
+    func testFolderReportCoversAllBinsInsideAndBinReportStaysSingle() throws {
+        let sc = try ReferenceScenario()
+        let bin2 = try addSecondBin(sc, in: sc.day.id)
+        let options = ReportOptions(projectName: sc.projectName)
+        func report(_ kind: ReportKind, node: Int64) throws -> (name: String, text: String) {
+            let out = try ReportGenerator.generate(kind, store: sc.store, projectID: sc.project.id, nodeID: node, options: options, thumbnails: nil)
+            return (out.fileName, text(out.data))
+        }
+        // report della cartella (giorno): un solo documento con i file di entrambi i bin
+        let day = try report(.clips, node: sc.day.id)
+        XCTAssertTrue(day.name.hasPrefix("Clips_Report-DAY01-"), day.name)
+        XCTAssertTrue(day.text.contains("A_9001C001_250606_093620_a1C3S"))
+        XCTAssertTrue(day.text.contains("B_0002C001_second"))
+        XCTAssertTrue(day.text.contains("B_0002_2XYZ") && day.text.contains("A_9001_1C3S"), "colonna Bin Name con entrambi")
+        let shooting = try report(.shootingDay, node: sc.day.id)
+        XCTAssertTrue(shooting.text.contains("A_9001_1C3S") && shooting.text.contains("B_0002_2XYZ"), "riquadro Bins")
+        let volume = try report(.volume, node: sc.day.id)
+        XCTAssertTrue(volume.text.contains("CARD_B") && volume.text.contains("A_9001_1C3S"), "una pagina per ogni volume sorgente")
+        // report del singolo bin: solo i suoi file
+        let single = try report(.clips, node: bin2.id)
+        XCTAssertTrue(single.name.hasPrefix("Clips_Report-B_0002_2XYZ-"))
+        XCTAssertTrue(single.text.contains("B_0002C001_second"))
+        XCTAssertFalse(single.text.contains("A_9001C001_250606_093620_a1C3S"))
+    }
+
+    func testOnlySelectedColumnsArePrinted() throws {
+        let sc = try ReferenceScenario()
+        let all = try ClipsReport.render(sc.context(.clips))
+        var options = ReportOptions(projectName: sc.projectName, columnIDs: ["size", "iso", "timecode"])
+        options.generatedAt = ReferenceScenario.date("20/10/2026 14:55")
+        let ctx = try ReportContextBuilder.build(kind: .clips, store: sc.store, projectID: sc.project.id, nodeID: sc.bin.id, options: options, thumbnails: nil)
+        let some = text(ClipsReport.render(ctx))
+        for title in ["Name", "File Size", "EI/ISO (clip)", "EI/ISO (current)", "TC Start", "TC End"] {
+            XCTAssertTrue(shows(some, title), title)
+        }
+        for title in ["Frames", "Codec", "Lens Model", "Resources", "Hash Values", "Preview", "Resolution"] {
+            XCTAssertFalse(shows(some, title), "\(title) non selezionata")
+        }
+        XCTAssertTrue(some.contains("800"))                       // ISO
+        XCTAssertFalse(some.contains("ARRIRAW"), "il codec non è stato scelto")
+        XCTAssertLessThan(ClipsReport.render(ctx).count, all.count / 2)
+        // il Thumbnail Report segue la stessa scelta
+        let thumb = text(ThumbnailReport.render(ctx))
+        XCTAssertTrue(shows(thumb, "File Size") && shows(thumb, "TC Start"))
+        XCTAssertFalse(shows(thumb, "Codec") || shows(thumb, "Lens Model"))
+        // senza scelta: tutte le 150 colonne del formato di riferimento
+        XCTAssertEqual(ReportFieldTable.selected(nil).count, ReportFieldTable.columns.count)
+    }
+
+    func testColumnMappingIsConsistent() {
+        let titles = Set(ReportFieldTable.columns.map(\.title))
+        for (id, mapped) in ReportFieldTable.titlesByColumnID {
+            XCTAssertNotNil(ClipColumns.column(id: id), "colonna \(id) inesistente")
+            for t in mapped { XCTAssertTrue(titles.contains(t), "campo «\(t)» non esiste nel formato") }
+        }
+        XCTAssertTrue(ReportColumnChoice.available.contains { $0.id == "iso" })
+        XCTAssertFalse(ReportColumnChoice.available.contains { $0.id == "day" })
+        XCTAssertEqual(ReportFieldTable.selected([]).map(\.title), ["Name"], "Name c'è sempre")
+        XCTAssertEqual(ReportFieldTable.selected(["timecode", "name"]).map(\.title), ["Name", "TC Start", "TC End"], "ordine del formato di riferimento")
+    }
+}
+
+final class MoveNodeTests: XCTestCase {
+    func testMoveBinIntoFolderAndRules() throws {
+        let store = try ProjectStore(path: nil)
+        let p = try store.createProject(name: "Film")
+        let other = try store.createProject(name: "Altro")
+        let lib = try store.tree(projectID: p.id)
+        let bin = try store.createBin(parentID: lib.id, name: "A001")
+        let folder = try store.createFolder(parentID: lib.id, name: "CAM_A")
+        let inner = try store.createFolder(parentID: folder.id, name: "Mattina")
+        let day = try store.createDay(projectID: p.id, name: "DAY01")
+
+        try store.moveNode(id: bin.id, toParentID: folder.id)
+        XCTAssertEqual(try store.binTarget(binID: bin.id)?.folderPath, ["CAM_A"])
+        try store.moveNode(id: folder.id, toParentID: day.id)                   // la cartella (con il bin) dentro il giorno
+        XCTAssertEqual(try store.binTarget(binID: bin.id)?.folderPath, ["DAY01", "CAM_A"])
+        try store.moveNode(id: bin.id, toParentID: inner.id)
+        XCTAssertEqual(try store.binTarget(binID: bin.id)?.folderPath, ["DAY01", "CAM_A", "Mattina"])
+        try store.moveNode(id: bin.id, toParentID: lib.id)                      // e di nuovo fuori, nella radice
+        XCTAssertEqual(try store.binTarget(binID: bin.id)?.folderPath, [])
+        try store.moveNode(id: bin.id, toParentID: lib.id)                      // stessa posizione: nessun effetto
+
+        XCTAssertThrowsError(try store.moveNode(id: folder.id, toParentID: inner.id), "una cartella dentro un suo discendente")
+        XCTAssertThrowsError(try store.moveNode(id: folder.id, toParentID: folder.id))
+        XCTAssertThrowsError(try store.moveNode(id: lib.id, toParentID: day.id), "la Library non si sposta")
+        XCTAssertThrowsError(try store.moveNode(id: day.id, toParentID: folder.id), "il giorno solo nella Library")
+        XCTAssertThrowsError(try store.moveNode(id: folder.id, toParentID: bin.id), "dentro un bin no")
+        XCTAssertThrowsError(try store.moveNode(id: bin.id, toParentID: try store.tree(projectID: other.id).id), "altro progetto")
+        // nome già presente nella destinazione
+        let dup = try store.createBin(parentID: inner.id, name: "a001")
+        XCTAssertThrowsError(try store.moveNode(id: bin.id, toParentID: inner.id))
+        _ = dup
+    }
+
+    func testMovingKeepsClipsAndOffloads() throws {
+        let sc = try ReferenceScenario()
+        let folder = try sc.store.createFolder(parentID: sc.day.id, name: "CAM_A")
+        let before = try sc.store.clips(underNode: sc.bin.id, mediaOnly: false).map(\.id)
+        try sc.store.moveNode(id: sc.bin.id, toParentID: folder.id)
+        XCTAssertEqual(try sc.store.clips(underNode: sc.bin.id, mediaOnly: false).map(\.id), before)
+        XCTAssertEqual(try sc.store.clips(underNode: folder.id, mediaOnly: false).count, before.count, "ora i clip contano nella cartella")
+        XCTAssertEqual(try sc.store.offloads(binID: sc.bin.id).count, 1)
+        XCTAssertEqual(try sc.store.clips(underNode: sc.bin.id, mediaOnly: false).first?.dayName, "CAM_A")
+    }
+}

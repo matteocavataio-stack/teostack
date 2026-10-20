@@ -24,6 +24,8 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 - Database SQLite in `~/Library/Application Support/TeoStackXt/teostack.sqlite` (libreria GRDB).
 - Struttura: Progetto → Library → [cartella giorno, es. `DAY01_20261016`] → [sottocartelle] → bin. Giorno e sottocartelle sono **facoltativi**:
   servono solo a tenere il progetto ordinato, un bin può stare anche direttamente nella Library. Sidebar ad albero con conteggio clip.
+- **Spostare:** trascina un giorno, una cartella o un bin su una cartella (o sulla Library) oppure usa il clic destro → «Sposta in». Si sposta solo nell'albero del
+  programma: clip, offload e file sui dischi non cambiano. Non si può spostare una cartella dentro se stessa, né un giorno fuori dalla Library, né in un altro progetto.
 - **I bin non si creano a mano**: nascono quando avvii l'offload (vedi sotto). Nella sidebar si creano solo «+ Giorno» (data) e «+ Cartella»
   (dentro la cartella selezionata); si rinomina/elimina con il clic destro. Selettore progetto in alto (nome, data creazione, numero clip) e «Nuovo progetto».
 - **Eliminare o rinominare nel programma non tocca mai i file sui dischi.** Le finestre di conferma lo dicono.
@@ -69,6 +71,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 ## Report (fase d)
 
 Menu **Report → Esporta report…** (⇧⌘E) oppure pulsante «Esporta report…» in alto. Ambito = elemento selezionato nella sidebar (progetto, giorno o bin).
+Selezionando una **cartella** (o un giorno) i report comprendono tutti i bin al suo interno, con un unico documento per la giornata; selezionando un **bin** si ottiene il report del solo bin.
 Si scelgono quali report creare e la cartella: **ogni report è un PDF separato**, con nome `<Report_Name>-<bin>-<aaaa-mm-gg-HHmm>.pdf`
 (es. `Clips_Report-A_9001_1C3S-2026-10-20-1455.pdf`). Un file esistente non viene mai sovrascritto (si aggiunge « 2»).
 
@@ -80,6 +83,8 @@ Si scelgono quali report creare e la cartella: **ogni report è un PDF separato*
 | Thumbnail | una scheda per file: anteprima (o icona) e tutti i campi |
 | Contact Print | griglia 4 colonne di anteprime dei clip video con il nome sotto |
 
+- **Colonne scelte da te:** nei report Clips e Thumbnail compaiono solo le colonne spuntate nella finestra «Esporta report» (sono le stesse del menu «Colonne» del tab Clip);
+  «Name» c'è sempre. Shooting Day, Volume e Contact Print hanno un formato fisso. Il tab Clip offre anche colonne per tint, tilt, roll, seriale lente, distanza fuoco, costruttore, indice camera e audio.
 - Nessun valore inventato: i campi che l'app non conosce (es. ShotID/ShotHub, Play Status, Wild Track, Missing) restano **vuoti**, non «N/D» né valori finti.
   Compaiono solo dati letti dai clip (ExifTool / art-cmd) o calcolati dall'offload (dimensioni, date, volumi, backup, verifica, XXH64).
 - «Verified Backups» conta solo i file riletti dal disco con XXH64 identico alla sorgente.

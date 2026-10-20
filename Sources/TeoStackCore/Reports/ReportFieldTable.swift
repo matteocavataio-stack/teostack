@@ -155,4 +155,32 @@ enum ReportFieldTable {
         ("Source File Type", 84.0),
         ("Source Soundroll", 84.0),
     ]
+
+    /// Colonne della tabella dell'app (`ClipColumns`) → campi del report che le rappresentano. «Giorno» non ha un campo equivalente.
+    static let titlesByColumnID: [String: [String]] = [
+        "preview": ["Preview"], "name": ["Name"], "bin": ["Bin Name"], "size": ["File Size"], "hash": ["XXH64", "Hash Values"],
+        "status": ["Verification State"], "offloadDate": ["Registration Date"], "path": ["Resources"],
+        "camera": ["Recorder Model"], "cameraSerial": ["Serial Number"], "firmware": ["Firmware Version"], "reel": ["Reel/Tape"],
+        "scene": ["Scene"], "take": ["Take"], "shutter": ["Shutter", "Shutter Angle"], "colorSpace": ["Rec. Color Space"],
+        "focalLength": ["Focal Length"], "createDate": ["Shooting/Recording Date"], "duration": ["Duration"], "frameRate": ["Project FPS"],
+        "codec": ["Codec"], "resolution": ["Resolution"], "sensorFPS": ["Sensor FPS"], "ndFilter": ["ND Filter"], "lookInfo": ["Look Info"],
+        "lens": ["Lens Model"], "iso": ["EI/ISO (clip)", "EI/ISO (current)"], "whiteBalance": ["WB (clip)", "WB (current)"],
+        "timecode": ["TC Start", "TC End"], "manufacturer": ["Manufacturer"], "cameraIndex": ["Camera"], "lensSerial": ["Lens Serial"],
+        "focusDistance": ["Focus Distance"], "tint": ["Tint (clip)", "Tint (current)"], "tilt": ["Camera Tilt [°]"], "roll": ["Camera Roll [°]"],
+        "audioCodec": ["Audio Codec"], "audioChannels": ["Audio Tracks"], "audioSampleRate": ["Audio Sample Rate"], "audioBitDepth": ["Audio Bit Depth"],
+    ]
+
+    /// Colonne da stampare: tutte se `ids` è nil; altrimenti solo quelle scelte dall'utente, nell'ordine del formato di riferimento.
+    /// «Name» c'è sempre (identifica la riga).
+    static func selected(_ ids: [String]?) -> [(title: String, width: Double)] {
+        guard let ids else { return columns }
+        var wanted: Set<String> = ["Name"]
+        for id in ids { wanted.formUnion(titlesByColumnID[id] ?? []) }
+        return columns.filter { wanted.contains($0.title) }
+    }
+}
+
+/// Colonne dell'app che i report Clips e Thumbnail sanno stampare (per la scelta nella finestra «Esporta report»).
+public enum ReportColumnChoice {
+    public static var available: [ClipColumn] { ClipColumns.all.filter { !(ReportFieldTable.titlesByColumnID[$0.id] ?? []).isEmpty } }
 }

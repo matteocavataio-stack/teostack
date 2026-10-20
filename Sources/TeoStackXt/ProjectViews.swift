@@ -172,7 +172,9 @@ struct SidebarView: View {
                         Spacer()
                         Text("\(node.clipCount)").foregroundStyle(.secondary).monospacedDigit()
                     }
+                    .contentShape(Rectangle())
                     .contextMenu { menu(for: node) }
+                    .modifier(NodeDragDrop(node: node, projects: projects))
                 }
             } else {
                 Text("Seleziona o crea un progetto")
@@ -234,12 +236,44 @@ struct SidebarView: View {
             Button("Nuova cartella") { projects.selectNode(node.id); request = .newFolder }
         case .day, .folder:
             Button("Nuova cartella") { projects.selectNode(node.id); request = .newFolder }
+            moveMenu(for: node)
             Button("Rinomina") { request = .renameNode(id: node.id, name: node.name) }
             Button("Elimina…", role: .destructive) { deleteTarget = node }
         case .bin:
+            moveMenu(for: node)
             Button("Rinomina") { request = .renameNode(id: node.id, name: node.name) }
             Button("Elimina…", role: .destructive) { deleteTarget = node }
         }
+    }
+
+    @ViewBuilder
+    private func moveMenu(for node: TreeNode) -> some View {
+        let targets = projects.moveTargets(for: node.id)
+        if !targets.isEmpty {
+            Menu("Sposta in") {
+                ForEach(targets) { t in
+                    Button(t.label) { projects.moveNode(id: node.id, toParent: t.id) }
+                }
+            }
+        }
+    }
+}
+
+/// Trascinando un giorno, una cartella o un bin su una cartella (o sulla Library) lo si sposta lì dentro.
+struct NodeDragDrop: ViewModifier {
+    let node: TreeNode
+    @ObservedObject var projects: ProjectsViewModel
+    private static let prefix = "teostack-node:"
+
+    func body(content: Content) -> some View {
+        content
+            .draggable(node.kind == .library ? "" : "\(Self.prefix)\(node.id)")
+            .dropDestination(for: String.self) { items, _ in
+                guard node.kind != .bin, let raw = items.first, raw.hasPrefix(Self.prefix),
+                      let id = Int64(raw.dropFirst(Self.prefix.count)) else { return false }
+                projects.moveNode(id: id, toParent: node.id)
+                return true
+            }
     }
 }
 

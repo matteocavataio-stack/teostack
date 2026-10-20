@@ -34,8 +34,11 @@ public struct ReportOptions {
     public var operatorName: String
     public var notes: String
     public var generatedAt: Date
+    /// Colonne scelte dall'utente (id di `ClipColumns`) per i report Clips e Thumbnail; nil = tutte le colonne del formato di riferimento.
+    public var columnIDs: [String]?
 
-    public init(projectName: String, operatorName: String = "", notes: String = "", generatedAt: Date = Date()) {
+    public init(projectName: String, operatorName: String = "", notes: String = "", generatedAt: Date = Date(), columnIDs: [String]? = nil) {
+        self.columnIDs = columnIDs
         self.projectName = projectName
         self.operatorName = operatorName
         self.notes = notes
@@ -100,6 +103,7 @@ struct ReportContext {
     var notes: String
     var items: [ReportItem]
     var offloads: [OffloadRecord]
+    var columnIDs: [String]? = nil
     var scopeName: String { title }
 
     var videoClips: [ReportItem] { items.filter { $0.kind == .video } }
@@ -156,7 +160,8 @@ public enum ReportContextBuilder {
         items.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
         return ReportContext(kind: kind, title: title, projectName: options.projectName,
                              offloadStarted: offloads.map(\.startedAt).min(), generatedAt: options.generatedAt,
-                             operatorName: options.operatorName, notes: options.notes, items: items, offloads: offloads)
+                             operatorName: options.operatorName, notes: options.notes, items: items, offloads: offloads,
+                             columnIDs: options.columnIDs)
     }
 }
 

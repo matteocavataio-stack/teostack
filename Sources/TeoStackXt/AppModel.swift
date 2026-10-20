@@ -229,6 +229,33 @@ final class ProjectsViewModel: ObservableObject {
         }
     }
 
+    struct MoveTarget: Identifiable {
+        let id: Int64
+        let label: String
+    }
+
+    /// Cartelle in cui si può spostare l'elemento (esclusi se stesso, i suoi discendenti e la cartella attuale).
+    func moveTargets(for id: Int64) -> [MoveTarget] {
+        guard let moving = node(id), moving.kind != .library else { return [] }
+        var out: [MoveTarget] = []
+        func visit(_ n: TreeNode, path: [String]) {
+            if n.id == id { return }                                   // né sé stesso né i suoi discendenti
+            guard n.kind != .bin else { return }
+            let here = n.kind == .library ? path : path + [n.name]
+            let allowed = moving.kind == .day ? n.kind == .library : true
+            if allowed && n.id != moving.parentID {
+                out.append(MoveTarget(id: n.id, label: n.kind == .library ? "Library (radice)" : here.joined(separator: " › ")))
+            }
+            for c in n.children ?? [] { visit(c, path: here) }
+        }
+        if let tree { visit(tree, path: []) }
+        return out
+    }
+
+    func moveNode(id: Int64, toParent parentID: Int64) {
+        if let message = mutate({ try $0.moveNode(id: id, toParentID: parentID) }) { errorMessage = message }
+    }
+
     func renameNode(id: Int64, name: String) -> String? {
         mutate { try $0.renameNode(id: id, to: name) }
     }

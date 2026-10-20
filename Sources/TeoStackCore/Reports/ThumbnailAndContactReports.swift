@@ -83,7 +83,7 @@ enum ThumbnailReport {
         let boxTop = canvas.drawTitleBlock()
         var y = canvas.drawCompactOverview(top: boxTop - 0.5) + 13.6
         let labelRight = 419.1, valueLeft = 427.6, valueWidth = setup.width - 18.2 - valueLeft - 6
-        let titles = ReportFieldTable.columns.map(\.title).filter { $0 != "Preview" }
+        let titles = ReportFieldTable.selected(ctx.columnIDs).map(\.title).filter { $0 != "Preview" }
         let pitch = 13.0667, lineHeight = 8.8
 
         for item in ctx.items {

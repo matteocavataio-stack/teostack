@@ -323,6 +323,45 @@ public final class ProjectStore {
         }
     }
 
+    /// Sposta un giorno, una cartella o un bin dentro un'altra cartella (o nella Library) dello stesso progetto.
+    /// Cambia solo l'albero del programma: clip, offload e file sui dischi restano dove sono.
+    public func moveNode(id: Int64, toParentID newParentID: Int64) throws {
+        try wrap {
+            try db.write { db in
+                guard let node = try Row.fetchOne(db, sql: "SELECT projectID, parentID, kind, name FROM node WHERE id = ?", arguments: [id]) else {
+                    throw ProjectStoreError.notFound("Elemento non trovato.")
+                }
+                guard let target = try Row.fetchOne(db, sql: "SELECT projectID, kind, name FROM node WHERE id = ?", arguments: [newParentID]) else {
+                    throw ProjectStoreError.notFound("Cartella di destinazione non trovata.")
+                }
+                let kind = NodeKind(rawValue: node["kind"]), targetKind = NodeKind(rawValue: target["kind"])
+                let name: String = node["name"], targetName: String = target["name"]
+                if kind == .library { throw ProjectStoreError.invalidOperation("La Library non si può spostare.") }
+                if (node["projectID"] as Int64) != (target["projectID"] as Int64) {
+                    throw ProjectStoreError.invalidOperation("Non si può spostare un elemento in un altro progetto.")
+                }
+                if targetKind == .bin { throw ProjectStoreError.invalidOperation("Dentro un bin non si può spostare nulla.") }
+                if kind == .day && targetKind != .library {
+                    throw ProjectStoreError.invalidOperation("Le cartelle giorno stanno solo nella Library.")
+                }
+                if (node["parentID"] as Int64?) == newParentID { return }
+                let inside = try Int.fetchOne(db, sql: """
+                    WITH RECURSIVE sub(id) AS (SELECT id FROM node WHERE id = ? UNION ALL SELECT n.id FROM node n JOIN sub ON n.parentID = sub.id)
+                    SELECT COUNT(*) FROM sub WHERE id = ?
+                    """, arguments: [id, newParentID]) ?? 0
+                if inside > 0 { throw ProjectStoreError.invalidOperation("Non si può spostare una cartella dentro se stessa.") }
+                if try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM node WHERE parentID = ? AND name = ?", arguments: [newParentID, name]) ?? 0 > 0 {
+                    throw ProjectStoreError.duplicateName("In «\(targetName)» esiste già «\(name)».")
+                }
+                let fromName: String = try (node["parentID"] as Int64?).flatMap {
+                    try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [$0])
+                } ?? ""
+                try db.execute(sql: "UPDATE node SET parentID = ? WHERE id = ?", arguments: [newParentID, id])
+                try ProjectStore.log(db, projectID: node["projectID"], kind: "nodeMoved", title: "«\(name)» spostato da «\(fromName)» a «\(targetName)»")
+            }
+        }
+    }
+
     public struct DeletionImpact: Equatable {
         public var bins: Int
         public var offloads: Int

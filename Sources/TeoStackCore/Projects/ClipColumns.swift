@@ -42,6 +42,17 @@ public enum ClipColumns {
         ClipColumn(id: "iso", title: "ISO", isMetadata: true, width: 70),
         ClipColumn(id: "whiteBalance", title: "WB", isMetadata: true, width: 80),
         ClipColumn(id: "timecode", title: "Timecode", isMetadata: true, width: 110),
+        ClipColumn(id: "manufacturer", title: "Costruttore", isMetadata: true, width: 100),
+        ClipColumn(id: "cameraIndex", title: "Indice camera", isMetadata: true, width: 100),
+        ClipColumn(id: "lensSerial", title: "Serial lente", isMetadata: true, width: 100),
+        ClipColumn(id: "focusDistance", title: "Distanza fuoco", isMetadata: true, width: 100),
+        ClipColumn(id: "tint", title: "Tint", isMetadata: true, width: 60),
+        ClipColumn(id: "tilt", title: "Tilt", isMetadata: true, width: 60),
+        ClipColumn(id: "roll", title: "Roll", isMetadata: true, width: 60),
+        ClipColumn(id: "audioCodec", title: "Audio codec", isMetadata: true, width: 100),
+        ClipColumn(id: "audioChannels", title: "Audio tracce", isMetadata: true, width: 90),
+        ClipColumn(id: "audioSampleRate", title: "Audio sample rate", isMetadata: true, width: 110),
+        ClipColumn(id: "audioBitDepth", title: "Audio bit", isMetadata: true, width: 80),
     ]
 
     public static let defaultVisibleIDs: [String] = ["preview", "name", "day", "bin", "size", "hash", "status", "camera", "resolution", "duration", "timecode"]

@@ -13,8 +13,8 @@ enum ClipsReport {
     private static let maxPageHeight = 14000.0
 
     static func render(_ ctx: ReportContext) -> Data {
-        let columns = ReportFieldTable.columns
-        let tableWidth = columns.reduce(0) { $0 + $1.width }
+        let columns = ReportFieldTable.selected(ctx.columnIDs)
+        let tableWidth = max(columns.reduce(0) { $0 + $1.width }, 480)     // con poche colonne la pagina resta larga abbastanza per il riquadro riassuntivo
         let minHeight = (30.0 + 5.6 + tableWidth + 5.6 + 53.0) * referenceRatio
 
         // Misure con una pagina provvisoria: blocco titolo + riquadro riassuntivo, poi celle e altezze delle righe.
