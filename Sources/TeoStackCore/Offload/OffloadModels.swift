@@ -149,6 +149,8 @@ public struct OffloadSnapshot {
     public var destinations: [DestinationProgress] = []
     public var elapsed: TimeInterval = 0
     public var eta: TimeInterval?          // della fase corrente
+
+    public init() {}
 }
 
 public struct FileUpdate {
