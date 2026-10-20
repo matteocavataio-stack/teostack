@@ -77,6 +77,20 @@ Riepiloghi opzionali: **Production Info**, **Clips Overview**, **Camera Summary*
 - PDF generato dall'app senza librerie esterne (font standard Helvetica, accenti italiani supportati); controllato con `pdftotext` e `pdfinfo`.
 - Gli altri formati (HTML, CSV, XML, JSON, ASC MHL) sono stati rimossi per scelta dell'utente.
 
+## Anteprima del primo fotogramma
+
+- Nel tab **Clip** la colonna **Anteprima** mostra il primo fotogramma di ogni clip; cliccando una riga si apre a destra il pannello con il fotogramma grande
+  e i dati principali (camera, lente, ISO, WB, ND, sensor FPS, shutter, risoluzione, codec, timecode, durata).
+- Le anteprime vengono create **dopo ogni offload** (dopo la lettura dei metadata) oppure con il pulsante **Crea anteprime**. Si legge la copia verificata sul disco di
+  destinazione, mai la scheda. I JPEG sono in `~/Library/Application Support/TeoStackXt/Thumbnails/`.
+- **Clip ARRI:** `art-cmd process --input clip.mxf --start 0 --duration 1 --embedded-look --target-colorspace Rec.709/D65/BT.1886 --output <temp>/%07d.tif`
+  (look incorporato nel clip, Rec.709); se il look non è supportato riprova senza. Il TIFF a 16 bit viene ridotto a JPEG con ImageIO (macOS).
+- **Altri video** (ProRes, Sony XAVC…) e ripiego per i clip ARRI: `ffmpeg` (primo fotogramma, JPEG largo al massimo 640 px, senza ingrandire).
+- **Dove nessuno strumento riesce a decodificare** (es. ARRIRAW senza art-cmd, Sony X-OCN) l'anteprima manca: la tabella mostra un triangolo e il pannello
+  spiega il motivo. Non viene mai mostrata un'immagine inventata.
+- ffmpeg non è incluso: l'app avvisa se manca e mostra come installarlo (stesso avviso di ExifTool e art-cmd).
+- Nota: la parte `art-cmd process` segue la sintassi del manuale ufficiale ma è stata provata solo con un finto `art-cmd` (il programma reale è solo per macOS).
+
 ## Cronologia del progetto
 
 Colonna a destra (pulsante «Nascondi/Mostra cronologia») per il progetto selezionato, dalla più recente.

@@ -63,6 +63,12 @@ final class ProjectsViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var metadataStatus: String?
     @Published var isReadingMetadata = false
+    @Published var thumbnailStatus: String?
+    @Published var isGeneratingThumbnails = false
+    /// Aumenta ogni volta che cambiano le anteprime su disco: fa ridisegnare la tabella.
+    @Published var thumbnailRevision = 0
+
+    let thumbnails = ThumbnailCache(directory: ThumbnailCache.defaultDirectory())
 
     private static let lastProjectKey = "lastProjectID"
 
@@ -227,7 +233,7 @@ final class ProjectsViewModel: ObservableObject {
     /// Legge i metadata dei clip di un offload appena concluso.
     func importMetadata(forJobID jobID: UUID) {
         guard let store else { return }
-        runMetadataImport(clips: (try? store.clips(forJobID: jobID)) ?? [])
+        runMetadataImport(clips: (try? store.clips(forJobID: jobID)) ?? [], thumbnailsForJobID: jobID)
     }
 
     /// Rilegge i metadata di tutti i clip mostrati (selezione corrente).
@@ -235,12 +241,13 @@ final class ProjectsViewModel: ObservableObject {
         runMetadataImport(clips: clips)
     }
 
-    private func runMetadataImport(clips: [ClipRecord]) {
+    private func runMetadataImport(clips: [ClipRecord], thumbnailsForJobID: UUID? = nil) {
         guard let store, !clips.isEmpty, !isReadingMetadata else { return }
         let exif = ExifToolRunner.locate()
         let art = ARTCmdRunner.locate()
         guard exif != nil || art != nil else {
             metadataStatus = "Né ExifTool né art-cmd sono installati: metadata non letti (vedi l'avviso in alto per installarli)."
+            if let job = thumbnailsForJobID { generateThumbnails(forJobID: job) }
             return
         }
         isReadingMetadata = true
@@ -250,9 +257,15 @@ final class ProjectsViewModel: ObservableObject {
                 let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: exif, art: art) { done, total in
                     DispatchQueue.main.async { self?.metadataStatus = "Lettura metadata… \(done)/\(total)" }
                 }
-                DispatchQueue.main.async { self?.finishMetadataImport("Metadata: \(summary.text)") }
+                DispatchQueue.main.async {
+                    self?.finishMetadataImport("Metadata: \(summary.text)")
+                    if let job = thumbnailsForJobID { self?.generateThumbnails(forJobID: job) }
+                }
             } catch {
-                DispatchQueue.main.async { self?.finishMetadataImport("Metadata non letti: \(error)") }
+                DispatchQueue.main.async {
+                    self?.finishMetadataImport("Metadata non letti: \(error)")
+                    if let job = thumbnailsForJobID { self?.generateThumbnails(forJobID: job) }
+                }
             }
         }
     }
@@ -261,6 +274,50 @@ final class ProjectsViewModel: ObservableObject {
         isReadingMetadata = false
         metadataStatus = text
         run { try refreshSelection() }
+    }
+
+    // MARK: Anteprime (primo fotogramma)
+
+    /// Crea le anteprime dei clip di un offload appena concluso (dopo la lettura dei metadata, che servono a riconoscere i clip ARRI).
+    func generateThumbnails(forJobID jobID: UUID) {
+        guard let store else { return }
+        runThumbnails(clips: (try? store.clips(forJobID: jobID)) ?? [], regenerate: false)
+    }
+
+    /// Crea (o ritenta) le anteprime dei clip mostrati.
+    func generateThumbnailsForSelection(regenerate: Bool) {
+        runThumbnails(clips: clips, regenerate: regenerate)
+    }
+
+    private func runThumbnails(clips: [ClipRecord], regenerate: Bool) {
+        guard let store, !clips.isEmpty, !isGeneratingThumbnails else { return }
+        let tools = ThumbnailTools()
+        guard tools.art != nil || tools.ffmpeg != nil else {
+            thumbnailStatus = "Né ffmpeg né art-cmd sono installati: anteprime non create (vedi l'avviso in alto per installarli)."
+            return
+        }
+        isGeneratingThumbnails = true
+        thumbnailStatus = "Creazione anteprime…"
+        let cache = thumbnails
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            do {
+                let summary = try ThumbnailGenerator.generate(for: clips, store: store, tools: tools, cache: cache, regenerate: regenerate) { done, total in
+                    DispatchQueue.main.async {
+                        self?.thumbnailStatus = "Creazione anteprime… \(done)/\(total)"
+                        self?.thumbnailRevision += 1
+                    }
+                }
+                DispatchQueue.main.async { self?.finishThumbnails("Anteprime: \(summary.text)") }
+            } catch {
+                DispatchQueue.main.async { self?.finishThumbnails("Anteprime non create: \(error)") }
+            }
+        }
+    }
+
+    private func finishThumbnails(_ text: String) {
+        isGeneratingThumbnails = false
+        thumbnailStatus = text
+        thumbnailRevision += 1
     }
 
     // MARK: Interni

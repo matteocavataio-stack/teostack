@@ -12,6 +12,7 @@ public enum ClipColumns {
     public static let notAvailable = "N/D"
 
     public static let all: [ClipColumn] = [
+        ClipColumn(id: "preview", title: "Anteprima", isMetadata: false, width: 96),
         ClipColumn(id: "name", title: "Nome", isMetadata: false, width: 220),
         ClipColumn(id: "day", title: "Giorno", isMetadata: false, width: 140),
         ClipColumn(id: "bin", title: "Bin", isMetadata: false, width: 130),
@@ -43,7 +44,7 @@ public enum ClipColumns {
         ClipColumn(id: "timecode", title: "Timecode", isMetadata: true, width: 110),
     ]
 
-    public static let defaultVisibleIDs: [String] = ["name", "day", "bin", "size", "hash", "status", "camera", "resolution", "duration", "timecode"]
+    public static let defaultVisibleIDs: [String] = ["preview", "name", "day", "bin", "size", "hash", "status", "camera", "resolution", "duration", "timecode"]
 
     public static func column(id: String) -> ClipColumn? { all.first { $0.id == id } }
 
@@ -59,6 +60,7 @@ public enum ClipColumns {
     /// Testo da mostrare. Mai valori inventati: metadata assenti o vuoti → "N/D".
     public static func value(_ column: ClipColumn, of clip: ClipRecord) -> String {
         switch column.id {
+        case "preview": return ""            // l'immagine è disegnata dall'interfaccia
         case "name": return clip.name
         case "day": return clip.dayName
         case "bin": return clip.binName

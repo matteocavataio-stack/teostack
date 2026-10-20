@@ -163,6 +163,16 @@ final class ReportBuilderTests: ReportTestCase {
         XCTAssertEqual(try table(bare, .clips).rows.count, 4)
     }
 
+    func testPreviewColumnIsNotPrintedInTheReport() throws {
+        try offload(to: bin)
+        let t = try table(try build([.clips], columns: ["preview", "name"]), .clips)
+        XCTAssertEqual(t.columns.map(\.id), ["name"])
+        let clip = ClipRecord(id: 1, offloadID: 1, binID: 1, relativePath: "a.mov", name: "a.mov", size: 1, sourceHash: nil, status: "ok",
+                              destinationStatuses: ["ok"], isMedia: true, metadata: [:], offloadDate: Date(), binName: "b", dayName: "d")
+        XCTAssertEqual(ClipColumns.value(try XCTUnwrap(ClipColumns.column(id: "preview")), of: clip), "")
+        XCTAssertEqual(ClipColumns.defaultVisibleIDs.first, "preview")
+    }
+
     func testVolumeHasOneBlockPerDestinationWithHashAndLocation() throws {
         try offload(to: bin)
         let doc = try build([.volume])

@@ -4,6 +4,7 @@ import Foundation
 public enum ExternalTool: String, CaseIterable, Identifiable {
     case exiftool
     case ffprobe
+    case ffmpeg
     case artCmd
 
     public var id: String { rawValue }
@@ -12,6 +13,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
         switch self {
         case .exiftool: return "ExifTool"
         case .ffprobe: return "ffprobe"
+        case .ffmpeg: return "ffmpeg"
         case .artCmd: return "art-cmd (ARRI Reference Tool)"
         }
     }
@@ -21,6 +23,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
         switch self {
         case .exiftool: return "exiftool"
         case .ffprobe: return "ffprobe"
+        case .ffmpeg: return "ffmpeg"
         case .artCmd: return "art-cmd"
         }
     }
@@ -30,7 +33,8 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
         switch self {
         case .exiftool: return "legge i metadata dei clip ARRI e Sony (necessario)"
         case .ffprobe: return "legge i dati tecnici degli MXF Sony e dei file ProRes (consigliato)"
-        case .artCmd: return "legge i metadata dei clip ARRI: ISO, lente, ND, WB, look, sensor FPS (senza di esso restano N/D)"
+        case .ffmpeg: return "estrae il primo fotogramma dei clip ProRes e Sony per l'anteprima (consigliato)"
+        case .artCmd: return "legge i metadata dei clip ARRI (ISO, lente, ND, WB, look, sensor FPS) e ne ricava l'anteprima ARRIRAW/ARRICORE"
         }
     }
 
@@ -40,7 +44,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
     var versionArguments: [String]? {
         switch self {
         case .exiftool: return ["-ver"]
-        case .ffprobe: return ["-version"]
+        case .ffprobe, .ffmpeg: return ["-version"]
         case .artCmd: return nil
         }
     }
@@ -62,6 +66,15 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
             sudo mkdir -p /usr/local/bin
             sudo mv ffprobe /usr/local/bin/
             (poi, per verifica: ffprobe -version)
+            """
+        case .ffmpeg:
+            return """
+            cd ~/Downloads
+            curl -L -o ffmpeg-9.0.2.zip "https://evermeet.cx/ffmpeg/ffmpeg-9.0.2.zip"
+            unzip -o ffmpeg-9.0.2.zip
+            sudo mkdir -p /usr/local/bin
+            sudo mv ffmpeg /usr/local/bin/
+            (poi, per verifica: ffmpeg -version)
             """
         case .artCmd:
             return """

@@ -175,7 +175,7 @@ public enum ReportBuilder {
     // MARK: Clips
 
     static func clipsBlock(_ media: [ClipRecord], columnIDs: [String]) -> ReportBlock {
-        let cols = columnIDs.compactMap { ClipColumns.column(id: $0) }
+        let cols = columnIDs.filter { $0 != "preview" }.compactMap { ClipColumns.column(id: $0) }   // l'anteprima non è testo
         let columns = cols.map { c -> ReportColumn in
             ReportColumn(id: c.id, title: c.title, width: max(0.6, c.width / 100), alignment: c.id == "size" ? .right : .left)
         }
