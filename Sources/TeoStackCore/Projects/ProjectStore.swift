@@ -232,9 +232,34 @@ public final class ProjectStore {
         return try createNode(parentID: libraryID, kind: .day, name: name)
     }
 
+    /// Sottocartella facoltativa per ordinare il progetto: si crea nella Library, in un giorno o in un'altra sottocartella.
     @discardableResult
-    public func createBin(dayID: Int64, name: String) throws -> TreeNode {
-        try createNode(parentID: dayID, kind: .bin, name: name)
+    public func createFolder(parentID: Int64, name: String) throws -> TreeNode {
+        try createNode(parentID: parentID, kind: .folder, name: name)
+    }
+
+    /// Bin: si crea nella Library, in un giorno o in una sottocartella.
+    @discardableResult
+    public func createBin(parentID: Int64, name: String) throws -> TreeNode {
+        try createNode(parentID: parentID, kind: .bin, name: name)
+    }
+
+    /// Bin con questo nome (senza distinzione tra maiuscole e minuscole, come sul disco) nella cartella; se non c'è lo crea.
+    public func findOrCreateBin(parentID: Int64, name: String) throws -> (node: TreeNode, created: Bool) {
+        let name = try NameValidator.validated(name)
+        let existing: TreeNode? = try wrap {
+            try db.read { db in
+                try Row.fetchOne(db, sql: """
+                    SELECT n.id, n.projectID, n.name, (SELECT COUNT(*) FROM clip c WHERE c.binID = n.id AND c.isMedia = 1 AND c.status = 'ok') AS n_clips
+                    FROM node n WHERE n.parentID = ? AND n.kind = 'bin' AND n.name = ? COLLATE NOCASE
+                    """, arguments: [parentID, name]).map {
+                    TreeNode(id: $0["id"], projectID: $0["projectID"], parentID: parentID, kind: .bin, name: $0["name"],
+                             clipCount: $0["n_clips"], children: nil)
+                }
+            }
+        }
+        if let existing { return (existing, false) }
+        return (try createBin(parentID: parentID, name: name), true)
     }
 
     private func createNode(parentID: Int64, kind: NodeKind, name: String) throws -> TreeNode {
@@ -245,10 +270,14 @@ public final class ProjectStore {
                     throw ProjectStoreError.notFound("Cartella padre non trovata.")
                 }
                 let parentKind = NodeKind(rawValue: parent["kind"])
-                if kind == .day && parentKind != .library || kind == .bin && parentKind != .day {
-                    throw ProjectStoreError.invalidOperation(kind == .day
-                        ? "Le cartelle giorno si creano dentro la Library."
-                        : "I bin si creano dentro una cartella giorno.")
+                switch kind {
+                case .day where parentKind != .library:
+                    throw ProjectStoreError.invalidOperation("Le cartelle giorno si creano dentro la Library.")
+                case .folder where parentKind == .bin, .bin where parentKind == .bin:
+                    throw ProjectStoreError.invalidOperation("Dentro un bin non si possono creare cartelle o altri bin.")
+                case .library:
+                    throw ProjectStoreError.invalidOperation("La Library esiste già.")
+                default: break
                 }
                 if try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM node WHERE parentID = ? AND name = ?", arguments: [parentID, name]) ?? 0 > 0 {
                     throw ProjectStoreError.duplicateName("Esiste già «\(name)» in questa cartella.")
@@ -256,11 +285,11 @@ public final class ProjectStore {
                 let projectID: Int64 = parent["projectID"]
                 try db.execute(sql: "INSERT INTO node(projectID, parentID, kind, name, createdAt) VALUES (?, ?, ?, ?, ?)",
                                arguments: [projectID, parentID, kind.rawValue, name, Date().timeIntervalSince1970])
-                if kind == .day {
-                    try ProjectStore.log(db, projectID: projectID, kind: "dayCreated", title: "Cartella giorno «\(name)» creata")
-                } else {
-                    let parentName = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [parentID]) ?? ""
-                    try ProjectStore.log(db, projectID: projectID, kind: "binCreated", title: "Bin «\(name)» creato in «\(parentName)»")
+                let parentName = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [parentID]) ?? ""
+                switch kind {
+                case .day: try ProjectStore.log(db, projectID: projectID, kind: "dayCreated", title: "Cartella giorno «\(name)» creata")
+                case .folder: try ProjectStore.log(db, projectID: projectID, kind: "folderCreated", title: "Cartella «\(name)» creata in «\(parentName)»")
+                default: try ProjectStore.log(db, projectID: projectID, kind: "binCreated", title: "Bin «\(name)» creato in «\(parentName)»")
                 }
                 return TreeNode(id: db.lastInsertedRowID, projectID: projectID, parentID: parentID, kind: kind,
                                 name: name, clipCount: 0, children: kind == .bin ? nil : [])
@@ -286,7 +315,7 @@ public final class ProjectStore {
                 let old = try String.fetchOne(db, sql: "SELECT name FROM node WHERE id = ?", arguments: [id]) ?? ""
                 try db.execute(sql: "UPDATE node SET name = ? WHERE id = ?", arguments: [name, id])
                 if old != name, let pid = try ProjectStore.projectID(ofNode: id, db) {
-                    let what = NodeKind(rawValue: row["kind"]) == .day ? "Cartella giorno" : "Bin"
+                    let what = ["day": "Cartella giorno", "folder": "Cartella"][row["kind"] as String] ?? "Bin"
                     try ProjectStore.log(db, projectID: pid, kind: "nodeRenamed", title: "\(what) rinominato: «\(old)» → «\(name)»",
                                          detail: "Rinominato solo nel programma: le cartelle già create sui dischi non sono state rinominate.")
                 }
@@ -330,7 +359,7 @@ public final class ProjectStore {
                 let clips = try Int.fetchOne(db, sql: sub + " SELECT COUNT(*) FROM clip WHERE binID IN (SELECT id FROM sub)", arguments: [id]) ?? 0
                 try db.execute(sql: "DELETE FROM node WHERE id = ?", arguments: [id])
                 if let pid {
-                    let what = NodeKind(rawValue: kind) == .day ? "Cartella giorno «\(name)» eliminata" : "Bin «\(name)» eliminato"
+                    let what = NodeKind(rawValue: kind) == .day ? "Cartella giorno «\(name)» eliminata" : NodeKind(rawValue: kind) == .folder ? "Cartella «\(name)» eliminata" : "Bin «\(name)» eliminato"
                     try ProjectStore.log(db, projectID: pid, kind: "nodeDeleted", title: what,
                                          detail: "Eliminati dal programma: \(bins) bin, \(offloads) offload, \(clips) file registrati. I file sui dischi non sono stati toccati.")
                 }
@@ -338,16 +367,21 @@ public final class ProjectStore {
         }
     }
 
-    /// Progetto/giorno/bin per costruire il percorso di destinazione di un offload.
+    /// Progetto e cartelle di un bin, per costruire il percorso di destinazione di un offload.
     public func binTarget(binID: Int64) throws -> BinTarget? {
         try wrap {
             try db.read { db in
                 guard let row = try Row.fetchOne(db, sql: """
-                    SELECT b.id AS binID, b.name AS binName, d.name AS dayName, p.id AS projectID, p.name AS projectName
-                    FROM node b JOIN node d ON d.id = b.parentID JOIN project p ON p.id = b.projectID
-                    WHERE b.id = ? AND b.kind = 'bin' AND d.kind = 'day'
+                    SELECT b.id AS binID, b.name AS binName, b.parentID AS parentID, p.id AS projectID, p.name AS projectName
+                    FROM node b JOIN project p ON p.id = b.projectID WHERE b.id = ? AND b.kind = 'bin'
                     """, arguments: [binID]) else { return nil }
-                return BinTarget(projectID: row["projectID"], projectName: row["projectName"], dayName: row["dayName"],
+                var path: [String] = []
+                var cursor: Int64? = row["parentID"]
+                while let id = cursor, let n = try Row.fetchOne(db, sql: "SELECT name, kind, parentID FROM node WHERE id = ?", arguments: [id]) {
+                    if NodeKind(rawValue: n["kind"]) != .library { path.insert(n["name"], at: 0) }
+                    cursor = n["parentID"]
+                }
+                return BinTarget(projectID: row["projectID"], projectName: row["projectName"], folderPath: path,
                                  binID: row["binID"], binName: row["binName"])
             }
         }
@@ -477,7 +511,7 @@ public final class ProjectStore {
             try db.read { db in
                 try Row.fetchAll(db, sql: """
                     WITH RECURSIVE sub(id) AS (SELECT id FROM node WHERE id = ? UNION ALL SELECT n.id FROM node n JOIN sub ON n.parentID = sub.id)
-                    SELECT c.*, o.startedAt AS offloadDate, b.name AS binName, COALESCE(d.name, '') AS dayName
+                    SELECT c.*, o.startedAt AS offloadDate, b.name AS binName, CASE WHEN d.kind = 'library' THEN '' ELSE COALESCE(d.name, '') END AS dayName
                     FROM clip c JOIN offload o ON o.id = c.offloadID JOIN node b ON b.id = c.binID LEFT JOIN node d ON d.id = b.parentID
                     WHERE c.binID IN (SELECT id FROM sub) AND (? = 0 OR c.isMedia = 1)
                     ORDER BY dayName COLLATE NOCASE, binName COLLATE NOCASE, c.relativePath COLLATE NOCASE

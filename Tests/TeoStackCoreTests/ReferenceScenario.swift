@@ -48,7 +48,7 @@ struct ReferenceScenario {
         store = try ProjectStore(path: nil)
         project = try store.createProject(name: projectName)
         day = try store.createDay(projectID: project.id, name: "DAY01")
-        bin = try store.createBin(dayID: day.id, name: binName)
+        bin = try store.createBin(parentID: day.id, name: binName)
         let source = URL(fileURLWithPath: "/Volumes/\(sourceVolume)/\(binName)")
         let job = OffloadJob(sourceURL: source, destinationRoots: [URL(fileURLWithPath: destination)])
         try store.beginOffload(jobID: job.id, binID: bin.id, sourcePath: source.path, destinations: [destination], startedAt: started)

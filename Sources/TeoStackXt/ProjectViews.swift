@@ -9,7 +9,7 @@ enum NameRequest: Identifiable {
     case newProject
     case renameProject(String)
     case newDay(String)
-    case newBin(String)
+    case newFolder
     case renameNode(id: Int64, name: String)
 
     var id: String {
@@ -17,7 +17,7 @@ enum NameRequest: Identifiable {
         case .newProject: return "newProject"
         case .renameProject: return "renameProject"
         case .newDay: return "newDay"
-        case .newBin: return "newBin"
+        case .newFolder: return "newFolder"
         case .renameNode(let id, _): return "renameNode\(id)"
         }
     }
@@ -27,14 +27,14 @@ enum NameRequest: Identifiable {
         case .newProject: return "Nuovo progetto"
         case .renameProject: return "Rinomina progetto"
         case .newDay: return "Nuova cartella giorno"
-        case .newBin: return "Nuovo bin (camera / roll)"
+        case .newFolder: return "Nuova cartella"
         case .renameNode: return "Rinomina"
         }
     }
 
     var initialName: String {
         switch self {
-        case .newProject, .newBin: return ""
+        case .newProject, .newFolder: return ""
         case .renameProject(let n), .newDay(let n): return n
         case .renameNode(_, let n): return n
         }
@@ -43,7 +43,7 @@ enum NameRequest: Identifiable {
     var hint: String? {
         switch self {
         case .newDay: return "Esempio: DAY01_20261016"
-        case .newBin: return "Esempio: A_0001_1DET"
+        case .newFolder: return "Per ordinare il progetto, per esempio CAM_A. I bin si creano da soli quando avvii un offload."
         case .renameProject, .renameNode:
             return "Rinomina solo nel programma: le cartelle già create sui dischi non vengono rinominate."
         case .newProject: return nil
@@ -183,8 +183,10 @@ struct SidebarView: View {
             HStack {
                 Button("+ Giorno") { request = .newDay(projects.suggestedDayName) }
                     .disabled(projects.tree == nil)
-                Button("+ Bin") { request = .newBin("") }
-                    .disabled(projects.currentDay == nil)
+                    .help("Facoltativo: cartella con la data delle riprese")
+                Button("+ Cartella") { request = .newFolder }
+                    .disabled(projects.currentContainer == nil)
+                    .help("Facoltativo: sottocartella per ordinare il progetto, dentro la cartella selezionata")
                 Spacer()
                 Button("Elimina selezione…", role: .destructive) { deleteTarget = selectedDeletableNode }
                     .disabled(selectedDeletableNode == nil)
@@ -211,7 +213,7 @@ struct SidebarView: View {
 
     private func deleteMessage() -> String {
         guard let t = deleteTarget, let impact = projects.deletionImpact(id: t.id) else { return "" }
-        let what = t.kind == .day ? "la cartella giorno «\(t.name)» con i suoi \(impact.bins) bin" : "il bin «\(t.name)»"
+        let what = t.kind == .bin ? "il bin «\(t.name)»" : "la cartella «\(t.name)» con le sue sottocartelle e i suoi \(impact.bins) bin"
         return "Verrà eliminato SOLO \(what) (\(impact.offloads) offload, \(impact.clips) file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati."
     }
 
@@ -219,6 +221,7 @@ struct SidebarView: View {
         switch kind {
         case .library: return "books.vertical"
         case .day: return "calendar"
+        case .folder: return "folder"
         case .bin: return "film"
         }
     }
@@ -228,8 +231,9 @@ struct SidebarView: View {
         switch node.kind {
         case .library:
             Button("Nuova cartella giorno") { request = .newDay(projects.suggestedDayName) }
-        case .day:
-            Button("Nuovo bin") { projects.selectNode(node.id); request = .newBin("") }
+            Button("Nuova cartella") { projects.selectNode(node.id); request = .newFolder }
+        case .day, .folder:
+            Button("Nuova cartella") { projects.selectNode(node.id); request = .newFolder }
             Button("Rinomina") { request = .renameNode(id: node.id, name: node.name) }
             Button("Elimina…", role: .destructive) { deleteTarget = node }
         case .bin:

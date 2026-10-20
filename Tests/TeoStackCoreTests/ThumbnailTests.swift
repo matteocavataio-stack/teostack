@@ -216,7 +216,7 @@ final class ThumbnailTests: XCTestCase {
         try TestSupport.writeRandomFile(card.appendingPathComponent("A001/bad.mxf"), size: 30_000, seed: 5)
         try TestSupport.writeRandomFile(card.appendingPathComponent("A001/notes.xml"), size: 100, seed: 6)
         let p = try store.createProject(name: "Film")
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "D1").id, name: "a001")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D1").id, name: "a001")
         let dest = work.appendingPathComponent("out/a001")
         try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
         let job = OffloadJob(sourceURL: card, destinationRoots: [dest])

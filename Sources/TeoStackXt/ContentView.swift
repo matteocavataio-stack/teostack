@@ -52,7 +52,7 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 1280, minHeight: 760)
-        .onReceive(app.projects.$binTarget) { app.offload.target = $0 }
+        .onReceive(app.projects.$placement) { app.offload.placement = $0 }
         .onReceive(NotificationCenter.default.publisher(for: .exportReport)) { _ in
             if app.projects.selectedProject != nil { showReport = true }
         }
@@ -72,7 +72,7 @@ struct ContentView: View {
         case .newProject: return app.projects.createProject(name: name)
         case .renameProject: return app.projects.renameProject(name: name)
         case .newDay: return app.projects.createDay(name: name)
-        case .newBin: return app.projects.createBin(name: name)
+        case .newFolder: return app.projects.createFolder(name: name)
         case .renameNode(let id, _): return app.projects.renameNode(id: id, name: name)
         }
     }
@@ -97,22 +97,23 @@ struct OffloadView: View {
     }
 }
 
-/// Mostra in quale bin del progetto verrà registrato l'offload e dove finiranno i file sui dischi.
+/// Mostra dove verrà creato il bin del progetto (cartella scelta nella barra laterale).
 struct TargetBar: View {
     @ObservedObject var vm: OffloadViewModel
     @ObservedObject var projects: ProjectsViewModel
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("Destinazione nel progetto:").font(.headline)
-            if let t = vm.target {
-                Text("\(t.projectName) › \(t.dayName) › \(t.binName)").bold()
-                let n = projects.offloadCount(binID: t.binID)
-                if n > 0 {
-                    Text("(il bin contiene già \(n) offload)").foregroundStyle(.orange).font(.callout)
+            Text("Il bin verrà creato in:").font(.headline)
+            if let p = vm.placement {
+                Text(p.displayPath).bold()
+                if vm.sourceURL != nil, vm.binNameError == nil, let existing = projects.existingBin(named: vm.binName) {
+                    let n = projects.offloadCount(binID: existing.id)
+                    Text("— il bin «\(existing.name)» esiste già (\(n) offload): l'offload verrà aggiunto")
+                        .foregroundStyle(.orange).font(.callout)
                 }
             } else {
-                Text("seleziona un bin nella barra laterale (o creane uno con «+ Giorno» e «+ Bin»)")
+                Text("crea o seleziona un progetto (la cartella selezionata nella barra laterale ospiterà il bin)")
                     .foregroundStyle(.red)
             }
             Spacer()
@@ -137,6 +138,20 @@ struct SourcePanel: View {
                 Spacer()
                 Button("Scegli sorgente…") { vm.chooseSource() }
                     .disabled(vm.isRunning)
+            }
+            if vm.sourceURL != nil {
+                HStack(spacing: 8) {
+                    Text("Nome bin:")
+                    TextField("Nome del bin", text: $vm.binName)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 360)
+                        .disabled(vm.isRunning)
+                    if let error = vm.binNameError {
+                        Text(error).foregroundStyle(.red).font(.callout)
+                    } else {
+                        Text("proposto dalla sorgente: puoi cambiarlo prima di avviare").foregroundStyle(.secondary).font(.callout)
+                    }
+                }
             }
             if vm.sourceURL == nil {
                 ZStack {

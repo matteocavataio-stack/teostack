@@ -15,6 +15,7 @@ final class AppModel: ObservableObject {
         tools = ToolsViewModel()
         offload.store = projects.store
         offload.onRecorded = { [weak projects] in projects?.reload() }
+        offload.onBinReady = { [weak projects] id in projects?.binRegistered(id: id) }
         // Dopo un offload completato i metadata dei clip verificati vengono letti automaticamente.
         offload.onOffloadFinished = { [weak projects] jobID in projects?.importMetadata(forJobID: jobID) }
     }
@@ -58,7 +59,8 @@ final class ProjectsViewModel: ObservableObject {
     @Published var selectedNodeID: Int64?
     @Published var clips: [ClipRecord] = []
     @Published var history: [HistoryEvent] = []
-    @Published var binTarget: BinTarget?
+    /// Dove verrà creato il bin del prossimo offload: la cartella selezionata (o quella che contiene il bin selezionato).
+    @Published var placement: BinPlacement?
     @Published var showAllFiles = false
     @Published var errorMessage: String?
     @Published var metadataStatus: String?
@@ -102,7 +104,7 @@ final class ProjectsViewModel: ObservableObject {
 
     private func reloadTree() throws {
         guard let store, let pid = selectedProjectID else {
-            tree = nil; selectedNodeID = nil; clips = []; history = []; binTarget = nil
+            tree = nil; selectedNodeID = nil; clips = []; history = []; placement = nil
             return
         }
         let t = try store.tree(projectID: pid)
@@ -116,9 +118,9 @@ final class ProjectsViewModel: ObservableObject {
         guard let store else { return }
         if let id = selectedNodeID {
             clips = try store.clips(underNode: id, mediaOnly: !showAllFiles)
-            if let n = node(id), n.kind == .bin { binTarget = try store.binTarget(binID: id) } else { binTarget = nil }
+            placement = computePlacement()
         } else {
-            clips = []; binTarget = nil
+            clips = []; placement = nil
         }
     }
 
@@ -136,12 +138,31 @@ final class ProjectsViewModel: ObservableObject {
         return node(pid)
     }
 
-    /// Giorno corrente: quello selezionato, o quello che contiene il bin selezionato.
-    var currentDay: TreeNode? {
+    /// Cartella in cui si creano nuove cartelle e bin: quella selezionata, o quella che contiene il bin selezionato.
+    var currentContainer: TreeNode? {
         guard let id = selectedNodeID, let n = node(id) else { return nil }
-        if n.kind == .day { return n }
-        if n.kind == .bin { return parent(of: n.id) }
-        return nil
+        return n.kind == .bin ? parent(of: n.id) : n
+    }
+
+    private func computePlacement() -> BinPlacement? {
+        guard let project = selectedProject, let container = currentContainer else { return nil }
+        var path: [String] = []
+        var cursor: TreeNode? = container
+        while let n = cursor, n.kind != .library { path.insert(n.name, at: 0); cursor = n.parentID.flatMap(node) }
+        return BinPlacement(projectID: project.id, projectName: project.name, parentID: container.id, parentPath: path)
+    }
+
+    /// Bin con questo nome già presente nella cartella di destinazione (stesso criterio del disco: maiuscole indifferenti).
+    func existingBin(named name: String) -> TreeNode? {
+        guard let placement, let container = node(placement.parentID) else { return nil }
+        let wanted = name.trimmingCharacters(in: .whitespaces)
+        return container.children?.first { $0.kind == .bin && $0.name.compare(wanted, options: .caseInsensitive) == .orderedSame }
+    }
+
+    /// Chiamato quando l'offload crea (o riusa) il bin: aggiorna l'albero e lo seleziona.
+    func binRegistered(id: Int64) {
+        selectedNodeID = id
+        run { try reloadTree() }
     }
 
     var suggestedDayName: String {
@@ -200,11 +221,11 @@ final class ProjectsViewModel: ObservableObject {
         }
     }
 
-    func createBin(name: String) -> String? {
-        guard let day = currentDay else { return "Seleziona prima una cartella giorno." }
+    func createFolder(name: String) -> String? {
+        guard let container = currentContainer else { return "Seleziona prima un progetto." }
         return mutate { store in
-            let b = try store.createBin(dayID: day.id, name: name)
-            selectedNodeID = b.id
+            let f = try store.createFolder(parentID: container.id, name: name)
+            selectedNodeID = f.id
         }
     }
 

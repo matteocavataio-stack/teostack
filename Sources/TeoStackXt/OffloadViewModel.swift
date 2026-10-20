@@ -33,9 +33,12 @@ final class OffloadViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var resumable: OffloadJournal?
 
-    /// Bin scelto nel progetto: la destinazione su disco è <cartella scelta>/<Bin>.
-    @Published var target: BinTarget?
+    /// Cartella del progetto in cui nascerà il bin e nome del bin (proposto dalla sorgente, modificabile prima dell'avvio).
+    /// Su disco la destinazione è <cartella scelta>/<nome bin>.
+    @Published var placement: BinPlacement?
+    @Published var binName = ""
     var store: ProjectStore?
+    var onBinReady: ((Int64) -> Void)?
     var onRecorded: (() -> Void)?
     var onOffloadFinished: ((UUID) -> Void)?
 
@@ -56,8 +59,13 @@ final class OffloadViewModel: ObservableObject {
     var isRunning: Bool { runState == .running }
 
     var canStart: Bool {
-        runState == .idle && scan != nil && !rows.isEmpty && target != nil
+        runState == .idle && scan != nil && !rows.isEmpty && placement != nil && binNameError == nil
             && !destinations.isEmpty && destinations.allSatisfy { $0.url != nil }
+    }
+
+    /// nil se il nome del bin è valido.
+    var binNameError: String? {
+        do { _ = try NameValidator.validated(binName); return nil } catch { return "\(error)" }
     }
 
     // MARK: Sorgente
@@ -69,6 +77,7 @@ final class OffloadViewModel: ObservableObject {
     func setSource(_ url: URL) {
         guard runState != .running else { return }
         sourceURL = url
+        binName = NameValidator.suggestedBinName(fromSource: url.lastPathComponent)
         result = nil
         errorMessage = nil
         rows = []
@@ -126,7 +135,21 @@ final class OffloadViewModel: ObservableObject {
     // MARK: Avvio / Annulla / Riprendi
 
     func start() {
-        guard canStart, let scan, let source = sourceURL, let target else { return }
+        guard canStart, let scan, let source = sourceURL, let placement, let store else { return }
+        // Il bin nasce ora, con il nome scelto (se esiste già nella cartella lo riusa: l'offload si aggiunge).
+        let target: BinTarget
+        do {
+            let bin = try store.findOrCreateBin(parentID: placement.parentID, name: binName)
+            guard let t = try store.binTarget(binID: bin.node.id) else {
+                errorMessage = "Bin non trovato dopo la creazione."
+                return
+            }
+            target = t
+            onBinReady?(bin.node.id)
+        } catch {
+            errorMessage = "Impossibile creare il bin «\(binName)»: \(error)"
+            return
+        }
         let bases = destinations.compactMap { $0.url }
         let roots = bases.map { target.destinationRoot(under: $0) }
         let job = OffloadJob(sourceURL: source, destinationRoots: roots, destinationBases: bases)

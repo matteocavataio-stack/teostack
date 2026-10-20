@@ -155,7 +155,7 @@ final class MetadataImporterTests: XCTestCase {
 
     private func offloadedBin() throws -> (TreeNode, URL) {
         let p = try store.createProject(name: "Film")
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "D1").id, name: "a001")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D1").id, name: "a001")
         let dest = destBase.appendingPathComponent("a001")
         let scan = try SourceScanner.scan(root: card.root)
         let job = OffloadJob(sourceURL: card.root, destinationRoots: [dest])
@@ -370,7 +370,7 @@ final class ARTCmdRunnerAndImporterTests: XCTestCase {
 
     private func offloadedBin() throws -> TreeNode {
         let p = try store.createProject(name: "Film")
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "D1").id, name: "a001")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D1").id, name: "a001")
         let dest = destBase.appendingPathComponent("a001")
         let job = OffloadJob(sourceURL: card.root, destinationRoots: [dest])
         try store.beginOffload(jobID: job.id, binID: bin.id, sourcePath: card.root.path, destinations: [dest.path])

@@ -8,7 +8,7 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 | Fase | Contenuto | Stato |
 |------|-----------|-------|
 | a | Offload + XXH64 + UI base | **fatta** (nucleo testato su Linux; UI da compilare su Mac) |
-| b | Progetti (SQLite/GRDB, Progetto → Library → Giorno → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
+| b | Progetti (SQLite/GRDB, Progetto → Library → [Giorno/Cartelle facoltativi] → Bin), tabella clip | **fatta** (database testato su Linux; UI da compilare su Mac) |
 | c | Metadata ARRI / Sony Venice | **ARRI fatta** (ExifTool + art-cmd, testata su dati reali ALEXA 35); Sony in attesa di dati di esempio |
 | d | Report: i 5 PDF del formato Silverstack «Classic» (Shooting Day, Clips, Volume, Thumbnail, Contact Print) | **fatta** (generazione testata su Linux e confrontata con i PDF di riferimento; UI da compilare su Mac) |
 
@@ -22,13 +22,17 @@ Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
 ## Progetti (fase b)
 
 - Database SQLite in `~/Library/Application Support/TeoStackXt/teostack.sqlite` (libreria GRDB).
-- Struttura: Progetto → Library → cartelle giorno (es. `DAY01_20261016`) → bin (es. `A_0001_1DET`). Sidebar ad albero con conteggio clip.
-- Crea / rinomina / elimina giorni e bin (clic destro nella sidebar o pulsanti «+ Giorno», «+ Bin»). Selettore progetto in alto
-  (nome, data creazione, numero clip) e «Nuovo progetto».
+- Struttura: Progetto → Library → [cartella giorno, es. `DAY01_20261016`] → [sottocartelle] → bin. Giorno e sottocartelle sono **facoltativi**:
+  servono solo a tenere il progetto ordinato, un bin può stare anche direttamente nella Library. Sidebar ad albero con conteggio clip.
+- **I bin non si creano a mano**: nascono quando avvii l'offload (vedi sotto). Nella sidebar si creano solo «+ Giorno» (data) e «+ Cartella»
+  (dentro la cartella selezionata); si rinomina/elimina con il clic destro. Selettore progetto in alto (nome, data creazione, numero clip) e «Nuovo progetto».
 - **Eliminare o rinominare nel programma non tocca mai i file sui dischi.** Le finestre di conferma lo dicono.
 - I nomi diventano cartelle: sono vietati `/ \ : * ? " < > |`, i nomi che iniziano/finiscono con punto e quelli oltre 100 caratteri.
-- **Offload:** scegli un bin nella sidebar, poi le cartelle base dei dischi. I file finiscono in
-  `<cartella scelta>/<Bin>/…`: sul disco viene creata solo la cartella del bin; Progetto, Library e giorno esistono solo nel programma. L'offload viene registrato nel bin
+- **Offload:** seleziona nella sidebar la cartella che ospiterà il bin (Library, giorno o sottocartella; se selezioni un bin si usa la sua cartella),
+  scegli la sorgente e le cartelle base dei dischi. Dopo aver scelto la sorgente compare il box **Nome bin**, già compilato con il nome della scheda/cartella:
+  puoi cambiarlo fino all'avvio. Alla pressione di «Avvia» il bin viene creato con quel nome (se nella cartella esiste già un bin con lo stesso nome,
+  senza distinzione tra maiuscole e minuscole, lo riusa e l'offload vi si aggiunge: l'app lo segnala in arancione). I file finiscono in
+  `<cartella scelta>/<Bin>/…`: sul disco viene creata solo la cartella del bin; Progetto, Library, giorno e sottocartelle esistono solo nel programma. L'offload viene registrato nel bin
   all'avvio e aggiornato alla fine (anche se annullato o con errori). «Riprendi» riusa lo stesso record.
 - **Clip:** contano come clip solo i file con estensione `ari, arx, mov, mxf, mp4` (valore predefinito modificabile in
   `MediaClassifier`) **e** con tutte le destinazioni OK. Gli altri file (XML, sidecar…) sono registrati e visibili con

@@ -20,7 +20,7 @@ final class HistoryTests: XCTestCase {
 
     private func setupBin(_ project: String = "Film") throws -> (Project, TreeNode) {
         let p = try store.createProject(name: project)
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "DAY01").id, name: "a001")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "DAY01").id, name: "a001")
         return (p, bin)
     }
 
@@ -69,7 +69,7 @@ final class HistoryTests: XCTestCase {
         let day = try XCTUnwrap(try store.tree(projectID: p.id).children?.first)
         try store.renameNode(id: bin.id, to: "a002")
         try store.renameProject(id: p.id, to: "Film 2")
-        try store.createBin(dayID: day.id, name: "extra")
+        try store.createBin(parentID: day.id, name: "extra")
         try store.deleteNode(id: try XCTUnwrap(try store.tree(projectID: p.id).children?.first?.children?.first { $0.name == "extra" }?.id))
         XCTAssertEqual(try store.history(projectID: p.id), [])
     }
@@ -130,7 +130,7 @@ final class HistoryTests: XCTestCase {
             let s = try ProjectStore(path: path)
             let p = try s.createProject(name: "P")
             pid = p.id
-            let bin = try s.createBin(dayID: try s.createDay(projectID: p.id, name: "D").id, name: "B")
+            let bin = try s.createBin(parentID: try s.createDay(projectID: p.id, name: "D").id, name: "B")
             let scan = try SourceScanner.scan(root: card.root)
             let job = OffloadJob(sourceURL: card.root, destinationRoots: [destBase.appendingPathComponent("o")])
             try s.beginOffload(jobID: job.id, binID: bin.id, sourcePath: card.root.path, destinations: [])

@@ -1,7 +1,7 @@
 import Foundation
 
 public enum NodeKind: String, Codable {
-    case library, day, bin
+    case library, day, folder, bin
 }
 
 public struct Project: Identifiable, Equatable {
@@ -17,7 +17,7 @@ public struct ProjectSummary: Identifiable, Equatable {
     public var clipCount: Int
 }
 
-/// Nodo dell'albero: Library → cartella giorno → bin.
+/// Nodo dell'albero: Library → (giorno e/o sottocartelle, facoltativi) → bin.
 public struct TreeNode: Identifiable, Equatable {
     public let id: Int64
     public let projectID: Int64
@@ -87,13 +87,31 @@ public struct HistoryEvent: Identifiable, Equatable {
 public struct BinTarget: Equatable {
     public var projectID: Int64
     public var projectName: String
-    public var dayName: String
+    /// Cartelle (giorno e sottocartelle) tra la Library e il bin; vuoto se il bin è direttamente nella Library.
+    public var folderPath: [String]
     public var binID: Int64
     public var binName: String
+
+    /// Posizione leggibile: «Progetto › Giorno › Cartella › Bin».
+    public var displayPath: String { ([projectName] + folderPath + [binName]).joined(separator: " › ") }
 
     public func destinationRoot(under base: URL) -> URL {
         base.appendingPathComponent(binName, isDirectory: true)
     }
+}
+
+/// Dove verrà creato il bin di un nuovo offload (cartella scelta nella barra laterale).
+public struct BinPlacement: Equatable {
+    public var projectID: Int64
+    public var projectName: String
+    public var parentID: Int64
+    public var parentPath: [String]
+
+    public init(projectID: Int64, projectName: String, parentID: Int64, parentPath: [String]) {
+        self.projectID = projectID; self.projectName = projectName; self.parentID = parentID; self.parentPath = parentPath
+    }
+
+    public var displayPath: String { ([projectName] + parentPath).joined(separator: " › ") }
 }
 
 public enum ProjectStoreError: Error, CustomStringConvertible, Equatable {
@@ -113,6 +131,16 @@ public enum ProjectStoreError: Error, CustomStringConvertible, Equatable {
 
 /// I nomi diventano cartelle su disco (anche exFAT/NTFS): vietati i caratteri non portabili.
 public enum NameValidator {
+    /// Nome di bin proposto a partire dalla sorgente (nome della scheda/cartella): sostituisce i caratteri non ammessi.
+    public static func suggestedBinName(fromSource name: String) -> String {
+        var out = ""
+        for u in name.unicodeScalars { out.unicodeScalars.append(forbiddenCharacters.contains(u) ? "_" : u) }
+        out = out.trimmingCharacters(in: .whitespaces)
+        while out.hasPrefix(".") { out.removeFirst() }
+        while out.hasSuffix(".") { out.removeLast() }
+        return String(out.prefix(100))
+    }
+
     public static let forbiddenCharacters = CharacterSet(charactersIn: "/\\:*?\"<>|").union(.controlCharacters)
 
     public static func validated(_ raw: String) throws -> String {

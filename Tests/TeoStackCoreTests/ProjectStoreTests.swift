@@ -55,14 +55,16 @@ final class ProjectStoreTests: XCTestCase {
         XCTAssertEqual(lib.children, [])
 
         let day = try store.createDay(projectID: p.id, name: "DAY01_20261016")
-        let bin = try store.createBin(dayID: day.id, name: "A_0001_1DET")
+        let bin = try store.createBin(parentID: day.id, name: "A_0001_1DET")
         XCTAssertThrowsError(try store.createDay(projectID: p.id, name: "day01_20261016")) // nomi uguali senza distinzione maiuscole
-        XCTAssertThrowsError(try store.createBin(dayID: day.id, name: "a_0001_1det"))
-        XCTAssertThrowsError(try store.createBin(dayID: lib.id, name: "BinInLibrary"))     // un bin non va nella Library
+        XCTAssertThrowsError(try store.createBin(parentID: day.id, name: "a_0001_1det"))
+        XCTAssertThrowsError(try store.createBin(parentID: bin.id, name: "BinInBin"))      // dentro un bin non si crea nulla
+        XCTAssertThrowsError(try store.createFolder(parentID: bin.id, name: "FolderInBin"))
+        XCTAssertThrowsError(try store.createDay(projectID: p.id, name: "con/barra"))
         XCTAssertThrowsError(try store.createDay(projectID: p.id, name: "con/barra"))
         // un nome uguale in un altro giorno è permesso
         let day2 = try store.createDay(projectID: p.id, name: "DAY02_20261017")
-        XCTAssertNoThrow(try store.createBin(dayID: day2.id, name: "A_0001_1DET"))
+        XCTAssertNoThrow(try store.createBin(parentID: day2.id, name: "A_0001_1DET"))
 
         let tree = try store.tree(projectID: p.id)
         XCTAssertEqual(tree.children?.map(\.name), ["DAY01_20261016", "DAY02_20261017"])
@@ -76,8 +78,8 @@ final class ProjectStoreTests: XCTestCase {
         let lib = try store.tree(projectID: p.id)
         let day = try store.createDay(projectID: p.id, name: "D1")
         let day2 = try store.createDay(projectID: p.id, name: "D2")
-        let bin = try store.createBin(dayID: day.id, name: "B1")
-        _ = try store.createBin(dayID: day.id, name: "B2")
+        let bin = try store.createBin(parentID: day.id, name: "B1")
+        _ = try store.createBin(parentID: day.id, name: "B2")
 
         XCTAssertThrowsError(try store.renameNode(id: lib.id, to: "X"))
         XCTAssertThrowsError(try store.deleteNode(id: lib.id))
@@ -103,9 +105,9 @@ final class ProjectStoreTests: XCTestCase {
         let other = try store.createProject(name: "Altro")
         let day1 = try store.createDay(projectID: p.id, name: "D1")
         let day2 = try store.createDay(projectID: p.id, name: "D2")
-        let binA = try store.createBin(dayID: day1.id, name: "A")
-        let binB = try store.createBin(dayID: day1.id, name: "B")
-        let binC = try store.createBin(dayID: day2.id, name: "C")
+        let binA = try store.createBin(parentID: day1.id, name: "A")
+        let binB = try store.createBin(parentID: day1.id, name: "B")
+        let binC = try store.createBin(parentID: day2.id, name: "C")
         for (i, bin) in [binA, binB, binC].enumerated() {
             let r = try runRealOffload(binID: bin.id, dests: [destBase.appendingPathComponent("out\(i)")], card: card)
             XCTAssertTrue(r.allOK)
@@ -136,16 +138,61 @@ final class ProjectStoreTests: XCTestCase {
         try TestSupport.writeRandomFile(file, size: 1000, seed: 1)
         let p = try store.createProject(name: "P")
         let day = try store.createDay(projectID: p.id, name: "D1")
-        _ = try store.createBin(dayID: day.id, name: "B1")
+        _ = try store.createBin(parentID: day.id, name: "B1")
         try store.deleteNode(id: day.id)
         try store.deleteProject(id: p.id)
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path))
     }
 
+    func testFoldersAndBinsAtAnyLevelAreOptional() throws {
+        let p = try store.createProject(name: "Film")
+        let lib = try store.tree(projectID: p.id)
+        // un bin può stare direttamente nella Library, senza giorno né cartelle
+        let direct = try store.createBin(parentID: lib.id, name: "A001")
+        XCTAssertEqual(try store.binTarget(binID: direct.id)?.folderPath, [])
+        XCTAssertEqual(try store.binTarget(binID: direct.id)?.displayPath, "Film › A001")
+        // oppure in giorno + sottocartelle annidate
+        let day = try store.createDay(projectID: p.id, name: "DAY01_20261016")
+        let cam = try store.createFolder(parentID: day.id, name: "CAM_A")
+        let sub = try store.createFolder(parentID: cam.id, name: "Mattina")
+        XCTAssertThrowsError(try store.createDay(projectID: p.id, name: "day01_20261016"))
+        XCTAssertThrowsError(try store.createFolder(parentID: cam.id, name: "mattina"), "nomi uguali senza distinzione di maiuscole")
+        let deep = try store.createBin(parentID: sub.id, name: "B002")
+        XCTAssertEqual(try store.binTarget(binID: deep.id)?.folderPath, ["DAY01_20261016", "CAM_A", "Mattina"])
+        XCTAssertEqual(try store.binTarget(binID: deep.id)?.displayPath, "Film › DAY01_20261016 › CAM_A › Mattina › B002")
+        // il conteggio dei clip dell'albero e la cancellazione di una cartella includono i bin annidati
+        XCTAssertEqual(try store.deletionImpact(nodeID: cam.id).bins, 1)
+        try store.deleteNode(id: cam.id)
+        XCTAssertNil(try store.binTarget(binID: deep.id))
+        XCTAssertNotNil(try store.binTarget(binID: direct.id), "il resto resta")
+    }
+
+    func testFindOrCreateBinReusesExistingNameIgnoringCase() throws {
+        let p = try store.createProject(name: "Film")
+        let lib = try store.tree(projectID: p.id)
+        let first = try store.findOrCreateBin(parentID: lib.id, name: "A_9001_1C3S")
+        XCTAssertTrue(first.created)
+        let again = try store.findOrCreateBin(parentID: lib.id, name: " a_9001_1c3s ")
+        XCTAssertFalse(again.created)
+        XCTAssertEqual(again.node.id, first.node.id)
+        XCTAssertEqual(again.node.name, "A_9001_1C3S", "si usa il nome già registrato: stessa cartella su disco")
+        let day = try store.createDay(projectID: p.id, name: "D1")
+        XCTAssertTrue(try store.findOrCreateBin(parentID: day.id, name: "A_9001_1C3S").created, "stesso nome in un'altra cartella = bin diverso")
+        XCTAssertThrowsError(try store.findOrCreateBin(parentID: lib.id, name: "con/barra"))
+    }
+
+    func testSuggestedBinNameFromSource() {
+        XCTAssertEqual(NameValidator.suggestedBinName(fromSource: "A_9001_1C3S"), "A_9001_1C3S")
+        XCTAssertEqual(NameValidator.suggestedBinName(fromSource: "CARD: 1/2"), "CARD_ 1_2")
+        XCTAssertEqual(NameValidator.suggestedBinName(fromSource: "..hidden."), "hidden")
+        XCTAssertEqual(NameValidator.suggestedBinName(fromSource: "/"), "_")
+        XCTAssertNoThrow(try NameValidator.validated(NameValidator.suggestedBinName(fromSource: "NO NAME")))
+    }
+
     func testBinTargetAndDestinationPath() throws {
         let p = try store.createProject(name: "Film")
         let day = try store.createDay(projectID: p.id, name: "DAY01_20261016")
-        let bin = try store.createBin(dayID: day.id, name: "A_0001_1DET")
+        let bin = try store.createBin(parentID: day.id, name: "A_0001_1DET")
         let target = try XCTUnwrap(try store.binTarget(binID: bin.id))
         XCTAssertEqual(target.projectName, "Film")
         XCTAssertEqual(target.destinationRoot(under: URL(fileURLWithPath: "/Volumes/SSD1")).path,
@@ -183,8 +230,8 @@ final class ProjectStoreTests: XCTestCase {
         }
         let p = try store.createProject(name: "Film")
         let day = try store.createDay(projectID: p.id, name: "DAY01_20261016")
-        let bin = try store.createBin(dayID: day.id, name: "A_0001_1DET")
-        let other = try store.createBin(dayID: day.id, name: "B_0001_2XXX")
+        let bin = try store.createBin(parentID: day.id, name: "A_0001_1DET")
+        let other = try store.createBin(parentID: day.id, name: "B_0001_2XXX")
         let target = try XCTUnwrap(try store.binTarget(binID: bin.id))
         let root = target.destinationRoot(under: destBase)
         try FileManager.default.createDirectory(at: root.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -224,7 +271,7 @@ final class ProjectStoreTests: XCTestCase {
             try? FileManager.default.removeItem(at: destBase)
         }
         let p = try store.createProject(name: "Film")
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "D1").id, name: "B1")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D1").id, name: "B1")
         let result = try runRealOffload(binID: bin.id, dests: [destBase.appendingPathComponent("out")], card: card,
                                         corruptTarget: "CLIP/C0001.MXF")
         XCTAssertFalse(result.allOK)
@@ -242,7 +289,7 @@ final class ProjectStoreTests: XCTestCase {
             try? FileManager.default.removeItem(at: destBase)
         }
         let p = try store.createProject(name: "Film")
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "D1").id, name: "B1")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D1").id, name: "B1")
         let dest = destBase.appendingPathComponent("out")
         let jobID = UUID()
         _ = try runRealOffload(binID: bin.id, dests: [dest], card: card, jobID: jobID)
@@ -262,7 +309,7 @@ final class ProjectStoreTests: XCTestCase {
         let card = try FakeCard.create()
         defer { try? FileManager.default.removeItem(at: card.root.deletingLastPathComponent()) }
         let p = try store.createProject(name: "Film")
-        let bin = try store.createBin(dayID: try store.createDay(projectID: p.id, name: "D1").id, name: "B1")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D1").id, name: "B1")
         let result = try runRealOffload(binID: bin.id, dests: [URL(fileURLWithPath: "/volume-inesistente/x/y")], card: card)
         XCTAssertEqual(result.outcome, .preflightFailed)
         XCTAssertEqual(try store.offloads(binID: bin.id).count, 0)
@@ -277,7 +324,7 @@ final class ProjectStoreTests: XCTestCase {
         }
         let p = try store.createProject(name: "Film")
         let day = try store.createDay(projectID: p.id, name: "D1")
-        let bin = try store.createBin(dayID: day.id, name: "B1")
+        let bin = try store.createBin(parentID: day.id, name: "B1")
         _ = try runRealOffload(binID: bin.id, dests: [destBase.appendingPathComponent("out")], card: card)
         XCTAssertEqual(try store.deletionImpact(nodeID: day.id), .init(bins: 1, offloads: 1, clips: card.files.count))
         try store.deleteNode(id: day.id)
