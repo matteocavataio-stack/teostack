@@ -67,3 +67,35 @@ final class HashTests: XCTestCase {
         }
     }
 }
+
+final class FileVerifierPipelineTests: XCTestCase {
+    func testPipelinedHashMatchesWholeFileHashAtBufferBoundaries() throws {
+        let dir = try TestSupport.makeTempDir("verifier")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let buffer = 4096
+        for size in [0, 1, buffer - 1, buffer, buffer + 1, 3 * buffer, 3 * buffer + 17, 10 * buffer, 10 * buffer + 1] {
+            let url = dir.appendingPathComponent("f\(size)")
+            try TestSupport.writeRandomFile(url, size: size, seed: UInt64(size))
+            let reference = XXH64Hasher()
+            let data = try Data(contentsOf: url)
+            data.withUnsafeBytes { reference.update($0.baseAddress!, count: data.count) }
+            var progress = 0
+            let (hash, bytes) = try FileVerifier.hash(path: url.path, uncached: true, bufferSize: buffer, onProgress: { progress += $0 })
+            XCTAssertEqual(hash, reference.hexDigest(), "size \(size)")
+            XCTAssertEqual(bytes, Int64(size))
+            XCTAssertEqual(progress, size)
+        }
+    }
+
+    func testCancellationAndMissingFileDoNotHang() throws {
+        let dir = try TestSupport.makeTempDir("verifier")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("big")
+        try TestSupport.writeRandomFile(url, size: 4_000_000, seed: 7)
+        var calls = 0
+        XCTAssertThrowsError(try FileVerifier.hash(path: url.path, uncached: true, bufferSize: 4096, isCancelled: { calls += 1; return calls > 5 })) {
+            XCTAssertTrue($0 is CancellationError)
+        }
+        XCTAssertThrowsError(try FileVerifier.hash(path: dir.appendingPathComponent("nope").path, uncached: true))
+    }
+}

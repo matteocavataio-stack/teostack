@@ -501,3 +501,82 @@ final class ARTCmdRunnerAndImporterTests: XCTestCase {
         XCTAssertEqual(status.path, exe)
     }
 }
+
+final class ParallelRunnerTests: XCTestCase {
+    func testEveryItemRunsOnceAndLimitIsRespected() throws {
+        let lock = NSLock()
+        var seen: [Int] = []
+        var running = 0, peak = 0
+        try ParallelRunner.forEach(Array(0..<60), limit: 3) { i, item in
+            XCTAssertEqual(i, item)
+            lock.lock(); running += 1; peak = max(peak, running); seen.append(i); lock.unlock()
+            Thread.sleep(forTimeInterval: 0.005)
+            lock.lock(); running -= 1; lock.unlock()
+        }
+        XCTAssertEqual(seen.sorted(), Array(0..<60))
+        XCTAssertLessThanOrEqual(peak, 3)
+        XCTAssertGreaterThan(peak, 1, "deve davvero lavorare in parallelo")
+    }
+
+    func testFirstErrorIsRethrownAndRemainingItemsAreSkipped() {
+        struct Boom: Error {}
+        let lock = NSLock()
+        var started = 0
+        XCTAssertThrowsError(try ParallelRunner.forEach(Array(0..<200), limit: 2) { i, _ in
+            lock.lock(); started += 1; lock.unlock()
+            if i == 3 { throw Boom() }
+            Thread.sleep(forTimeInterval: 0.002)
+        }) { XCTAssertTrue($0 is Boom) }
+        XCTAssertLessThan(started, 200)
+    }
+
+    func testEmptyAndSingleWorker() throws {
+        try ParallelRunner.forEach([Int](), limit: 4) { _, _ in XCTFail() }
+        var order: [Int] = []
+        try ParallelRunner.forEach([5, 6, 7], limit: 1) { _, v in order.append(v) }
+        XCTAssertEqual(order, [5, 6, 7])
+    }
+}
+
+final class MetadataParallelImportTests: XCTestCase {
+    func testManyClipsAreReadInParallelAndAllStored() throws {
+        let store = try ProjectStore(path: nil)
+        let p = try store.createProject(name: "P")
+        let bin = try store.createBin(parentID: try store.createDay(projectID: p.id, name: "D").id, name: "B")
+        let dir = try TestSupport.makeTempDir("par-meta")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dest = dir.appendingPathComponent("dest"), source = dir.appendingPathComponent("card")
+        var files: [FileResult] = []
+        for i in 0..<24 {
+            let name = String(format: "C%03d.mxf", i)
+            try TestSupport.writeRandomFile(dest.appendingPathComponent(name), size: 100, seed: UInt64(i))
+            files.append(FileResult(relativePath: name, size: 100, sourceHash: "0123456789abcdef",
+                                    destinations: [DestFileResult(status: .ok, destHash: "0123456789abcdef", message: nil)], modificationDate: Date()))
+        }
+        let job = OffloadJob(sourceURL: source, destinationRoots: [dest])
+        try store.beginOffload(jobID: job.id, binID: bin.id, sourcePath: source.path, destinations: [dest.path])
+        try store.finishOffload(OffloadResult(job: job, outcome: .completed, files: files, preflightErrors: [], destinationErrors: [nil],
+                                              skippedAlreadyVerified: 0, elapsed: 1))
+        // ExifTool finto che impiega 0,25 s per file: in serie 24 clip = 6 s
+        let out = dir.appendingPathComponent("exif.json")
+        try String(contentsOf: Fixtures.arriAlexa35).write(to: out, atomically: true, encoding: .utf8)
+        let script = dir.appendingPathComponent("exiftool")
+        try "#!/bin/sh\nif [ \"$1\" = \"-ver\" ]; then echo 13.59; exit 0; fi\nsleep 0.25\ncat '\(out.path)'\n".write(to: script, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.path)
+
+        let clips = try store.clips(underNode: bin.id, mediaOnly: false)
+        XCTAssertEqual(clips.count, 24)
+        var lastProgress = 0
+        let progressLock = NSLock()
+        let start = Date()
+        let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: ExifToolRunner(executable: script.path)) { done, total in
+            progressLock.lock(); lastProgress = max(lastProgress, done); progressLock.unlock()
+            XCTAssertEqual(total, 24)
+        }
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertEqual(summary.read, 24)
+        XCTAssertEqual(lastProgress, 24)
+        XCTAssertLessThan(elapsed, 4.5, "in parallelo deve battere nettamente i 6 s della lettura in serie (\(elapsed) s)")
+        XCTAssertTrue(try store.clips(underNode: bin.id).allSatisfy { $0.metadata["camera"] == "ALEXA 35" })
+    }
+}

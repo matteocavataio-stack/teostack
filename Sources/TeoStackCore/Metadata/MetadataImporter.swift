@@ -34,13 +34,20 @@ public enum MetadataImporter {
         }
         var summary = MetadataSummary()
         var rootsCache: [Int64: [String]] = [:]
-        for (index, clip) in clips.enumerated() {
-            progress?(index, clips.count)
-            guard clip.isMedia, clip.status == "ok" else { continue }
+        var done = 0
+        let lock = NSLock()
+        // Un clip alla volta per lavoratore: ExifTool e art-cmd partono in parallelo su più clip (la lettura è quasi tutta attesa).
+        try ParallelRunner.forEach(clips) { _, clip in
+            defer {
+                lock.lock(); done += 1; let n = done; lock.unlock()
+                progress?(n, clips.count)
+            }
+            guard clip.isMedia, clip.status == "ok" else { return }
+            lock.lock(); let cachedRoots = rootsCache[clip.offloadID]; lock.unlock()
             let roots: [String]
-            if let cached = rootsCache[clip.offloadID] { roots = cached } else {
+            if let cachedRoots { roots = cachedRoots } else {
                 roots = try store.destinationRoots(offloadID: clip.offloadID)
-                rootsCache[clip.offloadID] = roots
+                lock.lock(); rootsCache[clip.offloadID] = roots; lock.unlock()
             }
             // prima copia verificata OK che esiste ancora su disco
             var file: String?
@@ -48,7 +55,7 @@ public enum MetadataImporter {
                 let candidate = (root as NSString).appendingPathComponent(clip.relativePath)
                 if FileManager.default.fileExists(atPath: candidate) { file = candidate; break }
             }
-            guard let file else { summary.missingFile += 1; continue }
+            guard let file else { lock.lock(); summary.missingFile += 1; lock.unlock(); return }
 
             var values: [String: String] = [:]
             var isARRI = false
@@ -62,11 +69,11 @@ public enum MetadataImporter {
                     }
                 } catch let e as MetadataError {
                     if case .toolMissing = e { throw e }
-                    summary.failed.append("\(clip.name): \(e)")
+                    lock.lock(); summary.failed.append("\(clip.name): \(e)"); lock.unlock()
                     exifFailed = true
                 }
             }
-            if exifFailed && art == nil { continue }
+            if exifFailed && art == nil { return }
 
             let ext = (clip.relativePath as NSString).pathExtension.lowercased()
             if let art, isARRI || (values.isEmpty && artCmdExtensions.contains(ext)) {
@@ -76,22 +83,23 @@ public enum MetadataImporter {
                     if !extra.isEmpty {
                         values.merge(extra) { _, new in new }
                     } else if isARRI {
-                        summary.artFailed.append("\(clip.name): art-cmd non ha restituito metadata")
+                        lock.lock(); summary.artFailed.append("\(clip.name): art-cmd non ha restituito metadata"); lock.unlock()
                     }
                 } catch let e as MetadataError {
                     if case .toolMissing = e { throw e }
                     // su un clip riconosciuto come ARRI l'errore va segnalato; su un file sconosciuto è solo "formato non supportato"
-                    if isARRI { summary.artFailed.append("\(clip.name): \(e)") }
+                    if isARRI { lock.lock(); summary.artFailed.append("\(clip.name): \(e)"); lock.unlock() }
                 }
             }
             if values.isEmpty {
-                if !exifFailed { summary.unsupported += 1 }
+                if !exifFailed { lock.lock(); summary.unsupported += 1; lock.unlock() }
             } else {
                 try store.updateMetadata(clipID: clip.id, merging: values)
-                summary.read += 1
+                lock.lock(); summary.read += 1; lock.unlock()
             }
         }
-        progress?(clips.count, clips.count)
+        summary.failed.sort()
+        summary.artFailed.sort()
         return summary
     }
 }

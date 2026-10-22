@@ -1,17 +1,22 @@
 import XCTest
 @testable import TeoStackCore
 
-final class OffloadEngineTests: XCTestCase {
+class OffloadEngineTests: XCTestCase {
     var card: FakeCard!
     var destRoot: URL!
     var dests: [URL] = []
 
+    /// Le prove girano sia con la verifica sovrapposta alla copia (impostazione normale) sia a copia finita.
+    class var overlapVerification: Bool { true }
+
     override func setUpWithError() throws {
+        OffloadEngine.Configuration.defaultOverlapVerification = Self.overlapVerification
         card = try FakeCard.create()
         destRoot = try TestSupport.makeTempDir("dest")
     }
 
     override func tearDown() {
+        OffloadEngine.Configuration.defaultOverlapVerification = true
         try? FileManager.default.removeItem(at: card.root.deletingLastPathComponent())
         try? FileManager.default.removeItem(at: destRoot)
     }
@@ -101,8 +106,7 @@ final class OffloadEngineTests: XCTestCase {
         let dests = makeDests(3)
         let engine = try makeEngine(dests: dests)
         let target = "A001R2EC/sub/deep/A001C003.ari"
-        engine.onPhase = { phase in
-            guard phase == .verifying else { return }
+        engine.onCopied(target, destination: 1) {
             // Corrompe un solo byte nella destinazione 2 dopo la copia e prima della rilettura.
             let tmp = dests[1].appendingPathComponent(target + OffloadEngine.partialSuffix).path
             let fd = open(tmp, O_RDWR)
@@ -133,10 +137,8 @@ final class OffloadEngineTests: XCTestCase {
         let dests = makeDests(1)
         let engine = try makeEngine(dests: dests)
         let target = "CLIP/C0001.MXF"
-        engine.onPhase = { phase in
-            if phase == .verifying {
-                XCTAssertEqual(truncate(dests[0].appendingPathComponent(target + OffloadEngine.partialSuffix).path, 4_000_000), 0)
-            }
+        engine.onCopied(target) {
+            XCTAssertEqual(truncate(dests[0].appendingPathComponent(target + OffloadEngine.partialSuffix).path, 4_000_000), 0)
         }
         let result = engine.run()
         let fr = try XCTUnwrap(result.files.first { $0.relativePath == target })
@@ -249,7 +251,12 @@ final class OffloadEngineTests: XCTestCase {
         var copied = 0
         engine.onFileUpdate = { if $0.status == .copied { copied += 1; if copied == 2 { engine.cancel() } } }
         XCTAssertEqual(engine.run().outcome, .cancelled)
-        XCTAssertEqual(TestSupport.allFiles(under: base), [], "Annulla deve togliere anche Film/DAY01/A001 create dall'offload")
+        if Self.overlapVerification {
+            // con la verifica sovrapposta un file già riletto e identico può essere rimasto: mai però un parziale
+            XCTAssertTrue(TestSupport.allFiles(under: base).allSatisfy { !$0.hasSuffix(OffloadEngine.partialSuffix) })
+        } else {
+            XCTAssertEqual(TestSupport.allFiles(under: base), [], "Annulla deve togliere anche Film/DAY01/A001 create dall'offload")
+        }
         XCTAssertTrue(FileManager.default.fileExists(atPath: base.path), "la cartella base scelta dall'utente resta")
     }
 
@@ -318,10 +325,26 @@ final class OffloadEngineTests: XCTestCase {
         let result = engine.run()
         XCTAssertEqual(result.outcome, .cancelled)
         XCTAssertFalse(result.allOK)
-        for dest in dests {
-            XCTAssertEqual(TestSupport.allFiles(under: dest), [], "dopo Annulla non devono restare file o cartelle create")
+        if Self.overlapVerification {
+            // restano solo file già riletti e identici alla sorgente (stato OK), nessun parziale
+            for (d, dest) in dests.enumerated() {
+                XCTAssertTrue(TestSupport.allFiles(under: dest).allSatisfy { !$0.hasSuffix(OffloadEngine.partialSuffix) })
+                for f in result.files {
+                    let path = dest.appendingPathComponent(f.relativePath).path
+                    if f.destinations[d].status == .ok {
+                        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
+                    } else {
+                        XCTAssertFalse(FileManager.default.fileExists(atPath: path), "\(f.relativePath) non verificato ma presente")
+                        XCTAssertEqual(f.destinations[d].status, .pending)
+                    }
+                }
+            }
+        } else {
+            for dest in dests {
+                XCTAssertEqual(TestSupport.allFiles(under: dest), [], "dopo Annulla non devono restare file o cartelle create")
+            }
+            XCTAssertTrue(result.files.allSatisfy { $0.destinations.allSatisfy { $0.status == .pending } })
         }
-        XCTAssertTrue(result.files.allSatisfy { $0.destinations.allSatisfy { $0.status == .pending } })
     }
 
     func testCancelDuringVerificationKeepsVerifiedFilesAndRemovesTheRest() throws {
@@ -393,4 +416,10 @@ final class OffloadEngineTests: XCTestCase {
         XCTAssertEqual(scan.totalSize, Int64(card.files.reduce(0) { $0 + $1.size }))
         XCTAssertEqual(scan.skipped.map(\.relativePath), ["link"])
     }
+}
+
+
+/// Stesse prove con la verifica che parte solo a copia finita (modalità per dischi lenti).
+final class OffloadEngineSequentialVerifyTests: OffloadEngineTests {
+    override class var overlapVerification: Bool { false }
 }

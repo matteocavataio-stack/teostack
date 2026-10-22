@@ -102,3 +102,13 @@ struct FakeCard {
         return card
     }
 }
+
+extension OffloadEngine {
+    /// Esegue `action` quando il file è stato scritto sulla destinazione `d` ma non ancora riletto: funziona uguale con la verifica
+    /// sovrapposta alla copia o a copia finita (`onPhase(.verifying)` non basta più, la verifica può partire prima).
+    func onCopied(_ relativePath: String, destination d: Int = 0, _ action: @escaping () -> Void) {
+        onFileUpdate = { [scan] update in
+            if update.status == .copied, update.destinationIndex == d, scan.files[update.fileIndex].relativePath == relativePath { action() }
+        }
+    }
+}

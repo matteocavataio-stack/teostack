@@ -1,5 +1,6 @@
 #if canImport(SwiftUI)
 import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 import TeoStackCore
 
@@ -127,6 +128,7 @@ struct TargetBar: View {
 struct SourcePanel: View {
     @ObservedObject var vm: OffloadViewModel
     @State private var isTargeted = false
+    @State private var volumesRevision = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -136,7 +138,18 @@ struct SourcePanel: View {
                     Text(url.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }
                 Spacer()
+                Menu("Schede collegate") {
+                    let volumes = OffloadViewModel.connectedVolumes()
+                    if volumes.isEmpty { Text("Nessuna scheda o disco esterno collegato") }
+                    ForEach(volumes, id: \.path) { url in
+                        Button(url.lastPathComponent) { vm.setSource(url) }
+                    }
+                }
+                .id(volumesRevision)
+                .fixedSize()
+                .disabled(vm.isRunning)
                 Button("Scegli sorgente…") { vm.chooseSource() }
+                    .keyboardShortcut("o", modifiers: .command)
                     .disabled(vm.isRunning)
             }
             if vm.sourceURL != nil {
@@ -189,6 +202,8 @@ struct SourcePanel: View {
             }
         }
         .padding(12)
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in volumesRevision += 1 }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didUnmountNotification)) { _ in volumesRevision += 1 }
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in
             guard let provider = providers.first else { return false }
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
@@ -299,6 +314,8 @@ struct DestinationRow: View {
 
 struct ControlBar: View {
     @ObservedObject var vm: OffloadViewModel
+    @AppStorage("overlapVerification") private var overlapVerification = true
+    @AppStorage("soundOnFinish") private var soundOnFinish = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -320,6 +337,19 @@ struct ControlBar: View {
                     .disabled(!vm.canStart)
             }
             .font(.callout.monospacedDigit())
+            HStack(spacing: 18) {
+                Toggle("Verifica durante la copia", isOn: $overlapVerification)
+                    .toggleStyle(.checkbox)
+                    .disabled(vm.isRunning)
+                    .help("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita.")
+                Toggle("Suono al termine", isOn: $soundOnFinish).toggleStyle(.checkbox)
+                if let result = vm.result, result.outcome == .completed, result.allOK, vm.runState == .idle, vm.ejectableSourceVolume != nil {
+                    Button("Espelli sorgente") { vm.ejectSource() }
+                        .help("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK")
+                }
+                Spacer()
+            }
+            .font(.callout)
             if let result = vm.result { ResultBanner(result: result) }
         }
         .padding(12)

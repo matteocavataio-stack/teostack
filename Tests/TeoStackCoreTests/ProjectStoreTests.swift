@@ -210,8 +210,7 @@ final class ProjectStoreTests: XCTestCase {
         try store.beginOffload(jobID: job.id, binID: binID, sourcePath: card.root.path, destinations: dests.map(\.path))
         let engine = OffloadEngine(job: job, scan: scan)
         if let corruptTarget {
-            engine.onPhase = { phase in
-                guard phase == .verifying else { return }
+            engine.onCopied(corruptTarget) {
                 let fd = open(dests[0].appendingPathComponent(corruptTarget + OffloadEngine.partialSuffix).path, O_RDWR)
                 var b: UInt8 = 0; _ = pread(fd, &b, 1, 10); b ^= 1; _ = pwrite(fd, &b, 1, 10); close(fd)
             }

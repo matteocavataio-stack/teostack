@@ -27,6 +27,14 @@ public final class OffloadEngine {
         public var safetyMarginBytes: Int64 = 16 * 1024 * 1024
         public var freeSpaceProvider: (URL) -> Int64? = { DiskIO.availableSpace(atOrAbove: $0.path) }
         public var journalStore: JournalStore?
+        /// La verifica di un file inizia appena è stato scritto, mentre la copia prosegue con i successivi (una rilettura per destinazione).
+        /// Con false la verifica parte solo a copia finita (utile con dischi lenti che non reggono letture e scritture insieme).
+        public var overlapVerification = Configuration.defaultOverlapVerification
+        /// Valore iniziale di `overlapVerification` (modificabile dalle impostazioni dell'app e dai test).
+        public static var defaultOverlapVerification = true
+        /// I file più piccoli di questa soglia usano `fsync` e un solo svuotamento della cache del disco prima della verifica,
+        /// invece di un F_FULLFSYNC per ogni file. 0 = F_FULLFSYNC per ogni file.
+        public var deferredSyncThreshold: Int64 = 64 * 1024 * 1024
         public init() {}
     }
 
@@ -49,6 +57,11 @@ public final class OffloadEngine {
     private var createdDirs: [[String]]
     private var partialPaths: [Set<String>]
     private var verifyItems: [[VerifyItem]]
+    private var verifyCursor: [Int]
+    private var copyFinished = false
+    private var unflushed: [Bool]
+    private var lastUnflushedPath: [String?]
+    private let verifySignals: [DispatchSemaphore]
     private var journalDirty = false
 
     private var readBytes: Int64 = 0
@@ -73,6 +86,7 @@ public final class OffloadEngine {
         let fileIndex: Int
         let path: String
         let isPartial: Bool
+        var needsDeviceFlush = false
     }
 
     public init(job: OffloadJob, scan: ScanResult, configuration: Configuration = Configuration(), resume: OffloadJournal? = nil) {
@@ -108,6 +122,10 @@ public final class OffloadEngine {
         createdDirs = Array(repeating: [], count: n)
         partialPaths = Array(repeating: [], count: n)
         verifyItems = Array(repeating: [], count: n)
+        verifyCursor = Array(repeating: 0, count: n)
+        unflushed = Array(repeating: false, count: n)
+        lastUnflushedPath = Array(repeating: nil, count: n)
+        verifySignals = (0..<n).map { _ in DispatchSemaphore(value: 0) }
         writtenBytes = Array(repeating: 0, count: n)
         verifiedBytes = Array(repeating: 0, count: n)
         destTotals = Array(repeating: 0, count: n)
@@ -153,11 +171,14 @@ public final class OffloadEngine {
         saveJournal(.running, force: true)
 
         setPhase(.copying)
+        let verifiers = DispatchGroup()
+        if configuration.overlapVerification { startVerifiers(in: verifiers) }
         copyPhase()
-        if !isCancelled {
-            setPhase(.verifying)
-            verifyPhase()
-        }
+        lock.lock(); copyFinished = true; lock.unlock()
+        verifySignals.forEach { $0.signal() }
+        if !isCancelled { setPhase(.verifying) }
+        if !configuration.overlapVerification && !isCancelled { startVerifiers(in: verifiers) }
+        verifiers.wait()
         let cancelled = isCancelled
         if cancelled {
             cleanUpPartialFiles()
@@ -283,8 +304,7 @@ public final class OffloadEngine {
                         setStatus(i, d, .error, message: "Esiste già un elemento con questo nome che non è un file: non viene toccato.")
                         continue
                     }
-                    // Mai sovrascrivere: il file esistente verrà solo verificato.
-                    queueVerification(d, VerifyItem(fileIndex: i, path: finalPath, isPartial: false))
+                    // Mai sovrascrivere: il file esistente verrà solo verificato (dopo aver letto la sorgente e calcolato il suo hash).
                     setStatus(i, d, .copied, message: "File già presente in destinazione: non copiato, solo verificato")
                     continue
                 }
@@ -311,10 +331,7 @@ public final class OffloadEngine {
                 removePartial(t.d, t.tempPath)
                 setStatus(i, t.d, .error, message: message)
             }
-            for d in verifyOnly {
-                dropVerification(d, fileIndex: i)
-                setStatus(i, d, .error, message: message)
-            }
+            for d in verifyOnly { setStatus(i, d, .error, message: message) }
         }
 
         let srcFD: Int32
@@ -380,7 +397,7 @@ public final class OffloadEngine {
 
         if cancelledMidFile {
             for t in targets { close(t.fd) }   // i file parziali vengono rimossi da cleanUpPartialFiles()
-            for d in verifyOnly { dropVerification(d, fileIndex: i); setStatus(i, d, .pending) }
+            for d in verifyOnly { setStatus(i, d, .pending) }
             for t in targets { setStatus(i, t.d, .pending) }
             return
         }
@@ -402,6 +419,16 @@ public final class OffloadEngine {
             return
         }
 
+        // L'hash della sorgente deve essere noto PRIMA di mettere i file in coda di verifica (la verifica può partire subito).
+        lock.lock()
+        results[i].sourceHash = sourceHash
+        filesCopied += 1
+        journalDirty = true
+        lock.unlock()
+
+        for d in verifyOnly { queueVerification(d, VerifyItem(fileIndex: i, path: destPath(d, file.relativePath), isPartial: false)) }
+
+        let deferSync = file.size < configuration.deferredSyncThreshold
         for t in targets {
             if let e = t.error {
                 close(t.fd)
@@ -410,12 +437,13 @@ public final class OffloadEngine {
                 continue
             }
             do {
-                try DiskIO.flushToDisk(fd: t.fd, path: t.tempPath)
+                if deferSync { try DiskIO.syncData(fd: t.fd, path: t.tempPath) } else { try DiskIO.flushToDisk(fd: t.fd, path: t.tempPath) }
                 if close(t.fd) != 0 { throw DiskIOError(code: errno, operation: "Chiusura file", path: t.tempPath) }
                 try DiskIO.applyTimes(DiskIO.FileTimes(modification: file.modificationDate, creation: file.creationDate),
                                       toPath: t.tempPath)
-                queueVerification(t.d, VerifyItem(fileIndex: i, path: t.tempPath, isPartial: true))
+                if deferSync { markUnflushed(t.d, path: t.tempPath) }
                 setStatus(i, t.d, .copied)
+                queueVerification(t.d, VerifyItem(fileIndex: i, path: t.tempPath, isPartial: true, needsDeviceFlush: deferSync))
             } catch let e as DiskIOError {
                 removePartial(t.d, t.tempPath)
                 fail(i, t.d, e)
@@ -424,37 +452,57 @@ public final class OffloadEngine {
                 setStatus(i, t.d, .error, message: error.localizedDescription)
             }
         }
-        lock.lock()
-        results[i].sourceHash = sourceHash
-        filesCopied += 1
-        journalDirty = true
-        lock.unlock()
     }
 
     // MARK: Fase di verifica
 
-    private func verifyPhase() {
-        let group = DispatchGroup()
+    /// Un lavoratore per destinazione: rilegge i file man mano che vengono messi in coda e termina a copia finita e coda vuota.
+    private func startVerifiers(in group: DispatchGroup) {
         for d in 0..<job.destinationRoots.count {
             DispatchQueue.global(qos: .userInitiated).async(group: group) { [self] in
                 verifyDestination(d)
             }
         }
-        group.wait()
+    }
+
+    private func nextVerifyItem(_ d: Int) -> (item: VerifyItem?, finished: Bool) {
+        lock.lock(); defer { lock.unlock() }
+        if verifyCursor[d] < verifyItems[d].count {
+            verifyCursor[d] += 1
+            return (verifyItems[d][verifyCursor[d] - 1], copyFinished)
+        }
+        return (nil, copyFinished)
+    }
+
+    private func markUnflushed(_ d: Int, path: String) {
+        lock.lock(); unflushed[d] = true; lastUnflushedPath[d] = path; lock.unlock()
+    }
+
+    /// Prima di rileggere un file scritto solo con fsync: un unico svuotamento della cache del disco copre tutti i file scritti fino a quel momento.
+    private func flushDeviceCacheIfNeeded(_ d: Int) throws {
+        lock.lock()
+        let path = unflushed[d] ? lastUnflushedPath[d] : nil
+        unflushed[d] = false
+        lock.unlock()
+        if let path { try DiskIO.flushDeviceCache(path: path) }
     }
 
     private func verifyDestination(_ d: Int) {
-        lock.lock()
-        let items = verifyItems[d]
-        lock.unlock()
-        for item in items {
+        while true {
             if isCancelled { return }
+            let next = nextVerifyItem(d)
+            guard let item = next.item else {
+                if next.finished { return }
+                _ = verifySignals[d].wait(timeout: .now() + 0.2)
+                continue
+            }
             let i = item.fileIndex
             guard let sourceHash = sourceHashOf(i) else { continue }
             let size = scan.files[i].size
             setStatus(i, d, .verifying)
-            setCurrentFile(scan.files[i].relativePath)
+            if currentPhase == .verifying { setCurrentFile(scan.files[i].relativePath) }
             do {
+                if item.needsDeviceFlush { try flushDeviceCacheIfNeeded(d) }
                 let (hash, bytes) = try FileVerifier.hash(path: item.path, uncached: true,
                                                           bufferSize: configuration.verifyBufferSize,
                                                           isCancelled: { self.isCancelled },
@@ -526,13 +574,29 @@ public final class OffloadEngine {
         }
     }
 
+    /// Cartella che deve esistere sempre durante l'offload: la base scelta dall'utente (o, senza base, la cartella che contiene la destinazione).
+    /// Se sparisce il disco è stato scollegato: non si ricrea mai il suo percorso sul disco di avvio.
+    private func destinationAnchor(_ d: Int) -> String {
+        if let bases = job.destinationBases, d < bases.count { return bases[d].standardizedFileURL.path }
+        return (job.destinationRoots[d].standardizedFileURL.path as NSString).deletingLastPathComponent
+    }
+
     private func ensureDirectory(_ path: String, destination d: Int) throws {
+        let anchor = destinationAnchor(d)
+        var anchorIsDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: anchor, isDirectory: &anchorIsDir), anchorIsDir.boolValue else {
+            throw DiskIOError(code: ENODEV, operation: "Destinazione non raggiungibile", path: anchor)
+        }
+        try createDirectories(path, destination: d)
+    }
+
+    private func createDirectories(_ path: String, destination d: Int) throws {
         if let st = try? DiskIO.lstatInfo(path: path) {
             if st.isDirectory { return }
             throw DiskIOError(code: ENOTDIR, operation: "Creazione cartella", path: path)
         }
         let parent = (path as NSString).deletingLastPathComponent
-        if parent != path { try ensureDirectory(parent, destination: d) }   // risale fino alla prima cartella esistente
+        if parent != path { try createDirectories(parent, destination: d) }   // risale fino alla prima cartella esistente
         if mkdir(path, 0o755) != 0 && errno != EEXIST {
             throw DiskIOError(code: errno, operation: "Creazione cartella", path: path)
         }
@@ -581,10 +645,12 @@ public final class OffloadEngine {
 
     private func queueVerification(_ d: Int, _ item: VerifyItem) {
         lock.lock(); verifyItems[d].append(item); lock.unlock()
+        verifySignals[d].signal()
     }
 
-    private func dropVerification(_ d: Int, fileIndex: Int) {
-        lock.lock(); verifyItems[d].removeAll { $0.fileIndex == fileIndex }; lock.unlock()
+    private var currentPhase: OffloadPhase {
+        lock.lock(); defer { lock.unlock() }
+        return phase
     }
 
     private func registerPartial(_ d: Int, _ path: String) {
@@ -671,7 +737,7 @@ public final class OffloadEngine {
             p.writtenBytes = writtenBytes[d]
             p.verifiedBytes = verifiedBytes[d]
             p.writeSpeed = phase == .copying ? writeRates[d].rate : 0
-            p.verifySpeed = phase == .verifying ? verifyRates[d].rate : 0
+            p.verifySpeed = phase == .copying || phase == .verifying ? verifyRates[d].rate : 0
             p.fatalError = deadReason[d]
             for f in results {
                 switch f.destinations[d].status {

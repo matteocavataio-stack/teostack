@@ -118,6 +118,25 @@ principale e nella tabella clip). Per registrarne altri basta aggiungere il tipo
 Le voci sono salvate nel database, restano dopo il riavvio e sono per progetto; eliminando il progetto si elimina la sua cronologia.
 Il pulsante **Cancella…** in cima alla colonna svuota la cronologia del progetto selezionato (dopo conferma): clip, offload e file sui dischi non vengono toccati.
 
+## Prestazioni e flusso di lavoro
+
+- **Verifica durante la copia** (casella nella barra in basso, attiva di serie): ogni file viene riletto dal disco e confrontato appena è stato scritto, mentre la copia
+  dei file successivi prosegue (una rilettura per destinazione). Nulla cambia per la sicurezza: un file prende il nome definitivo solo dopo la rilettura con XXH64
+  identico. Con dischi lenti (HDD) che non reggono letture e scritture insieme, disattivala: la verifica parte a copia finita. Se annulli con la verifica sovrapposta,
+  restano solo i file già riletti e identici (mai parziali); «Riprendi» riparte da lì.
+- **File piccoli** (sotto 64 MB, per esempio gli XML accanto ai clip): invece di svuotare la cache del disco (`F_FULLFSYNC`) per ogni file, si fa `fsync` e un solo
+  svuotamento della cache prima della rilettura. Con centinaia di file di servizio risparmia molto tempo; la garanzia resta: nessun file viene riletto prima che i dati siano sul disco.
+- **Rilettura più veloce:** lettura del disco e calcolo dell'hash avvengono in parallelo.
+- **Disco scollegato a metà:** se sparisce la cartella base o il disco di destinazione, l'app segnala l'errore e non ricrea mai il percorso sul disco del computer.
+- **Metadata e anteprime in parallelo:** ExifTool, art-cmd e ffmpeg lavorano su 2–4 clip alla volta (in base ai core), con avanzamento «n/totale».
+- **Destinazioni ricordate:** le cartelle di destinazione dell'ultimo offload tornano da sole all'apertura (se il disco c'è ancora).
+- **Schede collegate:** il menu «Schede collegate» elenca schede e dischi esterni montati; ⌘O apre la scelta manuale della sorgente.
+- **Fine offload:** suono (diverso se ci sono problemi, disattivabile) e rimbalzo nel Dock se l'app è in secondo piano; con tutti i file OK compare «Espelli sorgente».
+- **Misurare la velocità sul tuo Mac:** `TEOSTACK_BENCH=1 swift test --filter BenchmarkTests` (dati di prova in cartelle temporanee) oppure
+  `TEOSTACK_BENCH=1 TEOSTACK_BENCH_MB=8000 TEOSTACK_BENCH_DST=/Volumes/SSD1 swift test --filter BenchmarkTests` per provare un disco vero; stampa MB/s di copia e tempi totali.
+  Per una scheda reale (in sola lettura): aggiungi `TEOSTACK_BENCH_SRC=/Volumes/NOME_SCHEDA`.
+  Nei test su Linux dell'autore (disco virtuale, 1,5 GB + 300 file piccoli, 2 destinazioni) il tempo totale è sceso da circa 6,5 s a circa 3,5–4,4 s; sul Mac con dischi veri il guadagno dipende dai dischi e va misurato.
+
 ## Come funziona la sicurezza
 
 1. La sorgente è aperta solo con `O_RDONLY`; non viene mai scritto, rinominato o cancellato nulla su di essa.

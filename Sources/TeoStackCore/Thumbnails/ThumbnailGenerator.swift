@@ -76,30 +76,37 @@ public enum ThumbnailGenerator {
         }
         var summary = ThumbnailSummary()
         var rootsCache: [Int64: [String]] = [:]
-        for (index, clip) in clips.enumerated() {
-            progress?(index, clips.count)
-            guard clip.isMedia, clip.status == "ok" else { continue }
-            if !regenerate && cache.hasImage(clipID: clip.id) { summary.alreadyPresent += 1; continue }
+        var done = 0
+        let lock = NSLock()
+        // Più anteprime in parallelo (art-cmd e ffmpeg sono programmi esterni che lavorano ciascuno per conto proprio).
+        try ParallelRunner.forEach(clips) { _, clip in
+            defer {
+                lock.lock(); done += 1; let n = done; lock.unlock()
+                progress?(n, clips.count)
+            }
+            guard clip.isMedia, clip.status == "ok" else { return }
+            if !regenerate && cache.hasImage(clipID: clip.id) { lock.lock(); summary.alreadyPresent += 1; lock.unlock(); return }
+            lock.lock(); let cachedRoots = rootsCache[clip.offloadID]; lock.unlock()
             let roots: [String]
-            if let cached = rootsCache[clip.offloadID] { roots = cached } else {
+            if let cachedRoots { roots = cachedRoots } else {
                 roots = try store.destinationRoots(offloadID: clip.offloadID)
-                rootsCache[clip.offloadID] = roots
+                lock.lock(); rootsCache[clip.offloadID] = roots; lock.unlock()
             }
             var file: String?
             for (d, root) in roots.enumerated() where d < clip.destinationStatuses.count && clip.destinationStatuses[d] == "ok" {
                 let candidate = (root as NSString).appendingPathComponent(clip.relativePath)
                 if FileManager.default.fileExists(atPath: candidate) { file = candidate; break }
             }
-            guard let file else { summary.missingFile += 1; continue }
+            guard let file else { lock.lock(); summary.missingFile += 1; lock.unlock(); return }
             do {
                 try generate(clip: clip, file: file, tools: tools, cache: cache)
-                summary.generated += 1
+                lock.lock(); summary.generated += 1; lock.unlock()
             } catch let e as MetadataError {
                 if case .toolMissing = e { throw e }
-                summary.failed.append("\(clip.name): \(e)")
+                lock.lock(); summary.failed.append("\(clip.name): \(e)"); lock.unlock()
             }
         }
-        progress?(clips.count, clips.count)
+        summary.failed.sort()
         return summary
     }
 }

@@ -25,7 +25,9 @@ final class OffloadViewModel: ObservableObject {
     @Published var rows: [FileRow] = []
     @Published var totalSize: Int64 = 0
     @Published var skippedItems: [SkippedItem] = []
-    @Published var destinations: [DestinationSlot] = [DestinationSlot()]
+    @Published var destinations: [DestinationSlot] = [DestinationSlot()] {
+        didSet { Self.saveDestinations(destinations) }
+    }
     @Published var snapshot = OffloadSnapshot()
     @Published var fileStates: [[DestFileStatus]] = []
     @Published var runState: RunState = .idle
@@ -50,13 +52,35 @@ final class OffloadViewModel: ObservableObject {
 
     let journalStore: JournalStore
 
+    private static let destinationsKey = "lastDestinations"
+
+    /// Cartelle di destinazione dell'ultimo offload che esistono ancora (i dischi scollegati vengono scartati).
+    static func savedDestinations() -> [DestinationSlot] {
+        let paths = UserDefaults.standard.stringArray(forKey: destinationsKey) ?? []
+        let slots = paths.prefix(3).compactMap { path -> DestinationSlot? in
+            var isDir: ObjCBool = false
+            return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue ? DestinationSlot(url: URL(fileURLWithPath: path)) : nil
+        }
+        return slots.isEmpty ? [DestinationSlot()] : slots
+    }
+
+    private static func saveDestinations(_ slots: [DestinationSlot]) {
+        UserDefaults.standard.set(slots.compactMap { $0.url?.path }, forKey: destinationsKey)
+    }
+
     init() {
+        destinations = Self.savedDestinations()
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         journalStore = JournalStore(directory: support.appendingPathComponent("TeoStackXt/Journal", isDirectory: true))
         resumable = journalStore.latestResumable()
     }
 
     var isRunning: Bool { runState == .running }
+
+    /// «Verifica durante la copia» (impostazione dell'app, attiva se non è mai stata cambiata).
+    static var overlapVerificationEnabled: Bool {
+        UserDefaults.standard.object(forKey: "overlapVerification") as? Bool ?? true
+    }
 
     var canStart: Bool {
         runState == .idle && scan != nil && !rows.isEmpty && placement != nil && binNameError == nil
@@ -216,6 +240,7 @@ final class OffloadViewModel: ObservableObject {
     private func run(job: OffloadJob, scan: ScanResult, resume: OffloadJournal?) {
         var config = OffloadEngine.Configuration()
         config.journalStore = journalStore
+        config.overlapVerification = Self.overlapVerificationEnabled
         let engine = OffloadEngine(job: job, scan: scan, configuration: config, resume: resume)
         self.engine = engine
         runState = .running
@@ -249,12 +274,12 @@ final class OffloadViewModel: ObservableObject {
         pendingUpdates.removeAll()
         pendingLock.unlock()
         guard !updates.isEmpty else { return }
-        for u in updates where u.fileIndex < fileStates.count {
-            var row = fileStates[u.fileIndex]
-            while row.count <= u.destinationIndex { row.append(.pending) }
-            row[u.destinationIndex] = u.status
-            fileStates[u.fileIndex] = row
+        var states = fileStates
+        for u in updates where u.fileIndex < states.count {
+            while states[u.fileIndex].count <= u.destinationIndex { states[u.fileIndex].append(.pending) }
+            states[u.fileIndex][u.destinationIndex] = u.status
         }
+        fileStates = states          // una sola pubblicazione per tutti gli aggiornamenti accumulati
     }
 
     private func finish(_ result: OffloadResult) {
@@ -270,8 +295,46 @@ final class OffloadViewModel: ObservableObject {
         }
         onRecorded?()
         if result.outcome == .completed { onOffloadFinished?(result.job.id) }
+        notifyFinished(result)
         if result.outcome == .preflightFailed {
             errorMessage = result.preflightErrors.joined(separator: "\n")
+        }
+    }
+
+    /// Suono (diverso se ci sono problemi) e rimbalzo nel Dock se l'app non è in primo piano.
+    private func notifyFinished(_ result: OffloadResult) {
+        guard result.outcome != .cancelled else { return }
+        if UserDefaults.standard.object(forKey: "soundOnFinish") as? Bool ?? true {
+            NSSound(named: result.outcome == .completed && result.allOK ? "Glass" : "Basso")?.play()
+        }
+        if !NSApp.isActive { NSApp.requestUserAttention(result.allOK ? .informationalRequest : .criticalRequest) }
+    }
+
+    // MARK: Schede collegate e espulsione
+
+    /// Volumi esterni/rimovibili montati (schede e dischi), per sceglierli con un clic come sorgente.
+    static func connectedVolumes() -> [URL] {
+        let keys: [URLResourceKey] = [.volumeIsInternalKey, .volumeIsRootFileSystemKey, .volumeIsRemovableKey, .volumeIsEjectableKey, .volumeNameKey]
+        let urls = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: [.skipHiddenVolumes]) ?? []
+        return urls.filter { url in
+            guard let v = try? url.resourceValues(forKeys: Set(keys)) else { return false }
+            if v.volumeIsRootFileSystem == true { return false }
+            return v.volumeIsInternal != true || v.volumeIsRemovable == true || v.volumeIsEjectable == true
+        }
+    }
+
+    /// Volume su cui si trova la sorgente, se è un disco esterno che si può espellere.
+    var ejectableSourceVolume: URL? {
+        guard let source = sourceURL, let volume = try? source.resourceValues(forKeys: [.volumeURLKey]).volume,
+              Self.connectedVolumes().contains(where: { $0.path == volume.path }) else { return nil }
+        return volume
+    }
+
+    /// Espelle la scheda sorgente (solo su richiesta, dopo un offload con tutti i file OK).
+    func ejectSource() {
+        guard let volume = ejectableSourceVolume else { return }
+        do { try NSWorkspace.shared.unmountAndEjectDevice(at: volume) } catch {
+            errorMessage = "Impossibile espellere «\(volume.lastPathComponent)»: \(error.localizedDescription)"
         }
     }
 

@@ -122,6 +122,20 @@ public enum DiskIO {
     }
 
     /// Forza i dati su disco. Su macOS usa F_FULLFSYNC (svuota anche la cache hardware del disco).
+    /// Solo `fsync`: i dati arrivano al disco ma non è garantito lo svuotamento della sua cache hardware. Va sempre seguito da `flushDeviceCache`
+    /// prima di rileggere il file per la verifica (serve a non pagare un F_FULLFSYNC per ogni file piccolo).
+    public static func syncData(fd: Int32, path: String) throws {
+        if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: "Sincronizzazione su disco", path: path) }
+    }
+
+    /// Svuota la cache hardware del disco su cui si trova `path` (F_FULLFSYNC su un file esistente, aperto in sola lettura).
+    public static func flushDeviceCache(path: String) throws {
+        let fd = open(path, O_RDONLY)
+        if fd < 0 { throw DiskIOError(code: errno, operation: "Sincronizzazione su disco", path: path) }
+        defer { close(fd) }
+        try flushToDisk(fd: fd, path: path)
+    }
+
     public static func flushToDisk(fd: Int32, path: String) throws {
         #if canImport(Darwin)
         if fcntl(fd, F_FULLFSYNC) == -1 {
