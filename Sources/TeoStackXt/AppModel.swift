@@ -1,6 +1,7 @@
 #if canImport(SwiftUI)
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 import TeoStackCore
 
 /// Contenitore dei due modelli dell'app. Non è osservato: le viste osservano i due modelli separatamente.
@@ -348,6 +349,33 @@ final class ProjectsViewModel: ObservableObject {
         if let store {
             let clips = imports.flatMap { (try? store.clips(forJobID: $0.result.jobID)) ?? [] }
             runMetadataImport(clips: clips, thumbnailsForJobIDs: imports.map { $0.result.jobID })
+        }
+    }
+
+    /// Importa un log esterno (ALE, CSV, XML: scena, take, tape, note…) e lo abbina ai clip mostrati per nome del file, o per timecode + data.
+    /// Senza la spunta «Sovrascrivi» i valori già presenti nei clip non vengono mai toccati.
+    func importSidecarLog() {
+        guard let store, !clips.isEmpty else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = ["ale", "csv", "tsv", "txt", "xml"].compactMap { UTType(filenameExtension: $0) }
+        panel.message = tr("Scegli il log da importare (ALE, CSV o XML). I clip si abbinano per nome del file, oppure per timecode e data.")
+        let overwrite = NSButton(checkboxWithTitle: tr("Sovrascrivi i valori già presenti"), target: nil, action: nil)
+        overwrite.state = .off
+        panel.accessoryView = overwrite
+        panel.isAccessoryViewDisclosed = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let replace = overwrite.state == .on
+        let targets = clips
+        do {
+            let records = try SidecarParser.parse(url: url)
+            let report = try SidecarImporter.apply(records, to: targets, store: store, overwrite: replace)
+            metadataStatus = report.text
+            reload()
+        } catch {
+            errorMessage = "\(error)"
         }
     }
 

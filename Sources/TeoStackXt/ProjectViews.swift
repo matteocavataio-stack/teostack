@@ -518,6 +518,9 @@ struct ClipTableView: View {
                 Button(tr("Leggi metadata")) { projects.readMetadataForSelection() }
                     .disabled(projects.isReadingMetadata || projects.clips.isEmpty)
                     .help(tr("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione)."))
+                Button(tr("Importa log…")) { projects.importSidecarLog() }
+                    .disabled(projects.clips.isEmpty)
+                    .help(tr("Importa un log esterno (ALE, CSV, XML) con scena, take, tape e note, e lo abbina ai clip mostrati."))
                 Menu(tr("Esporta metadata")) {
                     ForEach(MetadataExporter.Format.allCases) { f in
                         Button(f.rawValue.uppercased()) { projects.exportMetadata(f) }
