@@ -27,7 +27,7 @@ public struct FFmpegRunner {
 
     private func run(_ arguments: [String], output: String) throws {
         guard FileManager.default.isExecutableFile(atPath: executable) else {
-            throw MetadataError.toolMissing("ffmpeg non trovato in «\(executable)».")
+            throw MetadataError.toolMissing(tr("ffmpeg non trovato in «{0}».", executable))
         }
         try? FileManager.default.removeItem(atPath: output)
         let p = Process()
@@ -40,18 +40,18 @@ public struct FFmpegRunner {
         p.standardOutput = FileHandle.nullDevice
         p.standardError = handle
         defer { try? handle.close() }
-        do { try p.run() } catch { throw MetadataError.toolFailed("Impossibile avviare ffmpeg: \(error.localizedDescription)") }
+        do { try p.run() } catch { throw MetadataError.toolFailed(tr("Impossibile avviare ffmpeg: {0}", error.localizedDescription)) }
         let finished = DispatchSemaphore(value: 0)
         DispatchQueue.global().async { p.waitUntilExit(); finished.signal() }
         if finished.wait(timeout: .now() + timeout) == .timedOut {
             p.terminate()
-            throw MetadataError.toolFailed("ffmpeg non ha risposto entro \(Int(timeout)) secondi.")
+            throw MetadataError.toolFailed(tr("ffmpeg non ha risposto entro {0} secondi.", Int(timeout)))
         }
         let size = (try? FileManager.default.attributesOfItem(atPath: output)[.size] as? Int) ?? 0
         guard p.terminationStatus == 0, (size ?? 0) > 0 else {
             try? FileManager.default.removeItem(atPath: output)
             let text = ((try? String(contentsOf: log)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            throw MetadataError.toolFailed("ffmpeg non ha estratto il fotogramma\(text.isEmpty ? "" : ": \(String(text.suffix(250)))")")
+            throw MetadataError.toolFailed(text.isEmpty ? tr("ffmpeg non ha estratto il fotogramma") : tr("ffmpeg non ha estratto il fotogramma: {0}", String(text.suffix(250))))
         }
     }
 }

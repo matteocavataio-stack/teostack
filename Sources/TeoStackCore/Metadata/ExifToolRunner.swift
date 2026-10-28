@@ -26,7 +26,7 @@ public struct ExifToolRunner {
 
     public func read(file: String) throws -> [String: Any] {
         guard FileManager.default.isExecutableFile(atPath: executable) else {
-            throw MetadataError.toolMissing("ExifTool non trovato in «\(executable)».")
+            throw MetadataError.toolMissing(tr("ExifTool non trovato in «{0}».", executable))
         }
         let p = Process()
         p.executableURL = URL(fileURLWithPath: executable)
@@ -35,7 +35,7 @@ public struct ExifToolRunner {
         p.standardOutput = out
         p.standardError = err
         do { try p.run() } catch {
-            throw MetadataError.toolFailed("Impossibile avviare ExifTool: \(error.localizedDescription)")
+            throw MetadataError.toolFailed(tr("Impossibile avviare ExifTool: {0}", error.localizedDescription))
         }
         let data = out.fileHandleForReading.readDataToEndOfFile()
         let errData = err.fileHandleForReading.readDataToEndOfFile()
@@ -50,7 +50,7 @@ public struct ExifToolRunner {
     public static func parse(_ data: Data) throws -> [String: Any] {
         guard let json = try? JSONSerialization.jsonObject(with: data),
               let array = json as? [[String: Any]], let first = array.first else {
-            throw MetadataError.invalidOutput("L'output di ExifTool non è un JSON valido.")
+            throw MetadataError.invalidOutput(tr("L'output di ExifTool non è un JSON valido."))
         }
         return first
     }

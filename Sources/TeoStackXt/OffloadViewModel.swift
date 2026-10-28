@@ -28,6 +28,8 @@ final class OffloadViewModel: ObservableObject {
     @Published var destinations: [DestinationSlot] = [DestinationSlot()] {
         didSet { Self.saveDestinations(destinations) }
     }
+    /// Percorsi di destinazione salvati dall'utente (menu «Percorsi salvati»).
+    @Published private(set) var savedPaths: [String] = SavedPathsStore().paths
     @Published var snapshot = OffloadSnapshot()
     @Published var fileStates: [[DestFileStatus]] = []
     @Published var runState: RunState = .idle
@@ -52,12 +54,13 @@ final class OffloadViewModel: ObservableObject {
 
     let journalStore: JournalStore
 
+    private let savedStore = SavedPathsStore()
     private static let destinationsKey = "lastDestinations"
 
     /// Cartelle di destinazione dell'ultimo offload che esistono ancora (i dischi scollegati vengono scartati).
     static func savedDestinations() -> [DestinationSlot] {
         let paths = UserDefaults.standard.stringArray(forKey: destinationsKey) ?? []
-        let slots = paths.prefix(3).compactMap { path -> DestinationSlot? in
+        let slots = paths.prefix(OffloadJob.maxDestinations).compactMap { path -> DestinationSlot? in
             var isDir: ObjCBool = false
             return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue ? DestinationSlot(url: URL(fileURLWithPath: path)) : nil
         }
@@ -95,7 +98,7 @@ final class OffloadViewModel: ObservableObject {
     // MARK: Sorgente
 
     func chooseSource() {
-        if let url = pickFolder(message: "Seleziona la scheda (sorgente)") { setSource(url) }
+        if let url = pickFolder(message: tr("Seleziona la scheda (sorgente)")) { setSource(url) }
     }
 
     func setSource(_ url: URL) {
@@ -115,7 +118,7 @@ final class OffloadViewModel: ObservableObject {
             } catch {
                 DispatchQueue.main.async {
                     self?.runState = .idle
-                    self?.errorMessage = "Impossibile leggere la sorgente: \(error)"
+                    self?.errorMessage = tr("Impossibile leggere la sorgente: {0}", error)
                 }
             }
         }
@@ -133,12 +136,59 @@ final class OffloadViewModel: ObservableObject {
     // MARK: Destinazioni
 
     func chooseDestination(_ slot: DestinationSlot) {
-        guard !isRunning, let url = pickFolder(message: "Seleziona la cartella di destinazione") else { return }
+        guard !isRunning, let url = pickFolder(message: tr("Seleziona la cartella di destinazione")) else { return }
         if let i = destinations.firstIndex(where: { $0.id == slot.id }) { destinations[i].url = url }
     }
 
     func addDestination() {
-        if destinations.count < 3, !isRunning { destinations.append(DestinationSlot()) }
+        if destinations.count < OffloadJob.maxDestinations, !isRunning { destinations.append(DestinationSlot()) }
+    }
+
+    // MARK: Percorsi salvati
+
+    /// Si salvano i percorsi scelti, così non vanno selezionati ogni volta (nessun file viene toccato).
+    var canSaveChosenDestinations: Bool {
+        destinations.contains { slot in slot.url.map { !savedStore.contains($0.path) } ?? false }
+    }
+
+    func saveChosenDestinations() {
+        for slot in destinations { if let path = slot.url?.path { savedStore.add(path) } }
+        savedPaths = savedStore.paths
+    }
+
+    func removeSavedPath(_ path: String) {
+        savedStore.remove(path)
+        savedPaths = savedStore.paths
+    }
+
+    func isSavedPathAvailable(_ path: String) -> Bool { SavedPathsStore.isAvailable(path) }
+
+    /// Mette il percorso salvato in una destinazione precisa.
+    func assignSavedPath(_ path: String, to slot: DestinationSlot) {
+        guard !isRunning, let i = destinations.firstIndex(where: { $0.id == slot.id }) else { return }
+        destinations[i].url = URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    /// Mette il percorso salvato nella prima destinazione vuota; se non ce ne sono ne aggiunge una (fino al massimo).
+    func useSavedPath(_ path: String) {
+        guard !isRunning else { return }
+        let url = URL(fileURLWithPath: path, isDirectory: true)
+        if destinations.contains(where: { $0.url.map { SavedPathsStore.normalized($0.path) == SavedPathsStore.normalized(path) } ?? false }) { return }
+        if let i = destinations.firstIndex(where: { $0.url == nil }) {
+            destinations[i].url = url
+        } else if destinations.count < OffloadJob.maxDestinations {
+            destinations.append(DestinationSlot(url: url))
+        } else {
+            errorMessage = tr("Ci sono già {0} destinazioni (il massimo): rimuovine una prima.", OffloadJob.maxDestinations)
+        }
+    }
+
+    /// Usa tutti i percorsi salvati disponibili (fino al massimo) al posto delle destinazioni attuali.
+    func useAllSavedPaths() {
+        guard !isRunning else { return }
+        let available = savedPaths.filter { SavedPathsStore.isAvailable($0) }.prefix(OffloadJob.maxDestinations)
+        guard !available.isEmpty else { return }
+        destinations = available.map { DestinationSlot(url: URL(fileURLWithPath: $0, isDirectory: true)) }
     }
 
     func removeDestination(_ slot: DestinationSlot) {
@@ -152,7 +202,7 @@ final class OffloadViewModel: ObservableObject {
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.message = message
-        panel.prompt = "Scegli"
+        panel.prompt = tr("Scegli")
         return panel.runModal() == .OK ? panel.url : nil
     }
 
@@ -165,13 +215,13 @@ final class OffloadViewModel: ObservableObject {
         do {
             let bin = try store.findOrCreateBin(parentID: placement.parentID, name: binName)
             guard let t = try store.binTarget(binID: bin.node.id) else {
-                errorMessage = "Bin non trovato dopo la creazione."
+                errorMessage = tr("Bin non trovato dopo la creazione.")
                 return
             }
             target = t
             onBinReady?(bin.node.id)
         } catch {
-            errorMessage = "Impossibile creare il bin «\(binName)»: \(error)"
+            errorMessage = tr("Impossibile creare il bin «{0}»: {1}", binName, error)
             return
         }
         let bases = destinations.compactMap { $0.url }
@@ -185,12 +235,12 @@ final class OffloadViewModel: ObservableObject {
         guard let journal = resumable, runState == .idle else { return }
         let source = journal.job.sourceURL
         guard FileManager.default.fileExists(atPath: source.path) else {
-            errorMessage = "La sorgente «\(source.path)» non è montata: inserire la scheda e riprovare."
+            errorMessage = tr("La sorgente «{0}» non è montata: inserire la scheda e riprovare.", source.path)
             return
         }
         // L'offload deve essere ancora registrato in un bin del progetto (altrimenti il bin è stato eliminato).
         guard let record = try? store?.offloadRecord(jobID: journal.job.id) else {
-            errorMessage = "Il bin di questo offload è stato eliminato dal progetto: non posso riprenderlo registrandolo. Crea un nuovo bin e rilancia l'offload (i file già copiati e identici vengono solo verificati, mai riscritti)."
+            errorMessage = tr("Il bin di questo offload è stato eliminato dal progetto: non posso riprenderlo registrandolo. Crea un nuovo bin e rilancia l'offload (i file già copiati e identici vengono solo verificati, mai riscritti).")
             return
         }
         guard register(job: journal.job, binID: record.binID) else { return }
@@ -211,7 +261,7 @@ final class OffloadViewModel: ObservableObject {
             } catch {
                 DispatchQueue.main.async {
                     self?.runState = .idle
-                    self?.errorMessage = "Impossibile leggere la sorgente: \(error)"
+                    self?.errorMessage = tr("Impossibile leggere la sorgente: {0}", error)
                 }
             }
         }
@@ -224,7 +274,7 @@ final class OffloadViewModel: ObservableObject {
     /// Registra l'offload nel bin PRIMA di iniziare. Se la registrazione fallisce non si parte.
     private func register(job: OffloadJob, binID: Int64) -> Bool {
         guard let store else {
-            errorMessage = "Database dei progetti non disponibile: offload non avviato."
+            errorMessage = tr("Database dei progetti non disponibile: offload non avviato.")
             return false
         }
         do {
@@ -232,7 +282,7 @@ final class OffloadViewModel: ObservableObject {
                                    destinations: job.destinationRoots.map { $0.path })
             return true
         } catch {
-            errorMessage = "Impossibile registrare l'offload nel progetto: \(error)"
+            errorMessage = tr("Impossibile registrare l'offload nel progetto: {0}", error)
             return false
         }
     }
@@ -250,7 +300,7 @@ final class OffloadViewModel: ObservableObject {
         fileStates = scan.files.map { _ in Array(repeating: .pending, count: job.destinationRoots.count) }
         activity = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled],
-            reason: "Offload in corso")
+            reason: tr("Offload in corso"))
 
         engine.onFileUpdate = { [weak self] update in
             guard let self else { return }
@@ -291,7 +341,7 @@ final class OffloadViewModel: ObservableObject {
         activity = nil
         resumable = journalStore.latestResumable()
         do { try store?.finishOffload(result) } catch {
-            errorMessage = "L'offload è terminato ma non sono riuscito a registrarlo nel progetto: \(error)"
+            errorMessage = tr("L'offload è terminato ma non sono riuscito a registrarlo nel progetto: {0}", error)
         }
         onRecorded?()
         if result.outcome == .completed { onOffloadFinished?(result.job.id) }
@@ -334,7 +384,7 @@ final class OffloadViewModel: ObservableObject {
     func ejectSource() {
         guard let volume = ejectableSourceVolume else { return }
         do { try NSWorkspace.shared.unmountAndEjectDevice(at: volume) } catch {
-            errorMessage = "Impossibile espellere «\(volume.lastPathComponent)»: \(error.localizedDescription)"
+            errorMessage = tr("Impossibile espellere «{0}»: {1}", volume.lastPathComponent, error.localizedDescription)
         }
     }
 

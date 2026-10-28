@@ -8,10 +8,19 @@ enum MainTab: String, CaseIterable, Identifiable {
     case offload = "Offload"
     case clips = "Clip"
     var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .offload: return tr("Offload")
+        case .clips: return tr("Clip")
+        }
+    }
 }
 
 struct ContentView: View {
     @StateObject private var app = AppModel()
+    /// Cambiando lingua i testi si ridisegnano (.id sul contenuto: l'AppModel e un offload in corso non vengono toccati).
+    @ObservedObject private var languageSettings = LanguageSettings.shared
     @State private var request: NameRequest?
     @State private var tab: MainTab = .offload
     @AppStorage("showHistory") private var showHistory = true
@@ -31,13 +40,13 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     HStack {
                         Picker("", selection: $tab) {
-                            ForEach(MainTab.allCases) { Text($0.rawValue).tag($0) }
+                            ForEach(MainTab.allCases) { Text($0.title).tag($0) }
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
                         .frame(maxWidth: 260)
                         Spacer()
-                        Button(showHistory ? "Nascondi cronologia" : "Mostra cronologia") { showHistory.toggle() }
+                        Button(showHistory ? tr("Nascondi cronologia") : tr("Mostra cronologia")) { showHistory.toggle() }
                     }
                     .padding(8)
                     switch tab {
@@ -52,6 +61,7 @@ struct ContentView: View {
                 }
             }
         }
+        .id(languageSettings.language)
         .frame(minWidth: 1280, minHeight: 760)
         .onReceive(app.projects.$placement) { app.offload.placement = $0 }
         .onReceive(NotificationCenter.default.publisher(for: .exportReport)) { _ in
@@ -60,9 +70,9 @@ struct ContentView: View {
         .sheet(item: $request) { req in
             NameSheet(request: req, onSubmit: { submit(req, $0) }, onClose: { request = nil })
         }
-        .alert("Errore", isPresented: Binding(get: { app.projects.errorMessage != nil || app.offload.errorMessage != nil },
+        .alert(tr("Errore"), isPresented: Binding(get: { app.projects.errorMessage != nil || app.offload.errorMessage != nil },
                                               set: { if !$0 { app.projects.errorMessage = nil; app.offload.errorMessage = nil } })) {
-            Button("OK", role: .cancel) {}
+            Button(tr("OK"), role: .cancel) {}
         } message: {
             Text([app.projects.errorMessage, app.offload.errorMessage].compactMap { $0 }.joined(separator: "\n"))
         }
@@ -87,6 +97,7 @@ struct OffloadView: View {
         VStack(spacing: 0) {
             TargetBar(vm: vm, projects: projects)
             Divider()
+            RecapPanel(projects: projects)
             SourcePanel(vm: vm)
                 .frame(minHeight: 220)
             Divider()
@@ -105,21 +116,112 @@ struct TargetBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("Il bin verrà creato in:").font(.headline)
+            Text(tr("Il bin verrà creato in:")).font(.headline)
             if let p = vm.placement {
                 Text(p.displayPath).bold()
                 if vm.sourceURL != nil, vm.binNameError == nil, let existing = projects.existingBin(named: vm.binName) {
                     let n = projects.offloadCount(binID: existing.id)
-                    Text("— il bin «\(existing.name)» esiste già (\(n) offload): l'offload verrà aggiunto")
+                    Text(tr("— il bin «{0}» esiste già ({1} offload): l'offload verrà aggiunto", existing.name, n))
                         .foregroundStyle(.orange).font(.callout)
                 }
             } else {
-                Text("crea o seleziona un progetto (la cartella selezionata nella barra laterale ospiterà il bin)")
+                Text(tr("crea o seleziona un progetto (la cartella selezionata nella barra laterale ospiterà il bin)"))
                     .foregroundStyle(.red)
             }
             Spacer()
         }
         .padding(10)
+    }
+}
+
+// MARK: - Riepilogo della cartella selezionata
+
+/// Quanto è stato scaricato nella cartella selezionata (giorno, sottocartella, Library o bin): spazio, clip, schede, durata, formati.
+/// Solo dati registrati: quello che non si conosce è dichiarato, mai stimato.
+struct RecapPanel: View {
+    @ObservedObject var projects: ProjectsViewModel
+    @AppStorage("showRecap") private var expanded = true
+
+    var body: some View {
+        if let recap = projects.recap, let id = projects.selectedNodeID, let node = projects.node(id) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Button {
+                        expanded.toggle()
+                    } label: {
+                        Image(systemName: expanded ? "chevron.down" : "chevron.right").frame(width: 12)
+                    }
+                    .buttonStyle(.plain)
+                    Text(tr("Riepilogo di «{0}»", node.name)).font(.headline).lineLimit(1)
+                    Spacer()
+                }
+                if expanded { details(recap) }
+            }
+            .padding(10)
+            Divider()
+        }
+    }
+
+    @ViewBuilder
+    private func details(_ recap: ProjectRecap) -> some View {
+        if recap.isEmpty {
+            Text(tr("Ancora nessun offload in questa cartella.")).font(.callout).foregroundStyle(.secondary)
+        } else {
+            HStack(alignment: .top, spacing: 28) {
+                stat(tr("Spazio scaricato"), Format.bytes(recap.verifiedBytes))
+                stat(tr("Clip"), "\(recap.clipCount)")
+                stat(tr("Schede scaricate"), "\(recap.cardCount)")
+                stat(tr("Durata totale"), durationText(recap))
+                Spacer()
+            }
+            if !recap.formats.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(tr("Formati utilizzati")).font(.caption).foregroundStyle(.secondary)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), alignment: .leading)], alignment: .leading, spacing: 2) {
+                        ForEach(recap.formats, id: \.label) { line in
+                            Text(tr("{0} — {1} clip, {2}", line.label, line.clips, Format.bytes(line.bytes)))
+                                .font(.callout).lineLimit(1).truncationMode(.middle)
+                        }
+                    }
+                }
+            }
+            ForEach(notes(recap), id: \.self) { note in
+                Text(note).font(.caption).foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private func stat(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(value).font(.title3.monospacedDigit().bold())
+        }
+    }
+
+    private func durationText(_ recap: ProjectRecap) -> String {
+        guard recap.clipsWithDuration > 0 else { return ClipColumns.notAvailable }
+        let total = Int(recap.durationSeconds.rounded())
+        let clock = String(format: "%d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
+        return tr("{0} ({1} min)", clock, Int((recap.durationSeconds / 60).rounded()))
+    }
+
+    private func notes(_ recap: ProjectRecap) -> [String] {
+        var out: [String] = []
+        if recap.clipCount > 0 && recap.clipsWithDuration == 0 {
+            out.append(tr("Durata non disponibile: i metadata non sono ancora stati letti (usa «Leggi metadata» nel tab Clip)."))
+        } else if recap.clipsWithoutDuration > 0 {
+            out.append(tr("La durata comprende solo i {0} clip di cui è nota; {1} clip senza durata (usa «Leggi metadata» nel tab Clip).", recap.clipsWithDuration, recap.clipsWithoutDuration))
+        }
+        if recap.clipsWithoutFormat > 0 {
+            out.append(tr("{0} clip senza codec né risoluzione (metadata non letti): compaiono come formato {1}.", recap.clipsWithoutFormat, ClipColumns.notAvailable))
+        }
+        if recap.notVerifiedFiles > 0 {
+            out.append(tr("{0} file non verificati OK non sono contati nello spazio scaricato.", recap.notVerifiedFiles))
+        }
+        if recap.incompleteOffloads > 0 {
+            out.append(tr("{0} offload annullati o interrotti non sono contati come schede scaricate.", recap.incompleteOffloads))
+        }
+        return out
     }
 }
 
@@ -133,14 +235,14 @@ struct SourcePanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Sorgente").font(.headline)
+                Text(tr("Sorgente")).font(.headline)
                 if let url = vm.sourceURL {
                     Text(url.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }
                 Spacer()
-                Menu("Schede collegate") {
+                Menu(tr("Schede collegate")) {
                     let volumes = OffloadViewModel.connectedVolumes()
-                    if volumes.isEmpty { Text("Nessuna scheda o disco esterno collegato") }
+                    if volumes.isEmpty { Text(tr("Nessuna scheda o disco esterno collegato")) }
                     ForEach(volumes, id: \.path) { url in
                         Button(url.lastPathComponent) { vm.setSource(url) }
                     }
@@ -148,21 +250,21 @@ struct SourcePanel: View {
                 .id(volumesRevision)
                 .fixedSize()
                 .disabled(vm.isRunning)
-                Button("Scegli sorgente…") { vm.chooseSource() }
+                Button(tr("Scegli sorgente…")) { vm.chooseSource() }
                     .keyboardShortcut("o", modifiers: .command)
                     .disabled(vm.isRunning)
             }
             if vm.sourceURL != nil {
                 HStack(spacing: 8) {
-                    Text("Nome bin:")
-                    TextField("Nome del bin", text: $vm.binName)
+                    Text(tr("Nome bin:"))
+                    TextField(tr("Nome del bin"), text: $vm.binName)
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: 360)
                         .disabled(vm.isRunning)
                     if let error = vm.binNameError {
                         Text(error).foregroundStyle(.red).font(.callout)
                     } else {
-                        Text("proposto dalla sorgente: puoi cambiarlo prima di avviare").foregroundStyle(.secondary).font(.callout)
+                        Text(tr("proposto dalla sorgente: puoi cambiarlo prima di avviare")).foregroundStyle(.secondary).font(.callout)
                     }
                 }
             }
@@ -171,7 +273,7 @@ struct SourcePanel: View {
                     RoundedRectangle(cornerRadius: 8)
                         .strokeBorder(isTargeted ? Color.accentColor : Color.secondary.opacity(0.5),
                                       style: StrokeStyle(lineWidth: 2, dash: [6]))
-                    Text("Trascina qui la scheda (o la cartella sorgente)")
+                    Text(tr("Trascina qui la scheda (o la cartella sorgente)"))
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxHeight: .infinity)
@@ -179,12 +281,12 @@ struct SourcePanel: View {
                 HStack(spacing: 16) {
                     if vm.runState == .scanning {
                         ProgressView().controlSize(.small)
-                        Text("Lettura elenco file…")
+                        Text(tr("Lettura elenco file…"))
                     } else {
-                        Text("\(vm.rows.count) file")
-                        Text("Dimensione totale: \(Format.bytes(vm.totalSize))")
+                        Text(tr("{0} file", vm.rows.count))
+                        Text(tr("Dimensione totale: {0}", Format.bytes(vm.totalSize)))
                         if !vm.skippedItems.isEmpty {
-                            Text("\(vm.skippedItems.count) elementi non copiabili")
+                            Text(tr("{0} elementi non copiabili", vm.skippedItems.count))
                                 .foregroundStyle(.orange)
                                 .help(vm.skippedItems.map { "\($0.relativePath): \($0.reason)" }.joined(separator: "\n"))
                         }
@@ -192,11 +294,11 @@ struct SourcePanel: View {
                 }
                 .font(.callout)
                 Table(vm.rows) {
-                    TableColumn("Nome") { row in Text(row.file.name) }
-                    TableColumn("Cartella") { row in Text(row.file.folder).foregroundStyle(.secondary) }
-                    TableColumn("Dimensione") { row in Text(Format.bytes(row.file.size)) }
+                    TableColumn(tr("Nome")) { row in Text(row.file.name) }
+                    TableColumn(tr("Cartella")) { row in Text(row.file.folder).foregroundStyle(.secondary) }
+                    TableColumn(tr("Dimensione")) { row in Text(Format.bytes(row.file.size)) }
                         .width(min: 90, ideal: 100)
-                    TableColumn("Stato") { row in StatusBadge(status: vm.aggregateStatus(row.index)) }
+                    TableColumn(tr("Stato")) { row in StatusBadge(status: vm.aggregateStatus(row.index)) }
                         .width(min: 90, ideal: 110)
                 }
             }
@@ -245,10 +347,31 @@ struct DestinationsPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Destinazioni (verrà creata la cartella del bin dentro quella scelta)").font(.headline)
+                Text(tr("Destinazioni (verrà creata la cartella del bin dentro quella scelta)")).font(.headline)
                 Spacer()
-                Button("Aggiungi destinazione") { vm.addDestination() }
-                    .disabled(vm.destinations.count >= 3 || vm.isRunning)
+                Menu(tr("Percorsi salvati")) {
+                    Button(tr("Salva i percorsi scelti")) { vm.saveChosenDestinations() }
+                        .disabled(!vm.canSaveChosenDestinations)
+                    if !vm.savedPaths.isEmpty {
+                        Divider()
+                        ForEach(vm.savedPaths, id: \.self) { path in
+                            Button(vm.isSavedPathAvailable(path) ? path : tr("{0} (non disponibile)", path)) { vm.useSavedPath(path) }
+                                .disabled(!vm.isSavedPathAvailable(path))
+                        }
+                        Divider()
+                        Button(tr("Usa tutti i percorsi salvati")) { vm.useAllSavedPaths() }
+                        Menu(tr("Rimuovi dai salvati")) {
+                            ForEach(vm.savedPaths, id: \.self) { path in
+                                Button(path) { vm.removeSavedPath(path) }
+                            }
+                        }
+                    }
+                }
+                .fixedSize()
+                .disabled(vm.isRunning)
+                .help(tr("Salva i percorsi di destinazione che usi di solito, per non sceglierli ogni volta"))
+                Button(tr("Aggiungi destinazione")) { vm.addDestination() }
+                    .disabled(vm.destinations.count >= OffloadJob.maxDestinations || vm.isRunning)
             }
             ScrollView {
                 VStack(spacing: 10) {
@@ -274,13 +397,26 @@ struct DestinationRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("Destinazione \(index + 1)").bold()
-                Text(slot.url?.path ?? "nessuna cartella selezionata")
+                Text(tr("Destinazione {0}", index + 1)).bold()
+                Text(slot.url?.path ?? tr("nessuna cartella selezionata"))
                     .foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 Spacer()
-                Button("Scegli…") { vm.chooseDestination(slot) }.disabled(vm.isRunning)
+                Button(tr("Scegli…")) { vm.chooseDestination(slot) }.disabled(vm.isRunning)
+                if !vm.savedPaths.isEmpty {
+                    Menu {
+                        ForEach(vm.savedPaths, id: \.self) { path in
+                            Button(path) { vm.assignSavedPath(path, to: slot) }
+                                .disabled(!vm.isSavedPathAvailable(path))
+                        }
+                    } label: {
+                        Image(systemName: "star")
+                    }
+                    .fixedSize()
+                    .disabled(vm.isRunning)
+                    .help(tr("Usa un percorso salvato per questa destinazione"))
+                }
                 if vm.destinations.count > 1 {
-                    Button("Rimuovi") { vm.removeDestination(slot) }.disabled(vm.isRunning)
+                    Button(tr("Rimuovi")) { vm.removeDestination(slot) }.disabled(vm.isRunning)
                 }
             }
             if let p = progress, p.totalBytes > 0 {
@@ -288,18 +424,18 @@ struct DestinationRow: View {
                 let verify = Double(p.verifiedBytes) / Double(p.totalBytes)
                 ProgressView(value: min(1, (copy + verify) / 2))
                 HStack(spacing: 14) {
-                    Text("Copia \(Int(min(1, copy) * 100))%  \(Format.megabytesPerSecond(p.writeSpeed))")
-                    Text("Verifica \(Int(min(1, verify) * 100))%  \(Format.megabytesPerSecond(p.verifySpeed))")
-                    Text("Tempo \(Format.duration(vm.snapshot.elapsed))")
-                    Text("ETA \(Format.duration(p.eta))")
+                    Text(tr("Copia {0}%  {1}", Int(min(1, copy) * 100), Format.megabytesPerSecond(p.writeSpeed)))
+                    Text(tr("Verifica {0}%  {1}", Int(min(1, verify) * 100), Format.megabytesPerSecond(p.verifySpeed)))
+                    Text(tr("Tempo {0}", Format.duration(vm.snapshot.elapsed)))
+                    Text(tr("ETA {0}", Format.duration(p.eta)))
                     Spacer()
-                    Text("OK \(p.okCount)").foregroundStyle(.green)
-                    Text("MISMATCH \(p.mismatchCount)").foregroundStyle(p.mismatchCount > 0 ? Color.red : Color.secondary)
-                    Text("ERRORE \(p.errorCount)").foregroundStyle(p.errorCount > 0 ? Color.red : Color.secondary)
+                    Text(tr("OK {0}", p.okCount)).foregroundStyle(.green)
+                    Text(tr("MISMATCH {0}", p.mismatchCount)).foregroundStyle(p.mismatchCount > 0 ? Color.red : Color.secondary)
+                    Text(tr("ERRORE {0}", p.errorCount)).foregroundStyle(p.errorCount > 0 ? Color.red : Color.secondary)
                 }
                 .font(.caption.monospacedDigit())
                 if let fatal = p.fatalError {
-                    Text("Destinazione interrotta: \(fatal)").font(.caption).foregroundStyle(.red)
+                    Text(tr("Destinazione interrotta: {0}", fatal)).font(.caption).foregroundStyle(.red)
                 }
             } else {
                 ProgressView(value: 0)
@@ -321,31 +457,31 @@ struct ControlBar: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 18) {
                 Text(vm.snapshot.phase.label).bold()
-                Text("Lettura sorgente: \(Format.megabytesPerSecond(vm.snapshot.readSpeed))")
-                Text("Tempo: \(Format.duration(vm.snapshot.elapsed))")
-                Text("ETA: \(Format.duration(vm.snapshot.eta))")
+                Text(tr("Lettura sorgente: {0}", Format.megabytesPerSecond(vm.snapshot.readSpeed)))
+                Text(tr("Tempo: {0}", Format.duration(vm.snapshot.elapsed)))
+                Text(tr("ETA: {0}", Format.duration(vm.snapshot.eta)))
                 if let file = vm.snapshot.currentFile, vm.isRunning {
                     Text(file).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }
                 Spacer()
-                Button("Riprendi") { vm.resume() }
+                Button(tr("Riprendi")) { vm.resume() }
                     .disabled(vm.resumable == nil || vm.runState != .idle)
-                Button("Annulla") { vm.cancel() }
+                Button(tr("Annulla")) { vm.cancel() }
                     .disabled(!vm.isRunning)
-                Button("Avvia") { vm.start() }
+                Button(tr("Avvia")) { vm.start() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!vm.canStart)
             }
             .font(.callout.monospacedDigit())
             HStack(spacing: 18) {
-                Toggle("Verifica durante la copia", isOn: $overlapVerification)
+                Toggle(tr("Verifica durante la copia"), isOn: $overlapVerification)
                     .toggleStyle(.checkbox)
                     .disabled(vm.isRunning)
-                    .help("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita.")
-                Toggle("Suono al termine", isOn: $soundOnFinish).toggleStyle(.checkbox)
+                    .help(tr("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita."))
+                Toggle(tr("Suono al termine"), isOn: $soundOnFinish).toggleStyle(.checkbox)
                 if let result = vm.result, result.outcome == .completed, result.allOK, vm.runState == .idle, vm.ejectableSourceVolume != nil {
-                    Button("Espelli sorgente") { vm.ejectSource() }
-                        .help("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK")
+                    Button(tr("Espelli sorgente")) { vm.ejectSource() }
+                        .help(tr("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK"))
                 }
                 Spacer()
             }
@@ -365,14 +501,14 @@ struct ResultBanner: View {
         Group {
             switch result.outcome {
             case .preflightFailed:
-                banner("NON AVVIATO: controlli preliminari falliti", .red)
+                banner(tr("NON AVVIATO: controlli preliminari falliti"), .red)
             case .cancelled:
-                banner("ANNULLATO: i file parziali sono stati rimossi. «Riprendi» continua dai file già verificati.", .orange)
+                banner(tr("ANNULLATO: i file parziali sono stati rimossi. «Riprendi» continua dai file già verificati."), .orange)
             case .completed:
                 if result.allOK {
-                    banner("TUTTI I FILE OK: \(result.files.count) file riletti dal disco con XXH64 identico alla sorgente su \(result.job.destinationRoots.count) destinazione/i.", .green)
+                    banner(tr("TUTTI I FILE OK: {0} file riletti dal disco con XXH64 identico alla sorgente su {1} destinazione/i.", result.files.count, result.job.destinationRoots.count), .green)
                 } else {
-                    banner("ATTENZIONE: \(mismatches) MISMATCH, \(errors) ERRORI, \(result.destinationErrors.compactMap { $0 }.count) destinazioni interrotte. I file non OK non vanno considerati copiati.", .red)
+                    banner(tr("ATTENZIONE: {0} MISMATCH, {1} ERRORI, {2} destinazioni interrotte. I file non OK non vanno considerati copiati.", mismatches, errors, result.destinationErrors.compactMap { $0 }.count), .red)
                 }
             }
         }

@@ -42,8 +42,8 @@ final class ToolsViewModel: ObservableObject {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.message = "Seleziona il programma «\(tool.executableName)»"
-        panel.prompt = "Scegli"
+        panel.message = tr("Seleziona il programma «{0}»", tool.executableName)
+        panel.prompt = tr("Scegli")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         ExternalTools.setUserPath(url.path, for: tool)
         recheck()
@@ -59,6 +59,8 @@ final class ProjectsViewModel: ObservableObject {
     @Published var selectedNodeID: Int64?
     @Published var clips: [ClipRecord] = []
     @Published var history: [HistoryEvent] = []
+    /// Riepilogo di quanto scaricato nel nodo selezionato (spazio, clip, schede, durata, formati).
+    @Published var recap: ProjectRecap?
     /// Dove verrà creato il bin del prossimo offload: la cartella selezionata (o quella che contiene il bin selezionato).
     @Published var placement: BinPlacement?
     @Published var showAllFiles = false
@@ -79,7 +81,7 @@ final class ProjectsViewModel: ObservableObject {
             store = try ProjectStore(path: ProjectStore.defaultDatabasePath())
         } catch {
             store = nil
-            errorMessage = "Impossibile aprire il database dei progetti: \(error)"
+            errorMessage = tr("Impossibile aprire il database dei progetti: {0}", error)
         }
         reload()
     }
@@ -104,7 +106,7 @@ final class ProjectsViewModel: ObservableObject {
 
     private func reloadTree() throws {
         guard let store, let pid = selectedProjectID else {
-            tree = nil; selectedNodeID = nil; clips = []; history = []; placement = nil
+            tree = nil; selectedNodeID = nil; clips = []; history = []; placement = nil; recap = nil
             return
         }
         let t = try store.tree(projectID: pid)
@@ -117,10 +119,12 @@ final class ProjectsViewModel: ObservableObject {
     private func refreshSelection() throws {
         guard let store else { return }
         if let id = selectedNodeID {
-            clips = try store.clips(underNode: id, mediaOnly: !showAllFiles)
+            let all = try store.clips(underNode: id, mediaOnly: false)
+            clips = showAllFiles ? all : all.filter { $0.isMedia }
+            recap = ProjectRecap.make(clips: all, offloads: try store.offloads(underNode: id))
             placement = computePlacement()
         } else {
-            clips = []; placement = nil
+            clips = []; placement = nil; recap = nil
         }
     }
 
@@ -200,7 +204,7 @@ final class ProjectsViewModel: ObservableObject {
     }
 
     func renameProject(name: String) -> String? {
-        guard let id = selectedProjectID else { return "Nessun progetto selezionato." }
+        guard let id = selectedProjectID else { return tr("Nessun progetto selezionato.") }
         return mutate { try $0.renameProject(id: id, to: name) }
     }
 
@@ -214,7 +218,7 @@ final class ProjectsViewModel: ObservableObject {
     }
 
     func createDay(name: String) -> String? {
-        guard let pid = selectedProjectID else { return "Nessun progetto selezionato." }
+        guard let pid = selectedProjectID else { return tr("Nessun progetto selezionato.") }
         return mutate { store in
             let d = try store.createDay(projectID: pid, name: name)
             selectedNodeID = d.id
@@ -222,7 +226,7 @@ final class ProjectsViewModel: ObservableObject {
     }
 
     func createFolder(name: String) -> String? {
-        guard let container = currentContainer else { return "Seleziona prima un progetto." }
+        guard let container = currentContainer else { return tr("Seleziona prima un progetto.") }
         return mutate { store in
             let f = try store.createFolder(parentID: container.id, name: name)
             selectedNodeID = f.id
@@ -244,7 +248,7 @@ final class ProjectsViewModel: ObservableObject {
             let here = n.kind == .library ? path : path + [n.name]
             let allowed = moving.kind == .day ? n.kind == .library : true
             if allowed && n.id != moving.parentID {
-                out.append(MoveTarget(id: n.id, label: n.kind == .library ? "Library (radice)" : here.joined(separator: " › ")))
+                out.append(MoveTarget(id: n.id, label: n.kind == .library ? tr("Library (radice)") : here.joined(separator: " › ")))
             }
             for c in n.children ?? [] { visit(c, path: here) }
         }
@@ -299,24 +303,24 @@ final class ProjectsViewModel: ObservableObject {
         let exif = ExifToolRunner.locate()
         let art = ARTCmdRunner.locate()
         guard exif != nil || art != nil else {
-            metadataStatus = "Né ExifTool né art-cmd sono installati: metadata non letti (vedi l'avviso in alto per installarli)."
+            metadataStatus = tr("Né ExifTool né art-cmd sono installati: metadata non letti (vedi l'avviso in alto per installarli).")
             if let job = thumbnailsForJobID { generateThumbnails(forJobID: job) }
             return
         }
         isReadingMetadata = true
-        metadataStatus = "Lettura metadata…"
+        metadataStatus = tr("Lettura metadata…")
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
                 let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: exif, art: art) { done, total in
-                    DispatchQueue.main.async { self?.metadataStatus = "Lettura metadata… \(done)/\(total)" }
+                    DispatchQueue.main.async { self?.metadataStatus = tr("Lettura metadata… {0}/{1}", done, total) }
                 }
                 DispatchQueue.main.async {
-                    self?.finishMetadataImport("Metadata: \(summary.text)")
+                    self?.finishMetadataImport(tr("Metadata: {0}", summary.text))
                     if let job = thumbnailsForJobID { self?.generateThumbnails(forJobID: job) }
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self?.finishMetadataImport("Metadata non letti: \(error)")
+                    self?.finishMetadataImport(tr("Metadata non letti: {0}", error))
                     if let job = thumbnailsForJobID { self?.generateThumbnails(forJobID: job) }
                 }
             }
@@ -346,23 +350,23 @@ final class ProjectsViewModel: ObservableObject {
         guard let store, !clips.isEmpty, !isGeneratingThumbnails else { return }
         let tools = ThumbnailTools()
         guard tools.art != nil || tools.ffmpeg != nil else {
-            thumbnailStatus = "Né ffmpeg né art-cmd sono installati: anteprime non create (vedi l'avviso in alto per installarli)."
+            thumbnailStatus = tr("Né ffmpeg né art-cmd sono installati: anteprime non create (vedi l'avviso in alto per installarli).")
             return
         }
         isGeneratingThumbnails = true
-        thumbnailStatus = "Creazione anteprime…"
+        thumbnailStatus = tr("Creazione anteprime…")
         let cache = thumbnails
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
                 let summary = try ThumbnailGenerator.generate(for: clips, store: store, tools: tools, cache: cache, regenerate: regenerate) { done, total in
                     DispatchQueue.main.async {
-                        self?.thumbnailStatus = "Creazione anteprime… \(done)/\(total)"
+                        self?.thumbnailStatus = tr("Creazione anteprime… {0}/{1}", done, total)
                         self?.thumbnailRevision += 1
                     }
                 }
-                DispatchQueue.main.async { self?.finishThumbnails("Anteprime: \(summary.text)") }
+                DispatchQueue.main.async { self?.finishThumbnails(tr("Anteprime: {0}", summary.text)) }
             } catch {
-                DispatchQueue.main.async { self?.finishThumbnails("Anteprime non create: \(error)") }
+                DispatchQueue.main.async { self?.finishThumbnails(tr("Anteprime non create: {0}", error)) }
             }
         }
     }
@@ -380,7 +384,7 @@ final class ProjectsViewModel: ObservableObject {
     }
 
     private func mutate(_ body: (ProjectStore) throws -> Void) -> String? {
-        guard let store else { return "Database dei progetti non disponibile." }
+        guard let store else { return tr("Database dei progetti non disponibile.") }
         do {
             try body(store)
             reload()

@@ -23,7 +23,7 @@ enum ShootingDayReport {
 
         var durationText: String {
             if clips == 0 { return "0 sec" }
-            if durationKnown == 0 { return ClipColumns.notAvailable }
+            if durationKnown == 0 { return ClipColumns.reportNotAvailable }
             let t = ReportFormatting.duration(duration)
             return durationKnown < durationExpected ? "≥ \(t)" : t
         }
@@ -129,7 +129,7 @@ enum ShootingDayReport {
         func cameras(_ items: [ReportItem]) -> String {
             var seen = Set<String>(), out: [String] = []
             for i in items.filter({ $0.isClip }) { if let c = i.meta("cameraIndex"), seen.insert(c).inserted { out.append(c) } }
-            return out.isEmpty ? ClipColumns.notAvailable : out.joined(separator: ", ")
+            return out.isEmpty ? ClipColumns.reportNotAvailable : out.joined(separator: ", ")
         }
         func groupRow(_ label: String, _ items: [ReportItem]) -> [CellContent] {
             let s = Stats(items)
@@ -143,19 +143,19 @@ enum ShootingDayReport {
         }
         box("Bins", columns: groupColumns("Bin Name"), rows: groups(ctx.items, by: { $0.clip.binName }).map { groupRow($0.0, $0.1) })
         box("Video Reels", columns: groupColumns("Reel Name"),
-            rows: groups(video, by: { $0.meta("reel") ?? ClipColumns.notAvailable }).map { groupRow($0.0, $0.1) })
+            rows: groups(video, by: { $0.meta("reel") ?? ClipColumns.reportNotAvailable }).map { groupRow($0.0, $0.1) })
 
         func reelCount(_ items: [ReportItem]) -> Int { Set(items.map { $0.meta("reel") ?? "" }).count }
         func frameSum(_ items: [ReportItem]) -> String {
             let known = items.compactMap(\.frames)
-            return known.isEmpty ? ClipColumns.notAvailable : String(known.reduce(0, +))
+            return known.isEmpty ? ClipColumns.reportNotAvailable : String(known.reduce(0, +))
         }
         func cameraRow(_ label: String, _ items: [ReportItem]) -> [CellContent] {
             let s = Stats(items)
             return [.text(label), .text(String(reelCount(items))), .text(frameSum(items)), .text(String(s.clips)), .text(s.durationText),
                     .text(String(s.files)), .text(ReportFormatting.size(s.size)), .bar(Double(s.clips) / Double(totalClips))]
         }
-        var cameraRows = groups(video, by: { $0.meta("cameraIndex") ?? ClipColumns.notAvailable }).map { cameraRow($0.0, $0.1) }
+        var cameraRows = groups(video, by: { $0.meta("cameraIndex") ?? ClipColumns.reportNotAvailable }).map { cameraRow($0.0, $0.1) }
         cameraRows.append(cameraRow("Total", video))
         box("Camera Sums", columns: [
             TableColumn(title: "Camera"), TableColumn(title: "Reel Count", alignment: .right), TableColumn(title: "Frames", alignment: .right),
@@ -170,7 +170,7 @@ enum ShootingDayReport {
         let formatRows = groups(video, by: formatKey).map { key, items -> [CellContent] in
             let p = key.components(separatedBy: "|")
             let s = Stats(items)
-            func v(_ s: String) -> String { s.isEmpty ? ClipColumns.notAvailable : s }
+            func v(_ s: String) -> String { s.isEmpty ? ClipColumns.reportNotAvailable : s }
             return [.text(v(p[0])), .text(p[1]), .text(v(p[2])), .text(v(p[3])), .text(String(s.clips)), .text(s.durationText),
                     .text(String(s.files)), .text(ReportFormatting.size(s.size)), .bar(Double(s.clips) / Double(totalClips))]
         }

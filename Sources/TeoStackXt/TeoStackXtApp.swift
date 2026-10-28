@@ -4,6 +4,9 @@ import AppKit
 
 @main
 struct TeoStackXtApp: App {
+    /// Fa ridisegnare anche il menu in alto quando cambia la lingua.
+    @StateObject private var language = LanguageSettings.shared
+
     init() {
         // Necessario per avere finestra e menu anche quando l'app viene lanciata con `swift run`.
         NSApplication.shared.setActivationPolicy(.regular)
@@ -16,8 +19,8 @@ struct TeoStackXtApp: App {
         }
         .windowResizability(.contentMinSize)
         .commands {
-            CommandMenu("Report") {
-                Button("Esporta report…") {
+            CommandMenu(tr("Report")) {
+                Button(tr("Esporta report…")) {
                     NotificationCenter.default.post(name: .exportReport, object: nil)
                 }
                 .keyboardShortcut("e", modifiers: [.command, .shift])

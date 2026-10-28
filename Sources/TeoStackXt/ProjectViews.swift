@@ -24,11 +24,11 @@ enum NameRequest: Identifiable {
 
     var title: String {
         switch self {
-        case .newProject: return "Nuovo progetto"
-        case .renameProject: return "Rinomina progetto"
-        case .newDay: return "Nuova cartella giorno"
-        case .newFolder: return "Nuova cartella"
-        case .renameNode: return "Rinomina"
+        case .newProject: return tr("Nuovo progetto")
+        case .renameProject: return tr("Rinomina progetto")
+        case .newDay: return tr("Nuova cartella giorno")
+        case .newFolder: return tr("Nuova cartella")
+        case .renameNode: return tr("Rinomina")
         }
     }
 
@@ -42,10 +42,10 @@ enum NameRequest: Identifiable {
 
     var hint: String? {
         switch self {
-        case .newDay: return "Esempio: DAY01_20261016"
-        case .newFolder: return "Per ordinare il progetto, per esempio CAM_A. I bin si creano da soli quando avvii un offload."
+        case .newDay: return tr("Esempio: DAY01_20261016")
+        case .newFolder: return tr("Per ordinare il progetto, per esempio CAM_A. I bin si creano da soli quando avvii un offload.")
         case .renameProject, .renameNode:
-            return "Rinomina solo nel programma: le cartelle già create sui dischi non vengono rinominate."
+            return tr("Rinomina solo nel programma: le cartelle già create sui dischi non vengono rinominate.")
         case .newProject: return nil
         }
     }
@@ -62,7 +62,7 @@ struct NameSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(request.title).font(.headline)
-            TextField("Nome", text: $text)
+            TextField(tr("Nome"), text: $text)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { submit() }
             if let hint = request.hint {
@@ -73,9 +73,9 @@ struct NameSheet: View {
             }
             HStack {
                 Spacer()
-                Button("Annulla") { onClose() }
+                Button(tr("Annulla")) { onClose() }
                     .keyboardShortcut(.cancelAction)
-                Button("OK") { submit() }
+                Button(tr("OK")) { submit() }
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -97,60 +97,59 @@ struct ProjectBar: View {
     @Binding var showReport: Bool
     @State private var confirmDelete = false
 
-    private static let dateFormatter: DateFormatter = {
+    private static func formattedDate(_ date: Date) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "it_IT")
+        f.locale = Loc.language.locale
         f.dateStyle = .medium
-        return f
-    }()
+        return f.string(from: date)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            Text("Progetto").font(.headline)
+            Text(tr("Progetto")).font(.headline)
             if projects.projects.isEmpty {
-                Text("Nessun progetto: creane uno per iniziare").foregroundStyle(.secondary)
+                Text(tr("Nessun progetto: creane uno per iniziare")).foregroundStyle(.secondary)
             } else {
                 Picker("", selection: Binding(get: { projects.selectedProjectID ?? -1 },
                                               set: { projects.selectProject($0 < 0 ? nil : $0) })) {
                     ForEach(projects.projects) { p in
-                        Text("\(p.name)  ·  \(Self.dateFormatter.string(from: p.createdAt))  ·  \(p.clipCount) clip").tag(p.id)
+                        Text(tr("{0}  ·  {1}  ·  {2} clip", p.name, Self.formattedDate(p.createdAt), p.clipCount)).tag(p.id)
                     }
                 }
                 .labelsHidden()
                 .frame(maxWidth: 460)
                 if let p = projects.selectedProject {
-                    Text("Creato il \(Self.dateFormatter.string(from: p.createdAt)) · \(p.clipCount) clip")
+                    Text(tr("Creato il {0} · {1} clip", Self.formattedDate(p.createdAt), p.clipCount))
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 }
             }
             Spacer()
-            Button("Esporta report…") { showReport = true }
+            Button(tr("Esporta report…")) { showReport = true }
                 .disabled(projects.selectedProject == nil)
-            Button("Nuovo progetto") { request = .newProject }
-            Button("Rinomina") {
+            Button(tr("Nuovo progetto")) { request = .newProject }
+            Button(tr("Rinomina")) {
                 if let p = projects.selectedProject { request = .renameProject(p.name) }
             }
             .disabled(projects.selectedProject == nil)
-            Button("Elimina progetto…", role: .destructive) { confirmDelete = true }
+            Button(tr("Elimina progetto…"), role: .destructive) { confirmDelete = true }
                 .disabled(projects.selectedProject == nil)
-                .help("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.")
+                .help(tr("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale."))
         }
         .padding(10)
-        .alert("Eliminare il progetto «\(projects.selectedProject?.name ?? "")»?", isPresented: $confirmDelete) {
-            Button("Elimina", role: .destructive) { projects.deleteProject() }
-            Button("Annulla", role: .cancel) {}
+        .alert(tr("Eliminare il progetto «{0}»?", projects.selectedProject?.name ?? ""), isPresented: $confirmDelete) {
+            Button(tr("Elimina"), role: .destructive) { projects.deleteProject() }
+            Button(tr("Annulla"), role: .cancel) {}
         } message: {
             Text(projectDeleteMessage())
         }
     }
 
     private func projectDeleteMessage() -> String {
-        var text = "Verrà eliminato l'INTERO progetto dal programma"
         if let lib = projects.tree, let impact = projects.deletionImpact(id: lib.id) {
-            text += " (\(impact.bins) bin, \(impact.offloads) offload, \(impact.clips) file registrati)"
+            return tr("Verrà eliminato l'INTERO progetto dal programma ({0} bin, {1} offload, {2} file registrati). I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", impact.bins, impact.offloads, impact.clips)
         }
-        return text + ". I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale."
+        return tr("Verrà eliminato l'INTERO progetto dal programma. I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.")
     }
 }
 
@@ -177,31 +176,37 @@ struct SidebarView: View {
                     .modifier(NodeDragDrop(node: node, projects: projects))
                 }
             } else {
-                Text("Seleziona o crea un progetto")
+                Text(tr("Seleziona o crea un progetto"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Divider()
             HStack {
-                Button("+ Giorno") { request = .newDay(projects.suggestedDayName) }
+                Button(tr("+ Giorno")) { request = .newDay(projects.suggestedDayName) }
                     .disabled(projects.tree == nil)
-                    .help("Facoltativo: cartella con la data delle riprese")
-                Button("+ Cartella") { request = .newFolder }
+                    .help(tr("Facoltativo: cartella con la data delle riprese"))
+                Button(tr("+ Cartella")) { request = .newFolder }
                     .disabled(projects.currentContainer == nil)
-                    .help("Facoltativo: sottocartella per ordinare il progetto, dentro la cartella selezionata")
+                    .help(tr("Facoltativo: sottocartella per ordinare il progetto, dentro la cartella selezionata"))
                 Spacer()
-                Button("Elimina selezione…", role: .destructive) { deleteTarget = selectedDeletableNode }
+                Button(tr("Elimina selezione…"), role: .destructive) { deleteTarget = selectedDeletableNode }
                     .disabled(selectedDeletableNode == nil)
             }
             .padding(8)
+            Divider()
+            HStack {
+                LanguageMenu()
+                Spacer()
+            }
+            .padding(8)
         }
-        .alert("Eliminare «\(deleteTarget?.name ?? "")»?", isPresented: Binding(get: { deleteTarget != nil },
+        .alert(tr("Eliminare «{0}»?", deleteTarget?.name ?? ""), isPresented: Binding(get: { deleteTarget != nil },
                                                                                 set: { if !$0 { deleteTarget = nil } })) {
-            Button("Elimina", role: .destructive) {
+            Button(tr("Elimina"), role: .destructive) {
                 if let t = deleteTarget { projects.deleteNode(id: t.id) }
                 deleteTarget = nil
             }
-            Button("Annulla", role: .cancel) { deleteTarget = nil }
+            Button(tr("Annulla"), role: .cancel) { deleteTarget = nil }
         } message: {
             Text(deleteMessage())
         }
@@ -215,8 +220,10 @@ struct SidebarView: View {
 
     private func deleteMessage() -> String {
         guard let t = deleteTarget, let impact = projects.deletionImpact(id: t.id) else { return "" }
-        let what = t.kind == .bin ? "il bin «\(t.name)»" : "la cartella «\(t.name)» con le sue sottocartelle e i suoi \(impact.bins) bin"
-        return "Verrà eliminato SOLO \(what) (\(impact.offloads) offload, \(impact.clips) file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati."
+        if t.kind == .bin {
+            return tr("Verrà eliminato SOLO il bin «{0}» ({1} offload, {2} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", t.name, impact.offloads, impact.clips)
+        }
+        return tr("Verrà eliminata SOLO la cartella «{0}» con le sue sottocartelle e i suoi {1} bin ({2} offload, {3} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", t.name, impact.bins, impact.offloads, impact.clips)
     }
 
     private func icon(_ kind: NodeKind) -> String {
@@ -232,17 +239,17 @@ struct SidebarView: View {
     private func menu(for node: TreeNode) -> some View {
         switch node.kind {
         case .library:
-            Button("Nuova cartella giorno") { request = .newDay(projects.suggestedDayName) }
-            Button("Nuova cartella") { projects.selectNode(node.id); request = .newFolder }
+            Button(tr("Nuova cartella giorno")) { request = .newDay(projects.suggestedDayName) }
+            Button(tr("Nuova cartella")) { projects.selectNode(node.id); request = .newFolder }
         case .day, .folder:
-            Button("Nuova cartella") { projects.selectNode(node.id); request = .newFolder }
+            Button(tr("Nuova cartella")) { projects.selectNode(node.id); request = .newFolder }
             moveMenu(for: node)
-            Button("Rinomina") { request = .renameNode(id: node.id, name: node.name) }
-            Button("Elimina…", role: .destructive) { deleteTarget = node }
+            Button(tr("Rinomina")) { request = .renameNode(id: node.id, name: node.name) }
+            Button(tr("Elimina…"), role: .destructive) { deleteTarget = node }
         case .bin:
             moveMenu(for: node)
-            Button("Rinomina") { request = .renameNode(id: node.id, name: node.name) }
-            Button("Elimina…", role: .destructive) { deleteTarget = node }
+            Button(tr("Rinomina")) { request = .renameNode(id: node.id, name: node.name) }
+            Button(tr("Elimina…"), role: .destructive) { deleteTarget = node }
         }
     }
 
@@ -250,7 +257,7 @@ struct SidebarView: View {
     private func moveMenu(for node: TreeNode) -> some View {
         let targets = projects.moveTargets(for: node.id)
         if !targets.isEmpty {
-            Menu("Sposta in") {
+            Menu(tr("Sposta in")) {
                 ForEach(targets) { t in
                     Button(t.label) { projects.moveNode(id: node.id, toParent: t.id) }
                 }
@@ -308,7 +315,7 @@ struct ThumbnailCell: View {
                     Image(systemName: cache.failureReason(clipID: clip.id) == nil ? "photo" : "exclamationmark.triangle")
                         .foregroundStyle(.secondary)
                 }
-                .help(cache.failureReason(clipID: clip.id) ?? "Anteprima non ancora creata")
+                .help(cache.failureReason(clipID: clip.id) ?? tr("Anteprima non ancora creata"))
             }
         }
         .frame(width: 88, height: 50)
@@ -328,14 +335,14 @@ struct ClipPreviewPanel: View {
                 Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity)
                     .background(Color.black)
-                Text("Primo fotogramma").font(.caption).foregroundStyle(.secondary)
+                Text(tr("Primo fotogramma")).font(.caption).foregroundStyle(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(projects.thumbnails.failureReason(clipID: clip.id) ?? "Anteprima non ancora creata.")
+                    Text(projects.thumbnails.failureReason(clipID: clip.id) ?? tr("Anteprima non ancora creata."))
                         .font(.callout).foregroundStyle(projects.thumbnails.failureReason(clipID: clip.id) == nil ? Color.secondary : Color.red)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
-                    Button("Crea anteprime") { projects.generateThumbnailsForSelection(regenerate: false) }
+                    Button(tr("Crea anteprime")) { projects.generateThumbnailsForSelection(regenerate: false) }
                         .disabled(projects.isGeneratingThumbnails)
                 }
                 .padding(10)
@@ -346,7 +353,7 @@ struct ClipPreviewPanel: View {
             ForEach(["camera", "lens", "iso", "whiteBalance", "ndFilter", "sensorFPS", "shutter", "resolution", "codec", "timecode", "duration"], id: \.self) { id in
                 if let col = ClipColumns.column(id: id) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(col.title).font(.caption).foregroundStyle(.secondary).frame(width: 84, alignment: .leading)
+                        Text(col.localizedTitle).font(.caption).foregroundStyle(.secondary).frame(width: 84, alignment: .leading)
                         Text(ClipColumns.value(col, of: clip)).font(.callout).textSelection(.enabled)
                     }
                 }
@@ -410,27 +417,27 @@ struct ClipTableView: View {
     private var tableArea: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(projects.clips.count) \(projects.showAllFiles ? "file" : "clip")")
+                Text("\(projects.clips.count) \(projects.showAllFiles ? tr("file") : tr("clip"))")
                     .font(.callout)
-                Toggle("Mostra anche i file non video (XML, sidecar…)",
+                Toggle(tr("Mostra anche i file non video (XML, sidecar…)"),
                        isOn: Binding(get: { projects.showAllFiles }, set: { projects.setShowAllFiles($0) }))
                     .toggleStyle(.checkbox)
                 Spacer()
-                Button("Crea anteprime") { projects.generateThumbnailsForSelection(regenerate: false) }
+                Button(tr("Crea anteprime")) { projects.generateThumbnailsForSelection(regenerate: false) }
                     .disabled(projects.isGeneratingThumbnails || projects.clips.isEmpty)
-                    .help("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).")
-                Button("Leggi metadata") { projects.readMetadataForSelection() }
+                    .help(tr("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione)."))
+                Button(tr("Leggi metadata")) { projects.readMetadataForSelection() }
                     .disabled(projects.isReadingMetadata || projects.clips.isEmpty)
-                    .help("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).")
-                Menu("Colonne") {
-                    Section("Dati dell'offload") {
+                    .help(tr("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione)."))
+                Menu(tr("Colonne")) {
+                    Section(tr("Dati dell'offload")) {
                         ForEach(ClipColumns.all.filter { !$0.isMetadata }) { c in
-                            Toggle(c.title, isOn: Binding(get: { isVisible(c) }, set: { _ in toggle(c) }))
+                            Toggle(c.localizedTitle, isOn: Binding(get: { isVisible(c) }, set: { _ in toggle(c) }))
                         }
                     }
-                    Section("Metadata camera (N/D se non letti)") {
+                    Section(tr("Metadata camera (N/D se non letti)")) {
                         ForEach(ClipColumns.all.filter { $0.isMetadata }) { c in
-                            Toggle(c.title, isOn: Binding(get: { isVisible(c) }, set: { _ in toggle(c) }))
+                            Toggle(c.localizedTitle, isOn: Binding(get: { isVisible(c) }, set: { _ in toggle(c) }))
                         }
                     }
                 }
@@ -442,11 +449,11 @@ struct ClipTableView: View {
             if let status = projects.thumbnailStatus {
                 Text(status).font(.caption).foregroundStyle(.secondary)
             }
-            Text("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.")
+            Text(tr("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             if projects.clips.isEmpty {
-                Text("Nessuna clip: esegui un offload in un bin di questo progetto.")
+                Text(tr("Nessuna clip: esegui un offload in un bin di questo progetto."))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -481,7 +488,7 @@ struct ClipTableView: View {
                     if sortColumnID == col.id { ascending.toggle() } else { sortColumnID = col.id; ascending = true }
                 } label: {
                     HStack(spacing: 2) {
-                        Text(col.title).bold()
+                        Text(col.localizedTitle).bold()
                         if sortColumnID == col.id { Image(systemName: ascending ? "chevron.up" : "chevron.down").font(.caption2) }
                         Spacer(minLength: 0)
                     }
@@ -531,29 +538,29 @@ struct HistoryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Cronologia").font(.headline)
+                Text(tr("Cronologia")).font(.headline)
                 Spacer()
                 if let p = projects.selectedProject {
                     Text(p.name).foregroundStyle(.secondary).lineLimit(1)
                 }
-                Button("Cancella…", role: .destructive) { confirmClear = true }
+                Button(tr("Cancella…"), role: .destructive) { confirmClear = true }
                     .disabled(projects.history.isEmpty)
-                    .help("Cancella la cronologia di questo progetto")
+                    .help(tr("Cancella la cronologia di questo progetto"))
             }
             .padding(10)
-            .alert("Cancellare la cronologia di «\(projects.selectedProject?.name ?? "")»?", isPresented: $confirmClear) {
-                Button("Cancella", role: .destructive) { projects.clearHistory() }
-                Button("Annulla", role: .cancel) {}
+            .alert(tr("Cancellare la cronologia di «{0}»?", projects.selectedProject?.name ?? ""), isPresented: $confirmClear) {
+                Button(tr("Cancella"), role: .destructive) { projects.clearHistory() }
+                Button(tr("Annulla"), role: .cancel) {}
             } message: {
-                Text("Verranno cancellate \(projects.history.count) voci di cronologia di questo progetto. Clip, offload e file sui dischi non vengono toccati. L'operazione non si può annullare.")
+                Text(tr("Verranno cancellate {0} voci di cronologia di questo progetto. Clip, offload e file sui dischi non vengono toccati. L'operazione non si può annullare.", projects.history.count))
             }
             Divider()
             if projects.selectedProject == nil {
-                Text("Seleziona un progetto")
+                Text(tr("Seleziona un progetto"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if projects.history.isEmpty {
-                Text("Nessuna attività registrata")
+                Text(tr("Nessuna attività registrata"))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -569,12 +576,12 @@ struct HistoryView: View {
 struct HistoryRow: View {
     let event: HistoryEvent
 
-    private static let formatter: DateFormatter = {
+    private static func formattedDate(_ date: Date) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "it_IT")
+        f.locale = Loc.language.locale
         f.dateFormat = "dd/MM/yyyy HH:mm:ss"
-        return f
-    }()
+        return f.string(from: date)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -582,7 +589,7 @@ struct HistoryRow: View {
                 .foregroundStyle(color)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
-                Text(Self.formatter.string(from: event.date))
+                Text(Self.formattedDate(event.date))
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
                 Text(event.title)
@@ -640,15 +647,15 @@ struct DependencyBanner: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    Text("Programmi esterni mancanti: " + tools.missing.map { $0.tool.displayName }.joined(separator: ", ")
-                         + ". I metadata che dipendono da essi resteranno N/D.")
+                    Text(tr("Programmi esterni mancanti: {0}. I metadata che dipendono da essi resteranno {1}.",
+                            tools.missing.map { $0.tool.displayName }.joined(separator: ", "), ClipColumns.notAvailable))
                         .font(.callout.bold())
                     Spacer()
-                    Button(expanded ? "Nascondi istruzioni" : "Come installarli") { expanded.toggle() }
+                    Button(expanded ? tr("Nascondi istruzioni") : tr("Come installarli")) { expanded.toggle() }
                     if tools.missing.contains(where: { $0.tool == .artCmd }) {
-                        Button("Scegli art-cmd…") { tools.choosePath(for: .artCmd) }
+                        Button(tr("Scegli art-cmd…")) { tools.choosePath(for: .artCmd) }
                     }
-                    Button("Ricontrolla") { tools.recheck() }
+                    Button(tr("Ricontrolla")) { tools.recheck() }
                 }
                 if expanded {
                     ForEach(tools.missing) { status in
@@ -662,7 +669,7 @@ struct DependencyBanner: View {
                                 .background(RoundedRectangle(cornerRadius: 4).fill(Color.secondary.opacity(0.12)))
                         }
                     }
-                    Text("Si incolla nel Terminale, una riga alla volta. Poi premi «Ricontrolla».")
+                    Text(tr("Si incolla nel Terminale, una riga alla volta. Poi premi «Ricontrolla»."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

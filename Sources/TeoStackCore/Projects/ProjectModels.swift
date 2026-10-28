@@ -124,7 +124,7 @@ public enum ProjectStoreError: Error, CustomStringConvertible, Equatable {
     public var description: String {
         switch self {
         case .invalidName(let m), .duplicateName(let m), .notFound(let m), .invalidOperation(let m): return m
-        case .database(let m): return "Errore del database: \(m)"
+        case .database(let m): return tr("Errore del database: {0}", m)
         }
     }
 }
@@ -145,13 +145,13 @@ public enum NameValidator {
 
     public static func validated(_ raw: String) throws -> String {
         let name = raw.trimmingCharacters(in: .whitespaces)
-        if name.isEmpty { throw ProjectStoreError.invalidName("Il nome non può essere vuoto.") }
-        if name.count > 100 { throw ProjectStoreError.invalidName("Il nome è troppo lungo (massimo 100 caratteri).") }
+        if name.isEmpty { throw ProjectStoreError.invalidName(tr("Il nome non può essere vuoto.")) }
+        if name.count > 100 { throw ProjectStoreError.invalidName(tr("Il nome è troppo lungo (massimo 100 caratteri).")) }
         if name.unicodeScalars.contains(where: { forbiddenCharacters.contains($0) }) {
-            throw ProjectStoreError.invalidName("Il nome non può contenere / \\ : * ? \" < > |")
+            throw ProjectStoreError.invalidName(tr("Il nome non può contenere / \\ : * ? \" < > |"))
         }
         if name.hasPrefix(".") || name.hasSuffix(".") {
-            throw ProjectStoreError.invalidName("Il nome non può iniziare o finire con un punto.")
+            throw ProjectStoreError.invalidName(tr("Il nome non può iniziare o finire con un punto."))
         }
         return name
     }

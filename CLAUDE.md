@@ -16,7 +16,7 @@
 
 ## Architettura (Swift Package)
 - `Sources/CXXHash` (xxHash C), `TeoStackCore` (libreria: offload, progetti/SQLite via GRDB, metadata, anteprime, report), `TeoStackXt` (app SwiftUI), `CSQLiteLinuxShim` (solo Linux).
-- Offload (`Offload/OffloadEngine.swift`): lettura unica della sorgente, XXH64 in lettura, scrittura parallela su 1–3 destinazioni in `.teostackpart`, rilettura senza cache, rename solo dopo verifica,
+- Offload (`Offload/OffloadEngine.swift`): lettura unica della sorgente, XXH64 in lettura, scrittura parallela su 1–8 destinazioni (`OffloadJob.maxDestinations`) in `.teostackpart`, rilettura senza cache, rename solo dopo verifica,
   journal per «Riprendi», mai sovrascrivere file esistenti. Verifica sovrapposta alla copia (impostazione `overlapVerification`, di serie attiva), fsync differito + un solo flush della cache per file < 64 MB,
   nessuna ricreazione del percorso se il disco sparisce (`destinationAnchor`). FileVerifier legge e calcola l'hash in parallelo.
 - Progetti (`Projects/`): Progetto → Library → [giorno] → [sottocartelle] → bin. Bin creato in automatico all'avvio dell'offload col nome della sorgente (modificabile; se esiste lo riusa).
@@ -25,6 +25,13 @@
 - Report (`Reports/`): 5 PDF separati nel formato Silverstack «Classic» (Shooting Day, Clips, Volume, Thumbnail, Contact Print), scritti da un PDF writer proprio con font DejaVu Sans Mono incorporato;
   nome file `<Report_Name>-<bin>-<aaaa-mm-gg-HHmm>.pdf`; report di una cartella = tutti i bin contenuti; Clips e Thumbnail stampano solo le colonne scelte dall'utente («Name» sempre). Campi sconosciuti vuoti.
 - Installer (`packaging/`): app universale Intel+ARM, icona dal logo, ExifTool/ffmpeg/ffprobe inclusi (`fetch-tools.sh`, con cache e ripiego GitHub se evermeet.cx dà 429), `.pkg` (scarica art-cmd da ARRI) e `.dmg`. Firma ad-hoc: al primo avvio clic destro → Apri.
+
+## Lingue (Italiano / English / Castellano / Català)
+- `Localization/Loc.swift` + `LocStrings.swift`: la chiave è il testo italiano, i segnaposto sono `{0}`, `{1}`… (mai interpolazioni Swift dentro `tr("…")`). Ogni testo nuovo va aggiunto come riga (it, en, es, ca)
+  in `LocStrings.swift`: il test `LocalizationTests` cerca nei sorgenti tutti i `tr("…")`/`LocText("…")` e fallisce se manca una lingua o un segnaposto.
+- UI: `tr()` ovunque; `LanguageSettings` + `LanguageMenu` (in basso a sinistra nella barra laterale); `.id(lingua)` sul contenuto di `ContentView` (non sul livello che possiede `AppModel`).
+- I report PDF restano in inglese e con «N/D» (`ClipColumns.reportNotAvailable`); la cronologia salva chiave+parametri (`LocText`, colonna `event.i18n`) così segue la lingua.
+- Altre funzioni: percorsi di destinazione salvati (`SavedPathsStore`, menu «Percorsi salvati»), riepilogo cartella (`ProjectRecap`, `RecapPanel`).
 
 ## Stato
 - Tutto quanto sopra è implementato e pubblicato sul branch. Non provato su macOS reale: nuovi controlli UI (menu «Schede collegate», «Espelli sorgente», suono, trascinamento nodi, finestra «Esporta report» con colonne), gli effetti di velocità su dischi veri (da misurare col benchmark), `art-cmd process` per le anteprime ARRI.

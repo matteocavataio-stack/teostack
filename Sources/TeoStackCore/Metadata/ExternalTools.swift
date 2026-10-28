@@ -31,10 +31,10 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
     /// A cosa serve; `isRequired` = senza di esso i metadata non vengono letti.
     public var purpose: String {
         switch self {
-        case .exiftool: return "legge i metadata dei clip ARRI e Sony (necessario)"
-        case .ffprobe: return "legge i dati tecnici degli MXF Sony e dei file ProRes (consigliato)"
-        case .ffmpeg: return "estrae il primo fotogramma dei clip ProRes e Sony per l'anteprima (consigliato)"
-        case .artCmd: return "legge i metadata dei clip ARRI (ISO, lente, ND, WB, look, sensor FPS) e ne ricava l'anteprima ARRIRAW/ARRICORE"
+        case .exiftool: return tr("legge i metadata dei clip ARRI e Sony (necessario)")
+        case .ffprobe: return tr("legge i dati tecnici degli MXF Sony e dei file ProRes (consigliato)")
+        case .ffmpeg: return tr("estrae il primo fotogramma dei clip ProRes e Sony per l'anteprima (consigliato)")
+        case .artCmd: return tr("legge i metadata dei clip ARRI (ISO, lente, ND, WB, look, sensor FPS) e ne ricava l'anteprima ARRIRAW/ARRICORE")
         }
     }
 
@@ -56,7 +56,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
             cd ~/Downloads
             curl -L -o ExifTool-13.59.pkg "https://sourceforge.net/projects/exiftool/files/ExifTool-13.59.pkg/download"
             open ExifTool-13.59.pkg
-            (poi, per verifica: exiftool -ver)
+            \(tr("(poi, per verifica: {0})", "exiftool -ver"))
             """
         case .ffprobe:
             return """
@@ -65,7 +65,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
             unzip -o ffprobe-9.0.2.zip
             sudo mkdir -p /usr/local/bin
             sudo mv ffprobe /usr/local/bin/
-            (poi, per verifica: ffprobe -version)
+            \(tr("(poi, per verifica: {0})", "ffprobe -version"))
             """
         case .ffmpeg:
             return """
@@ -74,7 +74,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
             unzip -o ffmpeg-9.0.2.zip
             sudo mkdir -p /usr/local/bin
             sudo mv ffmpeg /usr/local/bin/
-            (poi, per verifica: ffmpeg -version)
+            \(tr("(poi, per verifica: {0})", "ffmpeg -version"))
             """
         case .artCmd:
             return """
@@ -82,8 +82,8 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
             cd ~/ARRI
             curl -L -o art-cmd.zip "https://arri.canto.de/direct/other/ht9rmfr4q177f2jlct7alob95s/AXAAWD6V5zGk08YuSogjUy6PcKM/original?content-type=application%2Fzip&name=ARRIReferenceTool_CMD_1.0.0_macos_universal_data.zip"
             unzip -q art-cmd.zip
-            (tieni l'intera cartella ~/ARRI/art-cmd_1.0.0_macos_universal: art-cmd ha bisogno della sottocartella lib)
-            (se macOS lo blocca: xattr -dr com.apple.quarantine ~/ARRI)
+            \(tr("(tieni l'intera cartella {0}: art-cmd ha bisogno della sottocartella lib)", "~/ARRI/art-cmd_1.0.0_macos_universal"))
+            \(tr("(se macOS lo blocca: {0})", "xattr -dr com.apple.quarantine ~/ARRI"))
             """
         }
     }

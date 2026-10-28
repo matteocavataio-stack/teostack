@@ -89,6 +89,35 @@ class OffloadEngineTests: XCTestCase {
         }
     }
 
+    func testOffloadToMaximumNumberOfDestinationsAllOK() throws {
+        let n = OffloadJob.maxDestinations
+        XCTAssertGreaterThan(n, 3, "il limite delle destinazioni non è più 3")
+        let dests = makeDests(n)
+        let result = try makeEngine(dests: dests).run()
+
+        XCTAssertEqual(result.outcome, .completed)
+        XCTAssertTrue(result.allOK)
+        for f in card.files {
+            let src = card.root.appendingPathComponent(f.path)
+            let fr = try XCTUnwrap(result.files.first { $0.relativePath == f.path })
+            XCTAssertEqual(fr.destinations.count, n)
+            for (d, dest) in dests.enumerated() {
+                XCTAssertEqual(fr.destinations[d].status, .ok, "\(f.path) dest \(d)")
+                XCTAssertTrue(TestSupport.contentsEqual(src, dest.appendingPathComponent(f.path)), "contenuto \(f.path) dest \(d)")
+            }
+        }
+    }
+
+    func testMoreThanMaximumDestinationsIsRefusedBeforeCopying() throws {
+        let n = OffloadJob.maxDestinations + 1
+        let dests = makeDests(n)
+        let result = try makeEngine(dests: dests).run()
+
+        XCTAssertEqual(result.outcome, .preflightFailed)
+        XCTAssertTrue(result.preflightErrors.contains("Servono da 1 a \(OffloadJob.maxDestinations) destinazioni (selezionate: \(n))."), "\(result.preflightErrors)")
+        for d in dests { XCTAssertTrue(TestSupport.allFiles(under: d).isEmpty, "nulla deve essere copiato") }
+    }
+
     func testDirectoryDatesArePreserved() throws {
         let dests = makeDests(1)
         let dir = card.root.appendingPathComponent("A001R2EC/sub")

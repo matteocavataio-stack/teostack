@@ -30,14 +30,14 @@ public struct DiskIOError: Error, CustomStringConvertible, Equatable {
     public var description: String {
         let reason: String
         switch code {
-        case ENOSPC, EDQUOT: reason = "spazio insufficiente sul disco"
-        case EIO: reason = "errore di input/output (disco o scheda non leggibile, forse scollegato)"
-        case ENXIO, ENODEV, ENOTCONN, ESTALE: reason = "il disco non è più disponibile (scollegato?)"
-        case ENOENT: reason = "file o cartella non trovato (disco scollegato o file spostato?)"
-        case EACCES, EPERM: reason = "permesso negato"
-        case EROFS: reason = "volume in sola lettura"
-        case ENAMETOOLONG: reason = "nome file troppo lungo"
-        case EMFILE, ENFILE: reason = "troppi file aperti"
+        case ENOSPC, EDQUOT: reason = tr("spazio insufficiente sul disco")
+        case EIO: reason = tr("errore di input/output (disco o scheda non leggibile, forse scollegato)")
+        case ENXIO, ENODEV, ENOTCONN, ESTALE: reason = tr("il disco non è più disponibile (scollegato?)")
+        case ENOENT: reason = tr("file o cartella non trovato (disco scollegato o file spostato?)")
+        case EACCES, EPERM: reason = tr("permesso negato")
+        case EROFS: reason = tr("volume in sola lettura")
+        case ENAMETOOLONG: reason = tr("nome file troppo lungo")
+        case EMFILE, ENFILE: reason = tr("troppi file aperti")
         default: reason = String(cString: strerror(code)) + " (errno \(code))"
         }
         return "\(operation) «\(path)»: \(reason)"
@@ -61,7 +61,7 @@ public enum DiskIO {
     /// Apre un file in SOLA LETTURA. Con `uncached` la lettura bypassa la cache di macOS (F_NOCACHE).
     public static func openForReading(path: String, uncached: Bool) throws -> Int32 {
         let fd = open(path, O_RDONLY)
-        if fd < 0 { throw DiskIOError(code: errno, operation: "Apertura in lettura", path: path) }
+        if fd < 0 { throw DiskIOError(code: errno, operation: tr("Apertura in lettura"), path: path) }
         if uncached { disableCaching(fd: fd) }
         return fd
     }
@@ -70,7 +70,7 @@ public enum DiskIO {
     /// così la successiva verifica legge davvero dal disco.
     public static func openForWriting(path: String) throws -> Int32 {
         let fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0o644)
-        if fd < 0 { throw DiskIOError(code: errno, operation: "Creazione file", path: path) }
+        if fd < 0 { throw DiskIOError(code: errno, operation: tr("Creazione file"), path: path) }
         disableCaching(fd: fd)
         return fd
     }
@@ -100,7 +100,7 @@ public enum DiskIO {
             let n = read(fd, buffer + total, count - total)
             if n < 0 {
                 if errno == EINTR { continue }
-                throw DiskIOError(code: errno, operation: "Lettura", path: path)
+                throw DiskIOError(code: errno, operation: tr("Lettura"), path: path)
             }
             if n == 0 { break }
             total += n
@@ -114,9 +114,9 @@ public enum DiskIO {
             let n = write(fd, buffer + total, count - total)
             if n < 0 {
                 if errno == EINTR { continue }
-                throw DiskIOError(code: errno, operation: "Scrittura", path: path)
+                throw DiskIOError(code: errno, operation: tr("Scrittura"), path: path)
             }
-            if n == 0 { throw DiskIOError(code: EIO, operation: "Scrittura", path: path) }
+            if n == 0 { throw DiskIOError(code: EIO, operation: tr("Scrittura"), path: path) }
             total += n
         }
     }
@@ -125,13 +125,13 @@ public enum DiskIO {
     /// Solo `fsync`: i dati arrivano al disco ma non è garantito lo svuotamento della sua cache hardware. Va sempre seguito da `flushDeviceCache`
     /// prima di rileggere il file per la verifica (serve a non pagare un F_FULLFSYNC per ogni file piccolo).
     public static func syncData(fd: Int32, path: String) throws {
-        if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: "Sincronizzazione su disco", path: path) }
+        if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: tr("Sincronizzazione su disco"), path: path) }
     }
 
     /// Svuota la cache hardware del disco su cui si trova `path` (F_FULLFSYNC su un file esistente, aperto in sola lettura).
     public static func flushDeviceCache(path: String) throws {
         let fd = open(path, O_RDONLY)
-        if fd < 0 { throw DiskIOError(code: errno, operation: "Sincronizzazione su disco", path: path) }
+        if fd < 0 { throw DiskIOError(code: errno, operation: tr("Sincronizzazione su disco"), path: path) }
         defer { close(fd) }
         try flushToDisk(fd: fd, path: path)
     }
@@ -140,10 +140,10 @@ public enum DiskIO {
         #if canImport(Darwin)
         if fcntl(fd, F_FULLFSYNC) == -1 {
             // Alcuni file system non supportano F_FULLFSYNC: ripiego su fsync.
-            if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: "Sincronizzazione su disco", path: path) }
+            if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: tr("Sincronizzazione su disco"), path: path) }
         }
         #else
-        if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: "Sincronizzazione su disco", path: path) }
+        if fsync(fd) != 0 { throw DiskIOError(code: errno, operation: tr("Sincronizzazione su disco"), path: path) }
         #endif
     }
 
@@ -188,7 +188,7 @@ public enum DiskIO {
         let ts = timespec(tv_sec: Int(sec), tv_nsec: Int(nsec))
         var arr = [ts, ts]
         if utimensat(AT_FDCWD, path, &arr, 0) != 0 {
-            throw DiskIOError(code: errno, operation: "Impostazione date", path: path)
+            throw DiskIOError(code: errno, operation: tr("Impostazione date"), path: path)
         }
     }
 
@@ -203,7 +203,7 @@ public enum DiskIO {
 
     public static func lstatInfo(path: String) throws -> StatInfo {
         var st = stat()
-        if lstat(path, &st) != 0 { throw DiskIOError(code: errno, operation: "Lettura attributi", path: path) }
+        if lstat(path, &st) != 0 { throw DiskIOError(code: errno, operation: tr("Lettura attributi"), path: path) }
         let mode = st.st_mode & S_IFMT
         #if canImport(Darwin)
         let m = st.st_mtimespec

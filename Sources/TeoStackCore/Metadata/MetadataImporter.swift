@@ -9,9 +9,9 @@ public struct MetadataSummary: Equatable {
 
     public var text: String {
         var parts = ["\(read) clip letti"]
-        if unsupported > 0 { parts.append("\(unsupported) formato non supportato (N/D)") }
-        if missingFile > 0 { parts.append("\(missingFile) file non raggiungibili") }
-        if !artFailed.isEmpty { parts.append("art-cmd non ha letto \(artFailed.count) clip ARRI (ISO, lente, ND, WB… N/D)") }
+        if unsupported > 0 { parts.append(tr("{0} formato non supportato ({1})", unsupported, ClipColumns.notAvailable)) }
+        if missingFile > 0 { parts.append(tr("{0} file non raggiungibili", missingFile)) }
+        if !artFailed.isEmpty { parts.append(tr("art-cmd non ha letto {0} clip ARRI (ISO, lente, ND, WB… {1})", artFailed.count, ClipColumns.notAvailable)) }
         if !failed.isEmpty { parts.append("\(failed.count) errori") }
         return parts.joined(separator: ", ")
     }
@@ -30,7 +30,7 @@ public enum MetadataImporter {
                                       runner: ExifToolRunner?, art: ARTCmdRunner? = nil,
                                       progress: ((Int, Int) -> Void)? = nil) throws -> MetadataSummary {
         if runner == nil && art == nil {
-            throw MetadataError.toolMissing("Né ExifTool né art-cmd sono installati: impossibile leggere i metadata.")
+            throw MetadataError.toolMissing(tr("Né ExifTool né art-cmd sono installati: impossibile leggere i metadata."))
         }
         var summary = MetadataSummary()
         var rootsCache: [Int64: [String]] = [:]
@@ -83,7 +83,7 @@ public enum MetadataImporter {
                     if !extra.isEmpty {
                         values.merge(extra) { _, new in new }
                     } else if isARRI {
-                        lock.lock(); summary.artFailed.append("\(clip.name): art-cmd non ha restituito metadata"); lock.unlock()
+                        lock.lock(); summary.artFailed.append(tr("{0}: art-cmd non ha restituito metadata", clip.name)); lock.unlock()
                     }
                 } catch let e as MetadataError {
                     if case .toolMissing = e { throw e }

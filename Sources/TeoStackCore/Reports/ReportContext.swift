@@ -134,7 +134,7 @@ struct ReportContext {
 public enum ReportContextBuilder {
     public static func scopeName(store: ProjectStore, projectID: Int64, nodeID: Int64, projectName: String) throws -> String {
         let tree = try store.tree(projectID: projectID)
-        guard let node = find(nodeID, in: tree) else { throw ProjectStoreError.notFound("Elemento del progetto non trovato.") }
+        guard let node = find(nodeID, in: tree) else { throw ProjectStoreError.notFound(tr("Elemento del progetto non trovato.")) }
         return node.kind == .library ? projectName : node.name
     }
 

@@ -63,7 +63,7 @@ public enum FileVerifier {
             filledSlots.wait()
             if isCancelled() { shutDownReader(); throw CancellationError() }
             lock.lock(); let item = queue.removeFirst(); let error = readError; lock.unlock()
-            if item.count < 0 { shutDownReader(); throw error ?? DiskIOError(code: EIO, operation: "Lettura", path: path) }
+            if item.count < 0 { shutDownReader(); throw error ?? DiskIOError(code: EIO, operation: tr("Lettura"), path: path) }
             if item.count == 0 { break }
             hasher.update(buffers[item.slot], count: item.count)
             total += Int64(item.count)

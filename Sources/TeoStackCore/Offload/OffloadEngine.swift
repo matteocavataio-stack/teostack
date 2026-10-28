@@ -198,15 +198,17 @@ public final class OffloadEngine {
     private func preflight() -> [String] {
         var errors: [String] = []
         let n = job.destinationRoots.count
-        if n < 1 || n > 3 { errors.append("Servono da 1 a 3 destinazioni (selezionate: \(n)).") }
+        if n < 1 || n > OffloadJob.maxDestinations {
+            errors.append(tr("Servono da 1 a {0} destinazioni (selezionate: {1}).", OffloadJob.maxDestinations, n))
+        }
         let source = job.sourceURL.standardizedFileURL.path
         var seen = Set<String>()
         for (d, url) in job.destinationRoots.enumerated() {
             let path = url.standardizedFileURL.path
-            let label = "Destinazione \(d + 1)"
-            if !seen.insert(path).inserted { errors.append("\(label): la stessa cartella è selezionata più volte.") }
+            let label = tr("Destinazione {0}", d + 1)
+            if !seen.insert(path).inserted { errors.append(tr("{0}: la stessa cartella è selezionata più volte.", label)) }
             if path == source || path.hasPrefix(source + "/") {
-                errors.append("\(label): si trova dentro la sorgente. La sorgente non deve mai essere modificata.")
+                errors.append(tr("{0}: si trova dentro la sorgente. La sorgente non deve mai essere modificata.", label))
                 continue
             }
             var isDir: ObjCBool = false
@@ -214,11 +216,11 @@ public final class OffloadEngine {
             if let bases = job.destinationBases, d < bases.count {
                 let basePath = bases[d].standardizedFileURL.path
                 guard FileManager.default.fileExists(atPath: basePath, isDirectory: &isDir), isDir.boolValue else {
-                    errors.append("\(label): la cartella base «\(basePath)» non è raggiungibile (disco scollegato?).")
+                    errors.append(tr("{0}: la cartella base «{1}» non è raggiungibile (disco scollegato?).", label, basePath))
                     continue
                 }
                 if !(path == basePath || path.hasPrefix(basePath + "/")) {
-                    errors.append("\(label): la cartella di destinazione non si trova dentro la cartella base scelta.")
+                    errors.append(tr("{0}: la cartella di destinazione non si trova dentro la cartella base scelta.", label))
                     continue
                 }
                 // la parte esistente più profonda del percorso (tra la base e la destinazione)
@@ -232,20 +234,20 @@ public final class OffloadEngine {
                 let rootExists = FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
                 let parentExists = FileManager.default.fileExists(atPath: parent, isDirectory: &isDir)
                 if !rootExists && !parentExists {
-                    errors.append("\(label): cartella non raggiungibile «\(path)» (disco scollegato?).")
+                    errors.append(tr("{0}: cartella non raggiungibile «{1}» (disco scollegato?).", label, path))
                     continue
                 }
                 writableAnchor = rootExists ? path : parent
             }
             if access(writableAnchor, W_OK) != 0 {
-                errors.append("\(label): nessun permesso di scrittura su «\(writableAnchor)».")
+                errors.append(tr("{0}: nessun permesso di scrittura su «{1}».", label, writableAnchor))
                 continue
             }
             var needed: Int64 = 0
             for f in results where f.destinations[d].status != .ok { needed += f.size }
             if let free = configuration.freeSpaceProvider(url) {
                 if free < needed + configuration.safetyMarginBytes {
-                    errors.append("\(label): spazio insufficiente. Servono \(Format.bytes(needed)), disponibili \(Format.bytes(free)).")
+                    errors.append(tr("{0}: spazio insufficiente. Servono {1}, disponibili {2}.", label, Format.bytes(needed), Format.bytes(free)))
                 }
             }
         }
@@ -293,7 +295,7 @@ public final class OffloadEngine {
         for d in 0..<n {
             if getStatus(i, d) == .ok { continue }
             if let reason = deadReasonFor(d) {
-                setStatus(i, d, .error, message: "Non copiato: destinazione in errore (\(reason))")
+                setStatus(i, d, .error, message: tr("Non copiato: destinazione in errore ({0})", reason))
                 continue
             }
             let finalPath = destPath(d, file.relativePath)
@@ -301,11 +303,11 @@ public final class OffloadEngine {
             do {
                 if let existing = try? DiskIO.lstatInfo(path: finalPath) {
                     guard existing.isRegular else {
-                        setStatus(i, d, .error, message: "Esiste già un elemento con questo nome che non è un file: non viene toccato.")
+                        setStatus(i, d, .error, message: tr("Esiste già un elemento con questo nome che non è un file: non viene toccato."))
                         continue
                     }
                     // Mai sovrascrivere: il file esistente verrà solo verificato (dopo aver letto la sorgente e calcolato il suo hash).
-                    setStatus(i, d, .copied, message: "File già presente in destinazione: non copiato, solo verificato")
+                    setStatus(i, d, .copied, message: tr("File già presente in destinazione: non copiato, solo verificato"))
                     continue
                 }
                 try ensureDirectory((finalPath as NSString).deletingLastPathComponent, destination: d)
@@ -338,7 +340,7 @@ public final class OffloadEngine {
         do {
             srcFD = try DiskIO.openForReading(path: sourcePath, uncached: true)
         } catch {
-            abort("Sorgente non leggibile: \(error)")
+            abort(tr("Sorgente non leggibile: {0}", error))
             return
         }
 
@@ -360,7 +362,7 @@ public final class OffloadEngine {
                 pool.give(chunk)
                 break
             } catch {
-                readError = DiskIOError(code: EIO, operation: "Lettura", path: sourcePath)
+                readError = DiskIOError(code: EIO, operation: tr("Lettura"), path: sourcePath)
                 pool.give(chunk)
                 break
             }
@@ -385,7 +387,7 @@ public final class OffloadEngine {
                         } catch let e as DiskIOError {
                             t.error = e
                         } catch {
-                            t.error = DiskIOError(code: EIO, operation: "Scrittura", path: t.tempPath)
+                            t.error = DiskIOError(code: EIO, operation: tr("Scrittura"), path: t.tempPath)
                         }
                     }
                 }
@@ -402,20 +404,20 @@ public final class OffloadEngine {
             return
         }
         if let readError {
-            abort("Errore di lettura della sorgente: \(readError)")
+            abort(tr("Errore di lettura della sorgente: {0}", readError))
             return
         }
         if targets.allSatisfy({ $0.error != nil }) && verifyOnly.isEmpty && !targets.isEmpty && offset != file.size {
             // Interrotto prima della fine perché tutte le destinazioni sono fallite: mostrare gli errori di scrittura.
         } else if offset != file.size {
-            abort("La dimensione della sorgente è cambiata durante la lettura (attesi \(file.size) byte, letti \(offset)).")
+            abort(tr("La dimensione della sorgente è cambiata durante la lettura (attesi {0} byte, letti {1}).", file.size, offset))
             return
         }
 
         let sourceHash = hasher.hexDigest()
         let previousHash = resumeHashes[file.relativePath]
         if let previousHash, previousHash != sourceHash, offset == file.size {
-            abort("La sorgente è cambiata rispetto al tentativo precedente (XXH64 diverso): file non copiato.")
+            abort(tr("La sorgente è cambiata rispetto al tentativo precedente (XXH64 diverso): file non copiato."))
             return
         }
 
@@ -438,7 +440,7 @@ public final class OffloadEngine {
             }
             do {
                 if deferSync { try DiskIO.syncData(fd: t.fd, path: t.tempPath) } else { try DiskIO.flushToDisk(fd: t.fd, path: t.tempPath) }
-                if close(t.fd) != 0 { throw DiskIOError(code: errno, operation: "Chiusura file", path: t.tempPath) }
+                if close(t.fd) != 0 { throw DiskIOError(code: errno, operation: tr("Chiusura file"), path: t.tempPath) }
                 try DiskIO.applyTimes(DiskIO.FileTimes(modification: file.modificationDate, creation: file.creationDate),
                                       toPath: t.tempPath)
                 if deferSync { markUnflushed(t.d, path: t.tempPath) }
@@ -508,15 +510,15 @@ public final class OffloadEngine {
                                                           isCancelled: { self.isCancelled },
                                                           onProgress: { self.addVerified(d, $0) })
                 if bytes != size {
-                    setStatus(i, d, .mismatch, message: "Dimensione riletta \(bytes) byte, attesa \(size) byte", hash: hash)
+                    setStatus(i, d, .mismatch, message: tr("Dimensione riletta {0} byte, attesa {1} byte", bytes, size), hash: hash)
                 } else if hash != sourceHash {
-                    setStatus(i, d, .mismatch, message: "XXH64 destinazione \(hash) ≠ sorgente \(sourceHash)", hash: hash)
+                    setStatus(i, d, .mismatch, message: tr("XXH64 destinazione {0} ≠ sorgente {1}", hash, sourceHash), hash: hash)
                 } else if item.isPartial {
                     let finalPath = String(item.path.dropLast(OffloadEngine.partialSuffix.count))
                     if (try? DiskIO.lstatInfo(path: finalPath)) != nil {
-                        setStatus(i, d, .error, message: "Un file con lo stesso nome è comparso durante l'offload: non sovrascritto.", hash: hash)
+                        setStatus(i, d, .error, message: tr("Un file con lo stesso nome è comparso durante l'offload: non sovrascritto."), hash: hash)
                     } else if rename(item.path, finalPath) != 0 {
-                        fail(i, d, DiskIOError(code: errno, operation: "Rinomina file verificato", path: finalPath))
+                        fail(i, d, DiskIOError(code: errno, operation: tr("Rinomina file verificato"), path: finalPath))
                     } else {
                         unregisterPartial(d, item.path)
                         setStatus(i, d, .ok, hash: hash)
@@ -528,7 +530,7 @@ public final class OffloadEngine {
                 setStatus(i, d, .copied)
                 return
             } catch let e as DiskIOError {
-                setStatus(i, d, .error, message: "Rilettura per verifica fallita: \(e)")
+                setStatus(i, d, .error, message: tr("Rilettura per verifica fallita: {0}", e))
             } catch {
                 setStatus(i, d, .error, message: error.localizedDescription)
             }
@@ -585,7 +587,7 @@ public final class OffloadEngine {
         let anchor = destinationAnchor(d)
         var anchorIsDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: anchor, isDirectory: &anchorIsDir), anchorIsDir.boolValue else {
-            throw DiskIOError(code: ENODEV, operation: "Destinazione non raggiungibile", path: anchor)
+            throw DiskIOError(code: ENODEV, operation: tr("Destinazione non raggiungibile"), path: anchor)
         }
         try createDirectories(path, destination: d)
     }
@@ -593,12 +595,12 @@ public final class OffloadEngine {
     private func createDirectories(_ path: String, destination d: Int) throws {
         if let st = try? DiskIO.lstatInfo(path: path) {
             if st.isDirectory { return }
-            throw DiskIOError(code: ENOTDIR, operation: "Creazione cartella", path: path)
+            throw DiskIOError(code: ENOTDIR, operation: tr("Creazione cartella"), path: path)
         }
         let parent = (path as NSString).deletingLastPathComponent
         if parent != path { try createDirectories(parent, destination: d) }   // risale fino alla prima cartella esistente
         if mkdir(path, 0o755) != 0 && errno != EEXIST {
-            throw DiskIOError(code: errno, operation: "Creazione cartella", path: path)
+            throw DiskIOError(code: errno, operation: tr("Creazione cartella"), path: path)
         }
         lock.lock(); createdDirs[d].append(path); lock.unlock()
     }

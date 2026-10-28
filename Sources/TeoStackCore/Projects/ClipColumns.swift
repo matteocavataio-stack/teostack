@@ -6,10 +6,16 @@ public struct ClipColumn: Identifiable, Hashable {
     public let title: String
     public let isMetadata: Bool
     public let width: Double
+
+    /// Titolo nella lingua scelta (`title` è il testo italiano, chiave di traduzione).
+    public var localizedTitle: String { tr(title) }
 }
 
 public enum ClipColumns {
-    public static let notAvailable = "N/D"
+    /// Valore mostrato nelle tabelle dell'app quando un dato non è disponibile (segue la lingua).
+    public static var notAvailable: String { tr("N/D") }
+    /// Valore usato nei report PDF: uguale in ogni lingua, come nel riferimento.
+    public static let reportNotAvailable = "N/D"
 
     public static let all: [ClipColumn] = [
         ClipColumn(id: "preview", title: "Anteprima", isMetadata: false, width: 96),
@@ -63,8 +69,8 @@ public enum ClipColumns {
         switch status {
         case "ok": return "OK"
         case "mismatch": return "MISMATCH"
-        case "error": return "ERRORE"
-        default: return "In attesa"
+        case "error": return tr("ERRORE")
+        default: return tr("In attesa")
         }
     }
 
@@ -80,7 +86,7 @@ public enum ClipColumns {
         case "status": return statusLabel(clip.status)
         case "offloadDate":
             let f = DateFormatter()
-            f.locale = Locale(identifier: "it_IT")
+            f.locale = Loc.language.locale
             f.dateFormat = "dd/MM/yyyy HH:mm"
             return f.string(from: clip.offloadDate)
         case "path": return clip.relativePath

@@ -9,7 +9,7 @@ extension ReportCanvas {
         func stats(_ items: [ReportItem]) -> [CellContent] {
             let clips = items.filter { $0.isClip }
             let known = clips.compactMap(\.durationSeconds)
-            var duration = clips.isEmpty ? "0 sec" : (known.isEmpty ? ClipColumns.notAvailable : ReportFormatting.duration(known.reduce(0, +)))
+            var duration = clips.isEmpty ? "0 sec" : (known.isEmpty ? ClipColumns.reportNotAvailable : ReportFormatting.duration(known.reduce(0, +)))
             if !known.isEmpty && known.count < clips.count { duration = "≥ " + duration }
             return [.text(String(clips.count)), .text(duration), .text(String(items.count)),
                     .text(ReportFormatting.size(items.reduce(Int64(0)) { $0 + $1.clip.size }))]

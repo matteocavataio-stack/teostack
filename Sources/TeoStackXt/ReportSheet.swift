@@ -49,14 +49,14 @@ struct ReportSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Esporta report (PDF)").font(.title3.bold())
-            Text("Ambito: \(scopeText)\(scopeIsBin ? "" : " (tutti i bin contenuti)")").font(.callout).foregroundStyle(.secondary)
+            Text(tr("Esporta report (PDF)")).font(.title3.bold())
+            Text(scopeIsBin ? tr("Ambito: {0}", scopeText) : tr("Ambito: {0} (tutti i bin contenuti)", scopeText)).font(.callout).foregroundStyle(.secondary)
 
             HStack {
-                TextField("Nome progetto", text: $projectName).textFieldStyle(.roundedBorder)
-                TextField("Operatore", text: $operatorName).textFieldStyle(.roundedBorder)
+                TextField(tr("Nome progetto"), text: $projectName).textFieldStyle(.roundedBorder)
+                TextField(tr("Operatore"), text: $operatorName).textFieldStyle(.roundedBorder)
             }
-            GroupBox("Report da creare (un PDF per ciascuno)") {
+            GroupBox(tr("Report da creare (un PDF per ciascuno)")) {
                 VStack(alignment: .leading) {
                     ForEach(ReportKind.allCases) { kind in
                         Toggle(kind.title, isOn: Binding(
@@ -67,18 +67,18 @@ struct ReportSheet: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            GroupBox("Colonne dei report Clips e Thumbnail (stesse del tab Clip)") {
+            GroupBox(tr("Colonne dei report Clips e Thumbnail (stesse del tab Clip)")) {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), alignment: .leading)], alignment: .leading, spacing: 4) {
                         ForEach(ReportColumnChoice.available) { c in
-                            Toggle(c.title, isOn: columnBinding(c.id)).toggleStyle(.checkbox)
+                            Toggle(c.localizedTitle, isOn: columnBinding(c.id)).toggleStyle(.checkbox)
                         }
                     }
                     .padding(.vertical, 4)
                 }
                 .frame(height: 140)
             }
-            Text("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip).")
+            Text(tr("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip)."))
                 .font(.caption).foregroundStyle(.secondary)
 
             if let message {
@@ -86,15 +86,15 @@ struct ReportSheet: View {
                     Text(message).font(.callout).foregroundStyle(messageIsError ? Color.red : Color.green)
                         .fixedSize(horizontal: false, vertical: true)
                     if !revealURLs.isEmpty {
-                        Button("Mostra nel Finder") { NSWorkspace.shared.activateFileViewerSelecting(revealURLs) }
+                        Button(tr("Mostra nel Finder")) { NSWorkspace.shared.activateFileViewerSelecting(revealURLs) }
                     }
                 }
             }
             HStack {
                 if working { ProgressView().controlSize(.small) }
                 Spacer()
-                Button("Chiudi") { close() }.keyboardShortcut(.cancelAction)
-                Button("Esporta PDF…") { export() }
+                Button(tr("Chiudi")) { close() }.keyboardShortcut(.cancelAction)
+                Button(tr("Esporta PDF…")) { export() }
                     .disabled(working || kinds.isEmpty || projectName.trimmingCharacters(in: .whitespaces).isEmpty)
                     .keyboardShortcut(.defaultAction)
             }
@@ -107,8 +107,8 @@ struct ReportSheet: View {
     private func export() {
         guard let store = projects.store, let pid = projects.selectedProjectID, let nid = projects.selectedNodeID else { return }
         let panel = NSOpenPanel()
-        panel.title = "Cartella in cui salvare i report"
-        panel.prompt = "Salva qui"
+        panel.title = tr("Cartella in cui salvare i report")
+        panel.prompt = tr("Salva qui")
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = true
@@ -138,10 +138,10 @@ struct ReportSheet: View {
                 working = false
                 revealURLs = saved
                 if failures.isEmpty {
-                    message = "Salvati \(saved.count) report in \(folder.path)"
+                    message = tr("Salvati {0} report in {1}", saved.count, folder.path)
                     messageIsError = false
                 } else {
-                    message = "Errori: " + failures.joined(separator: " · ") + (saved.isEmpty ? "" : " — salvati \(saved.count) report in \(folder.path)")
+                    message = tr("Errori: {0}", failures.joined(separator: " · ")) + (saved.isEmpty ? "" : " — " + tr("salvati {0} report in {1}", saved.count, folder.path))
                     messageIsError = true
                 }
             }

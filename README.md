@@ -130,6 +130,17 @@ Il pulsante **Cancella…** in cima alla colonna svuota la cronologia del proget
 - **Disco scollegato a metà:** se sparisce la cartella base o il disco di destinazione, l'app segnala l'errore e non ricrea mai il percorso sul disco del computer.
 - **Metadata e anteprime in parallelo:** ExifTool, art-cmd e ffmpeg lavorano su 2–4 clip alla volta (in base ai core), con avanzamento «n/totale».
 - **Destinazioni ricordate:** le cartelle di destinazione dell'ultimo offload tornano da sole all'apertura (se il disco c'è ancora).
+- **Fino a 8 destinazioni** contemporanee (prima il limite era 3): lo stesso file viene letto una sola volta e scritto in parallelo su tutte. Oltre 8 l'offload non parte
+  (controllo preliminare), perché letture e scritture si dividerebbero troppo il lavoro dei dischi.
+- **Percorsi salvati:** il menu «Percorsi salvati» (sopra le destinazioni) salva le cartelle scelte, le rimette con un clic in una destinazione (stella accanto a «Scegli…»),
+  le mette tutte insieme («Usa tutti i percorsi salvati») o le toglie. Un disco scollegato compare grigio come «non disponibile». Si salvano solo i percorsi, nessun file viene toccato.
+- **Riepilogo della cartella:** selezionando un giorno, una sottocartella, la Library (o un bin) nella schermata Offload compare, sotto «Il bin verrà creato in», il riepilogo di
+  quanto scaricato lì dentro: spazio verificato (GB/TB), numero di clip, schede scaricate, durata totale e tutti i formati usati (codec · risoluzione · estensione, con numero di clip e peso).
+  Sono solo dati registrati: la durata somma i clip di cui è nota (gli altri sono dichiarati, mai stimati), i file non verificati OK non entrano nello spazio, gli offload annullati non contano
+  come schede, e la stessa scheda scaricata due volte nello stesso bin conta una volta. Il riquadro si chiude con la freccia.
+- **Lingua:** pulsante con il mappamondo in basso a sinistra: Italiano, English, Castellano, Català (al primo avvio segue la lingua del Mac se è una di queste, altrimenti italiano).
+  Cambia tutta l'interfaccia, i messaggi di errore e le voci nuove della cronologia. Restano come sono: i **report PDF** (formato Silverstack in inglese), i nomi dei report, le voci di
+  cronologia già registrate prima e i menu standard di macOS (che seguono la lingua del sistema).
 - **Schede collegate:** il menu «Schede collegate» elenca schede e dischi esterni montati; ⌘O apre la scelta manuale della sorgente.
 - **Fine offload:** suono (diverso se ci sono problemi, disattivabile) e rimbalzo nel Dock se l'app è in secondo piano; con tutti i file OK compare «Espelli sorgente».
 - **Misurare la velocità sul tuo Mac:** `TEOSTACK_BENCH=1 swift test --filter BenchmarkTests` (dati di prova in cartelle temporanee) oppure
@@ -141,7 +152,7 @@ Il pulsante **Cancella…** in cima alla colonna svuota la cronologia del proget
 
 1. La sorgente è aperta solo con `O_RDONLY`; non viene mai scritto, rinominato o cancellato nulla su di essa.
    Il test `testOffloadToThreeDestinationsAllOKAndIdentical` confronta elenco, dimensioni e date della sorgente prima/dopo.
-2. Ogni file viene letto una sola volta; XXH64 è calcolato durante la lettura e i dati sono scritti in parallelo su 1–3 destinazioni.
+2. Ogni file viene letto una sola volta; XXH64 è calcolato durante la lettura e i dati sono scritti in parallelo su 1–8 destinazioni.
 3. La copia è scritta in `nomefile.teostackpart`. Dopo la copia (e `F_FULLFSYNC`) il file viene **riletto dal disco con `F_NOCACHE`**,
    si ricalcola XXH64 e lo si confronta con la sorgente.
    Solo se coincide il file prende il nome definitivo: **un file con nome definitivo creato dall'app è sempre verificato**.

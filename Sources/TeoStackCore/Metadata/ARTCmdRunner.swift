@@ -24,7 +24,7 @@ public struct ARTCmdRunner {
             try execute(["export", "--input", file, "--duration", "1", "--output", output.path], in: work)
             guard let data = try? Data(contentsOf: output),
                   let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
-                throw MetadataError.invalidOutput("art-cmd non ha prodotto un JSON di metadata valido.")
+                throw MetadataError.invalidOutput(tr("art-cmd non ha prodotto un JSON di metadata valido."))
             }
             return json
         }
@@ -48,11 +48,11 @@ public struct ARTCmdRunner {
                     try execute(["process", "--input", file, "--start", "0", "--duration", "1"] + extra
                                 + ["--output", out.appendingPathComponent("%07d.tif").path], in: work)
                     let produced = ((try? FileManager.default.contentsOfDirectory(atPath: out.path)) ?? []).sorted().first { $0.lowercased().hasSuffix(".tif") }
-                    guard let produced else { throw MetadataError.invalidOutput("art-cmd non ha prodotto alcuna immagine.") }
+                    guard let produced else { throw MetadataError.invalidOutput(tr("art-cmd non ha prodotto alcuna immagine.")) }
                     return try consume(out.appendingPathComponent(produced))
                 } catch { lastError = error }
             }
-            throw lastError ?? MetadataError.toolFailed("art-cmd non ha prodotto l'anteprima.")
+            throw lastError ?? MetadataError.toolFailed(tr("art-cmd non ha prodotto l'anteprima."))
         }
     }
 
@@ -60,7 +60,7 @@ public struct ARTCmdRunner {
 
     private func withWorkDirectory<T>(_ body: (URL) throws -> T) throws -> T {
         guard FileManager.default.isExecutableFile(atPath: executable) else {
-            throw MetadataError.toolMissing("art-cmd non trovato in «\(executable)».")
+            throw MetadataError.toolMissing(tr("art-cmd non trovato in «{0}».", executable))
         }
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("teostack-art-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
@@ -83,13 +83,13 @@ public struct ARTCmdRunner {
         defer { try? outHandle.close(); try? errHandle.close() }
 
         do { try p.run() } catch {
-            throw MetadataError.toolFailed("Impossibile avviare art-cmd: \(error.localizedDescription)")
+            throw MetadataError.toolFailed(tr("Impossibile avviare art-cmd: {0}", error.localizedDescription))
         }
         let finished = DispatchSemaphore(value: 0)
         DispatchQueue.global().async { p.waitUntilExit(); finished.signal() }
         if finished.wait(timeout: .now() + timeout) == .timedOut {
             p.terminate()
-            throw MetadataError.toolFailed("art-cmd non ha risposto entro \(Int(timeout)) secondi.")
+            throw MetadataError.toolFailed(tr("art-cmd non ha risposto entro {0} secondi.", Int(timeout)))
         }
         guard p.terminationStatus == 0 else {
             let log = (try? String(contentsOf: logErr)) ?? ""

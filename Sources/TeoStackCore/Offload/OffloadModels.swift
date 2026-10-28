@@ -12,13 +12,13 @@ public enum DestFileStatus: String, Codable, Equatable {
 
     public var label: String {
         switch self {
-        case .pending: return "In attesa"
-        case .copying: return "Copia"
-        case .copied: return "Da verificare"
-        case .verifying: return "Verifica"
+        case .pending: return tr("In attesa")
+        case .copying: return tr("Copia")
+        case .copied: return tr("Da verificare")
+        case .verifying: return tr("Verifica")
         case .ok: return "OK"
         case .mismatch: return "MISMATCH"
-        case .error: return "ERRORE"
+        case .error: return tr("ERRORE")
         }
     }
 }
@@ -54,9 +54,13 @@ public struct ScanResult {
 }
 
 public struct OffloadJob: Codable {
+    /// Numero massimo di destinazioni contemporanee. Il motore gestisce un numero qualsiasi di scritture in parallelo;
+    /// oltre questo limite la lettura/scrittura sui dischi rallenterebbe troppo senza vantaggi pratici.
+    public static let maxDestinations = 8
+
     public var id: UUID
     public var sourceURL: URL
-    /// Cartelle finali di destinazione (1...3). Il contenuto della sorgente viene copiato DENTRO ciascuna.
+    /// Cartelle finali di destinazione (1...`maxDestinations`). Il contenuto della sorgente viene copiato DENTRO ciascuna.
     public var destinationRoots: [URL]
     /// Cartelle base scelte dall'utente (il disco): devono esistere; sotto di esse le cartelle mancanti vengono create.
     /// Se assente, la cartella di destinazione o la sua cartella superiore deve già esistere.
@@ -121,11 +125,11 @@ public enum OffloadPhase: String, Codable {
     case idle, preflight, copying, verifying, finished
     public var label: String {
         switch self {
-        case .idle: return "Pronto"
-        case .preflight: return "Controlli preliminari"
-        case .copying: return "Copia"
-        case .verifying: return "Verifica"
-        case .finished: return "Terminato"
+        case .idle: return tr("Pronto")
+        case .preflight: return tr("Controlli preliminari")
+        case .copying: return tr("Copia")
+        case .verifying: return tr("Verifica")
+        case .finished: return tr("Terminato")
         }
     }
 }

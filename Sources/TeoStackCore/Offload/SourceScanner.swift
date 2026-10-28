@@ -12,7 +12,7 @@ public enum SourceScanner {
         let rootPath = root.standardizedFileURL.path
         let rootInfo = try DiskIO.lstatInfo(path: rootPath)
         guard rootInfo.isDirectory else {
-            throw DiskIOError(code: ENOTDIR, operation: "La sorgente non è una cartella", path: rootPath)
+            throw DiskIOError(code: ENOTDIR, operation: tr("La sorgente non è una cartella"), path: rootPath)
         }
         var files: [SourceFile] = []
         var dirs: [SourceDirectory] = []
@@ -30,7 +30,7 @@ public enum SourceScanner {
             names = try FileManager.default.contentsOfDirectory(atPath: absolute).sorted()
         } catch {
             skipped.append(SkippedItem(relativePath: relative.isEmpty ? "." : relative,
-                                       reason: "cartella non leggibile: \(error.localizedDescription)"))
+                                       reason: tr("cartella non leggibile: {0}", error.localizedDescription)))
             return
         }
         for name in names {
@@ -43,7 +43,7 @@ public enum SourceScanner {
                 continue
             }
             if info.isSymlink {
-                skipped.append(SkippedItem(relativePath: rel, reason: "collegamento simbolico (non copiato)"))
+                skipped.append(SkippedItem(relativePath: rel, reason: tr("collegamento simbolico (non copiato)")))
             } else if info.isDirectory {
                 dirs.append(SourceDirectory(relativePath: rel, modificationDate: info.times.modification,
                                             creationDate: info.times.creation))
@@ -52,7 +52,7 @@ public enum SourceScanner {
                 files.append(SourceFile(relativePath: rel, size: info.size,
                                         modificationDate: info.times.modification, creationDate: info.times.creation))
             } else {
-                skipped.append(SkippedItem(relativePath: rel, reason: "tipo di file speciale (non copiato)"))
+                skipped.append(SkippedItem(relativePath: rel, reason: tr("tipo di file speciale (non copiato)")))
             }
         }
     }

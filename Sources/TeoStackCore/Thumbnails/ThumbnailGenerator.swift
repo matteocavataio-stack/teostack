@@ -17,10 +17,10 @@ public struct ThumbnailSummary: Equatable {
     public var failed: [String] = []      // "clip: motivo"
 
     public var text: String {
-        var parts = ["\(generated) anteprime create"]
-        if alreadyPresent > 0 { parts.append("\(alreadyPresent) già presenti") }
-        if missingFile > 0 { parts.append("\(missingFile) file non raggiungibili") }
-        if !failed.isEmpty { parts.append("\(failed.count) non decodificabili (vedi il motivo nel pannello di anteprima)") }
+        var parts = [tr("{0} anteprime create", generated)]
+        if alreadyPresent > 0 { parts.append(tr("{0} già presenti", alreadyPresent)) }
+        if missingFile > 0 { parts.append(tr("{0} file non raggiungibili", missingFile)) }
+        if !failed.isEmpty { parts.append(tr("{0} non decodificabili (vedi il motivo nel pannello di anteprima)", failed.count)) }
         return parts.joined(separator: ", ")
     }
 }
@@ -50,7 +50,7 @@ public enum ThumbnailGenerator {
                 return
             } catch { reasons.append("art-cmd: \(error)") }
         } else if looksARRI {
-            reasons.append("per i clip ARRI serve art-cmd (ARRI Reference Tool), non installato")
+            reasons.append(tr("per i clip ARRI serve art-cmd (ARRI Reference Tool), non installato"))
         }
 
         if let ffmpeg = tools.ffmpeg {
@@ -60,10 +60,10 @@ public enum ThumbnailGenerator {
                 return
             } catch { reasons.append("ffmpeg: \(error)") }
         } else {
-            reasons.append("ffmpeg non installato")
+            reasons.append(tr("ffmpeg non installato"))
         }
 
-        let reason = "Anteprima non disponibile: formato non decodificabile con gli strumenti installati. " + reasons.joined(separator: " · ")
+        let reason = tr("Anteprima non disponibile: formato non decodificabile con gli strumenti installati.") + " " + reasons.joined(separator: " · ")
         cache.recordFailure(clipID: clip.id, reason: reason)
         throw MetadataError.toolFailed(reason)
     }
@@ -72,7 +72,7 @@ public enum ThumbnailGenerator {
     public static func generate(for clips: [ClipRecord], store: ProjectStore, tools: ThumbnailTools, cache: ThumbnailCache,
                                 regenerate: Bool = false, progress: ((Int, Int) -> Void)? = nil) throws -> ThumbnailSummary {
         if tools.art == nil && tools.ffmpeg == nil {
-            throw MetadataError.toolMissing("Né ffmpeg né art-cmd sono installati: impossibile creare le anteprime.")
+            throw MetadataError.toolMissing(tr("Né ffmpeg né art-cmd sono installati: impossibile creare le anteprime."))
         }
         var summary = ThumbnailSummary()
         var rootsCache: [Int64: [String]] = [:]
