@@ -51,6 +51,17 @@ public struct ARRIReader: MetadataReader {
         } else if artOnly {
             diagnostics.append(.note(tr("I file .ari/.arx si leggono solo con art-cmd, che non è installato.")))
         }
+        if values.isEmpty, file.probe.kind == .arriRaw {
+            // il file ha la firma ARRIRAW ma senza art-cmd non si legge altro: solo l'identità del formato
+            var m = ClipMetadata()
+            m.family = "ARRI"
+            m.cameraMake = "ARRI"
+            m.container = "ARRIRAW"
+            m.codec = "ARRIRAW"
+            m.diagnostics = diagnostics + [.note(tr("File ARRIRAW riconosciuto dalla firma: gli altri metadata richiedono art-cmd."))]
+            m.status = .partial
+            return m
+        }
         guard !values.isEmpty else { return .unsupported(diagnostics) }
         var m = ClipMetadata(columns: values, family: "ARRI")
         m.container = m.container ?? ARRIReader.containerName(file)
@@ -204,6 +215,7 @@ public extension ReaderRegistry {
         ReaderRegistry(readers: [
             ARRIReader(),
             REDReader(),
+            PhantomReader(),
             CameraFamilyReader(family: "Sony", extensions: ["mxf", "mp4", "mts", "m2ts", "mov", "arw", "sr2", "srf", "arq"],
                                exclusiveExtensions: ["arw", "sr2", "srf", "arq"]),
             CameraFamilyReader(family: "Canon", extensions: ["mxf", "mp4", "mts", "m2ts", "mov", "crm", "cr3", "cr2", "crw", "rmf"],
@@ -212,7 +224,8 @@ public extension ReaderRegistry {
                                exclusiveExtensions: ["rw2", "rwl"]),
             CameraFamilyReader(family: "Blackmagic", extensions: ["braw", "mov", "dng", "mxf"], exclusiveExtensions: ["braw"],
                                identity: ("BRAW", "Blackmagic RAW")),
-            CameraFamilyReader(family: "Kinefinity", extensions: ["krw", "mov", "mxf", "dng"], exclusiveExtensions: ["krw"]),
+            CameraFamilyReader(family: "Kinefinity", extensions: ["krw", "mov", "mxf", "dng"], exclusiveExtensions: ["krw"],
+                               identity: ("KRW", "Kinefinity KineRAW")),
             BWFReader(),
             ARRIArtCmdFallbackReader(),
             GenericMediaReader(),

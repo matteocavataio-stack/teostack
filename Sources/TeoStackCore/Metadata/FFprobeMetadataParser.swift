@@ -64,8 +64,14 @@ public enum FFprobeMetadataParser {
         "opus": "Opus", "vorbis": "Vorbis", "dts": "DTS", "truehd": "TrueHD",
     ]
 
+    /// FourCC di codec che ffprobe non decodifica (nessun `codec_name`) ma che il file dichiara: si usa il nome del formato, non una stima.
+    static let fourCCNames: [String: String] = ["aprn": "Apple ProRes RAW", "aprh": "Apple ProRes RAW HQ", "braw": "Blackmagic RAW"]
+
     static func videoCodecLabel(_ stream: [String: Any]) -> String? {
-        guard let name = string(stream["codec_name"]) else { return nil }
+        guard let name = string(stream["codec_name"]), name.lowercased() != "unknown" else {
+            if let tag = string(stream["codec_tag_string"])?.lowercased(), let known = fourCCNames[tag] { return known }
+            return nil
+        }
         let base = videoNames[name] ?? string(stream["codec_long_name"]) ?? name
         if let profile = string(stream["profile"]), profile.lowercased() != "unknown" { return "\(base) \(profile)" }
         return base
