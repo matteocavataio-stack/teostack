@@ -76,6 +76,18 @@ final class RecapTests: XCTestCase {
         ]
         let recap = ProjectRecap.make(clips: clips, offloads: [offload(1, "completed"), offload(2, "completed"), offload(3, "cancelled"), offload(4, "imported")])
 
+        // la durata si somma per codec, non per progetto
+        XCTAssertEqual(recap.videoCodecs.map { $0.codec }, ["ProRes 4444", nil, "XAVC"], "ordine: più clip prima, poi per nome (nil = senza metadata)")
+        let proresRow = recap.videoCodecs[0]
+        XCTAssertEqual(proresRow.group.clips, 3)
+        XCTAssertEqual(proresRow.group.durationSeconds, 100)
+        XCTAssertEqual(proresRow.group.clipsWithoutDuration, 0)
+        XCTAssertEqual(recap.videoCodecs[1].group.clipsWithDuration, 0, "clip senza metadata: durata non stimata")
+        XCTAssertEqual(recap.videoCodecs[2].group.clips, 1)
+        XCTAssertEqual(recap.videoCodecs[2].group.clipsWithoutDuration, 1)
+        XCTAssertEqual(recap.audioCodecs.map { $0.codec }, ["PCM"])
+        XCTAssertEqual(recap.audioCodecs[0].group.durationSeconds, 20, "la durata dell'audio non entra nei codec video")
+
         // Clips Overview
         XCTAssertEqual(recap.video.clips, 5)
         XCTAssertEqual(recap.video.files, 5)

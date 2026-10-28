@@ -184,7 +184,7 @@ struct RecapPanel: View {
             Text(tr("Ancora nessun offload né file importato in questa cartella.")).font(.callout).foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 18) {
-                table(tr("Panoramica clip"), columns: [tr("Clip"), tr("Durata"), tr("File"), tr("Dimensione")], rows: [
+                table(tr("Panoramica clip"), columns: [tr("Clip"), tr("File"), tr("Dimensione")], rows: [
                     [tr("Clip video sorgente")] + overviewCells(recap.video),
                     [tr("Clip audio")] + overviewCells(recap.audio),
                     [tr("Altri file")] + overviewCells(recap.other),
@@ -195,16 +195,22 @@ struct RecapPanel: View {
                     table(tr("Formati video"), columns: [tr("Tipo file"), tr("Risoluzione"), tr("FPS"), tr("Clip")],
                           rows: recap.videoFormats.map { [$0.codec ?? na, $0.fileType.isEmpty ? na : $0.fileType, $0.resolution ?? na, $0.fps ?? na, String($0.group.clips)] })
                 }
+                if !recap.videoCodecs.isEmpty {
+                    table(tr("Durata per codec video"), columns: [tr("Clip"), tr("Durata")],
+                          rows: recap.videoCodecs.map { [$0.codec ?? na, String($0.group.clips), durationText($0.group)] })
+                }
                 if !recap.cameras.isEmpty {
-                    table(tr("Somme per camera"), columns: [tr("Bobine"), tr("Frame"), tr("Clip"), tr("Durata"), tr("File"), tr("Dimensione")],
+                    table(tr("Somme per camera"), columns: [tr("Bobine"), tr("Frame"), tr("Clip"), tr("File"), tr("Dimensione")],
                           rows: recap.cameras.map {
                               [$0.camera ?? na, String($0.reelCount), $0.frames.map(String.init) ?? na, String($0.group.clips),
-                               durationText($0.group), String($0.group.files), Format.bytes($0.group.size)]
+                               String($0.group.files), Format.bytes($0.group.size)]
                           })
                 }
                 if !recap.audioFormats.isEmpty {
                     table(tr("Formati audio"), columns: [tr("Frequenza"), tr("Bit"), tr("Canali"), tr("Clip")],
                           rows: recap.audioFormats.map { [$0.codec ?? na, $0.sampleRate ?? na, $0.bitDepth ?? na, $0.channels ?? na, String($0.group.clips)] })
+                    table(tr("Durata per codec audio"), columns: [tr("Clip"), tr("Durata")],
+                          rows: recap.audioCodecs.map { [$0.codec ?? na, String($0.group.clips), durationText($0.group)] })
                 }
                 ForEach(notes(recap), id: \.self) { note in
                     Text(note).font(.caption).foregroundStyle(.orange)
@@ -215,8 +221,9 @@ struct RecapPanel: View {
 
     private var na: String { ClipColumns.notAvailable }
 
+    /// Nella panoramica nessuna durata: si somma solo per codec (tabelle «Durata per codec»), mai per progetto.
     private func overviewCells(_ g: ProjectRecap.Group) -> [String] {
-        [String(g.clips), durationText(g), String(g.files), Format.bytes(g.size)]
+        [String(g.clips), String(g.files), Format.bytes(g.size)]
     }
 
     /// «0» se non ci sono clip; N/D se nessun clip ha la durata; «≥ …» se la conoscono solo alcuni.

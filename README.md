@@ -112,7 +112,7 @@ Quello che manca resta N/D. ExifTool non si usa per questi formati: sui file MPE
 
 - **Riepilogo della cartella** (schermata Offload, sotto «Il bin verrà creato in»): stesse tabelle del Shooting Day Report — *Panoramica clip* (clip video, audio, altri file, totale: clip, durata,
   file, dimensione), *Backup (verificati)* (clip con 3+/2/1/0 copie verificate), *Formati video* (codec, tipo file, risoluzione, FPS, clip), *Somme per camera* (bobine, frame, clip, durata, file, dimensione),
-  *Formati audio*. Sopra, «Schede scaricate» e «Spazio verificato». Durata parziale = «≥ …», nessun dato → N/D; i file con problemi o importati senza copia sono dichiarati e finiscono nella riga «0» dei backup.
+  *Formati audio*. Le **durate si sommano solo per codec** (tabelle «Durata per codec video» e «Durata per codec audio»): nessuna durata totale del progetto, né nella panoramica né nelle somme per camera. Sopra, «Schede scaricate» e «Spazio verificato». Durata parziale = «≥ …», nessun dato → N/D; i file con problemi o importati senza copia sono dichiarati e finiscono nella riga «0» dei backup.
 - **Importa media** (barra in alto): sceglie cartelle o file già su disco e li aggiunge al progetto **senza copiarli né toccarli**, per leggere i metadata ed esportare i report. Ogni cartella diventa un bin
   (col nome della cartella) dentro la cartella selezionata; i file singoli vanno nel bin della loro cartella. I clip risultano «Importato» (mai «OK»: nessuna copia è stata verificata), nessun hash inventato.
   Metadata e anteprime si leggono da dove stanno i file; reimportare la stessa cartella aggiunge solo i file nuovi.

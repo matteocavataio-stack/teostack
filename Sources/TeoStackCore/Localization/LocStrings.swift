@@ -174,7 +174,6 @@ enum LocStrings {
         ("File importati: {0}", "Imported files: {0}", "Archivos importados: {0}", "Fitxers importats: {0}"),
         ("Ancora nessun offload né file importato in questa cartella.", "No offload or imported file in this folder yet.", "Todavía no hay ningún offload ni archivo importado en esta carpeta.", "Encara no hi ha cap offload ni fitxer importat en aquesta carpeta."),
         ("Panoramica clip", "Clips Overview", "Resumen de clips", "Resum de clips"),
-        ("Durata", "Duration", "Duración", "Durada"),
         ("File", "Files", "Archivos", "Fitxers"),
         ("Dimensione", "Size", "Tamaño", "Mida"),
         ("Clip video sorgente", "Source Video Clips", "Clips de vídeo de origen", "Clips de vídeo d'origen"),
@@ -186,16 +185,19 @@ enum LocStrings {
         ("Tipo file", "File type", "Tipo de archivo", "Tipus de fitxer"),
         ("Risoluzione", "Resolution", "Resolución", "Resolució"),
         ("FPS", "FPS", "FPS", "FPS"),
+        ("Durata per codec video", "Duration per video codec", "Duración por códec de vídeo", "Durada per còdec de vídeo"),
+        ("Durata", "Duration", "Duración", "Durada"),
         ("Somme per camera", "Camera Sums", "Totales por cámara", "Totals per càmera"),
         ("Bobine", "Reels", "Bobinas", "Bobines"),
         ("Frame", "Frames", "Fotogramas", "Fotogrames"),
-        ("Formati audio", "Audio Formats", "Formatos de audio", "Formats d'àudio"),
     ]
 
     private static let part3: [Entry] = [
+        ("Formati audio", "Audio Formats", "Formatos de audio", "Formats d'àudio"),
         ("Frequenza", "Sample rate", "Frecuencia", "Freqüència"),
         ("Bit", "Bits", "Bits", "Bits"),
         ("Canali", "Channels", "Canales", "Canals"),
+        ("Durata per codec audio", "Duration per audio codec", "Duración por códec de audio", "Durada per còdec d'àudio"),
         ("Durata non disponibile: i metadata non sono ancora stati letti (usa «Leggi metadata» nel tab Clip).", "Duration not available: the metadata has not been read yet (use “Read metadata” in the Clips tab).", "Duración no disponible: los metadatos aún no se han leído (usa «Leer metadatos» en la pestaña Clips).", "Durada no disponible: les metadades encara no s'han llegit (usa «Llegeix metadades» a la pestanya Clips)."),
         ("La durata comprende solo i {0} clip di cui è nota; {1} clip senza durata (usa «Leggi metadata» nel tab Clip).", "The duration only includes the {0} clips whose duration is known; {1} clips without duration (use “Read metadata” in the Clips tab).", "La duración solo incluye los {0} clips cuya duración se conoce; {1} clips sin duración (usa «Leer metadatos» en la pestaña Clips).", "La durada només inclou els {0} clips dels quals es coneix; {1} clips sense durada (usa «Llegeix metadades» a la pestanya Clips)."),
         ("{0} clip senza codec né risoluzione (metadata non letti): compaiono come formato {1}.", "{0} clips without codec or resolution (metadata not read): they appear as format {1}.", "{0} clips sin códec ni resolución (metadatos sin leer): aparecen como formato {1}.", "{0} clips sense còdec ni resolució (metadades sense llegir): apareixen com a format {1}."),
@@ -251,11 +253,11 @@ enum LocStrings {
         ("Quando tutti i file sono OK la parte «Sorgente» si svuota da sola, pronta per la scheda successiva. Se ci sono problemi resta l'elenco dei file.", "When all files are OK the “Source” section clears itself, ready for the next card. If there are problems the file list stays.", "Cuando todos los archivos están OK la parte «Origen» se vacía sola, lista para la siguiente tarjeta. Si hay problemas, la lista de archivos se queda.", "Quan tots els fitxers són OK la part «Origen» es buida sola, a punt per a la targeta següent. Si hi ha problemes, la llista de fitxers es queda."),
         ("Espelli sorgente", "Eject source", "Expulsar origen", "Expulsa l'origen"),
         ("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK", "Unmounts and ejects the card: only after an offload with all files OK", "Desmonta y expulsa la tarjeta: solo tras un offload con todos los archivos OK", "Desmunta i expulsa la targeta: només després d'un offload amb tots els fitxers OK"),
-        ("NON AVVIATO: controlli preliminari falliti", "NOT STARTED: preliminary checks failed", "NO INICIADO: fallaron las comprobaciones previas", "NO INICIAT: han fallat les comprovacions prèvies"),
-        ("ANNULLATO: i file parziali sono stati rimossi. «Riprendi» continua dai file già verificati.", "CANCELLED: partial files were removed. “Resume” continues from the files already verified.", "CANCELADO: se eliminaron los archivos parciales. «Reanudar» continúa desde los archivos ya verificados.", "CANCEL·LAT: s'han eliminat els fitxers parcials. «Reprèn» continua des dels fitxers ja verificats."),
     ]
 
     private static let part4: [Entry] = [
+        ("NON AVVIATO: controlli preliminari falliti", "NOT STARTED: preliminary checks failed", "NO INICIADO: fallaron las comprobaciones previas", "NO INICIAT: han fallat les comprovacions prèvies"),
+        ("ANNULLATO: i file parziali sono stati rimossi. «Riprendi» continua dai file già verificati.", "CANCELLED: partial files were removed. “Resume” continues from the files already verified.", "CANCELADO: se eliminaron los archivos parciales. «Reanudar» continúa desde los archivos ya verificados.", "CANCEL·LAT: s'han eliminat els fitxers parcials. «Reprèn» continua des dels fitxers ja verificats."),
         ("TUTTI I FILE OK: {0} file riletti dal disco con XXH64 identico alla sorgente su {1} destinazione/i.", "ALL FILES OK: {0} files read back from disk with XXH64 identical to the source on {1} destination(s).", "TODOS LOS ARCHIVOS OK: {0} archivos releídos del disco con XXH64 idéntico al del origen en {1} destino(s).", "TOTS ELS FITXERS OK: {0} fitxers rellegits del disc amb XXH64 idèntic al de l'origen a {1} destinació/ons."),
         ("ATTENZIONE: {0} MISMATCH, {1} ERRORI, {2} destinazioni interrotte. I file non OK non vanno considerati copiati.", "WARNING: {0} MISMATCH, {1} ERRORS, {2} destinations interrupted. Files that are not OK must not be considered copied.", "ATENCIÓN: {0} MISMATCH, {1} ERRORES, {2} destinos interrumpidos. Los archivos que no estén OK no deben considerarse copiados.", "ATENCIÓ: {0} MISMATCH, {1} ERRORS, {2} destinacions interrompudes. Els fitxers que no estiguin OK no s'han de considerar copiats."),
         ("Lingua dell'interfaccia", "Interface language", "Idioma de la interfaz", "Idioma de la interfície"),
@@ -314,11 +316,11 @@ enum LocStrings {
         ("file", "files", "archivos", "fitxers"),
         ("clip", "clips", "clips", "clips"),
         ("Mostra anche i file non video (XML, sidecar…)", "Also show non-video files (XML, sidecars…)", "Mostrar también los archivos que no son vídeo (XML, sidecars…)", "Mostra també els fitxers que no són vídeo (XML, sidecars…)"),
-        ("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).", "Creates the first-frame thumbnail of the clips that do not have one (from the verified copy on the destination disk).", "Crea la miniatura del primer fotograma de los clips que no la tienen (a partir de la copia verificada en el disco de destino).", "Crea la miniatura del primer fotograma dels clips que no en tenen (a partir de la còpia verificada al disc de destinació)."),
-        ("Leggi metadata", "Read metadata", "Leer metadatos", "Llegeix metadades"),
     ]
 
     private static let part5: [Entry] = [
+        ("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).", "Creates the first-frame thumbnail of the clips that do not have one (from the verified copy on the destination disk).", "Crea la miniatura del primer fotograma de los clips que no la tienen (a partir de la copia verificada en el disco de destino).", "Crea la miniatura del primer fotograma dels clips que no en tenen (a partir de la còpia verificada al disc de destinació)."),
+        ("Leggi metadata", "Read metadata", "Leer metadatos", "Llegeix metadades"),
         ("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).", "Re-reads the metadata of the clips shown with ExifTool and art-cmd (from the verified copy on the destination disk).", "Vuelve a leer los metadatos de los clips mostrados con ExifTool y art-cmd (a partir de la copia verificada en el disco de destino).", "Torna a llegir les metadades dels clips mostrats amb ExifTool i art-cmd (a partir de la còpia verificada al disc de destinació)."),
         ("Colonne", "Columns", "Columnas", "Columnes"),
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
@@ -377,11 +379,11 @@ enum LocStrings {
         ("Sensor FPS", "Sensor FPS", "Sensor FPS", "Sensor FPS"),
         ("ND Filter", "ND Filter", "Filtro ND", "Filtre ND"),
         ("Look Info", "Look Info", "Info del look", "Info del look"),
-        ("Lente", "Lens", "Objetivo", "Objectiu"),
-        ("ISO", "ISO", "ISO", "ISO"),
     ]
 
     private static let part6: [Entry] = [
+        ("Lente", "Lens", "Objetivo", "Objectiu"),
+        ("ISO", "ISO", "ISO", "ISO"),
         ("WB", "WB", "WB", "WB"),
         ("Timecode", "Timecode", "Timecode", "Timecode"),
         ("Costruttore", "Manufacturer", "Fabricante", "Fabricant"),

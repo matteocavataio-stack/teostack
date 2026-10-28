@@ -52,6 +52,12 @@ public struct ProjectRecap: Equatable {
         public var group = Group()
     }
 
+    /// Conteggi di un codec (video o audio): la durata si somma SOLO per codec, mai per l'intero progetto.
+    public struct CodecRow: Equatable {
+        public var codec: String?
+        public var group = Group()
+    }
+
     public struct CameraRow: Equatable {
         public var camera: String?
         public var reelCount = 0
@@ -69,6 +75,9 @@ public struct ProjectRecap: Equatable {
     public var backups = [BackupRow(label: "3+"), BackupRow(label: "2"), BackupRow(label: "1"), BackupRow(label: "0")]
     public var videoFormats: [VideoFormat] = []
     public var audioFormats: [AudioFormat] = []
+    /// Durata per codec: un calcolo separato per ogni codec video e per ogni codec audio.
+    public var videoCodecs: [CodecRow] = []
+    public var audioCodecs: [CodecRow] = []
     public var cameras: [CameraRow] = []
 
     /// Schede scaricate: offload completati che hanno portato almeno un file (la stessa scheda ripetuta nello stesso bin conta una volta).
@@ -121,6 +130,8 @@ public struct ProjectRecap: Equatable {
         var cardIDs = Set<Int64>()
         var videoFormats: [String: VideoFormat] = [:]
         var audioFormats: [String: AudioFormat] = [:]
+        var videoCodecs: [String: CodecRow] = [:]
+        var audioCodecs: [String: CodecRow] = [:]
         var cameraClips: [String: [ClipRecord]] = [:]
         var cameraOrder: [String] = []
 
@@ -148,6 +159,9 @@ public struct ProjectRecap: Equatable {
                 var f = videoFormats[key] ?? VideoFormat(codec: codec, fileType: ext, resolution: resolution, fps: fps)
                 f.group.add(clip, isClip: true)
                 videoFormats[key] = f
+                var c = videoCodecs[codec ?? ""] ?? CodecRow(codec: codec)
+                c.group.add(clip, isClip: true)
+                videoCodecs[codec ?? ""] = c
 
                 let cameraKey = meta(clip, "cameraIndex") ?? ""
                 if cameraClips[cameraKey] == nil { cameraOrder.append(cameraKey) }
@@ -160,6 +174,9 @@ public struct ProjectRecap: Equatable {
                 var f = audioFormats[key] ?? AudioFormat(codec: codec, sampleRate: rate, bitDepth: bits, channels: channels)
                 f.group.add(clip, isClip: true)
                 audioFormats[key] = f
+                var c = audioCodecs[codec ?? ""] ?? CodecRow(codec: codec)
+                c.group.add(clip, isClip: true)
+                audioCodecs[codec ?? ""] = c
             }
         }
         recap.cardCount = cardIDs.count
@@ -169,6 +186,9 @@ public struct ProjectRecap: Equatable {
         recap.audioFormats = audioFormats.values.sorted {
             ($1.group.clips, $0.codec ?? "", $0.sampleRate ?? "") < ($0.group.clips, $1.codec ?? "", $1.sampleRate ?? "")
         }
+        func byClipsThenName(_ a: CodecRow, _ b: CodecRow) -> Bool { (b.group.clips, a.codec ?? "") < (a.group.clips, b.codec ?? "") }
+        recap.videoCodecs = videoCodecs.values.sorted(by: byClipsThenName)
+        recap.audioCodecs = audioCodecs.values.sorted(by: byClipsThenName)
         recap.cameras = cameraOrder.sorted().map { key in
             let items = cameraClips[key] ?? []
             var row = CameraRow(camera: key.isEmpty ? nil : key)
