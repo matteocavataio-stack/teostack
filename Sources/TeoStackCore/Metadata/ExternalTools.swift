@@ -32,7 +32,7 @@ public enum ExternalTool: String, CaseIterable, Identifiable {
     public var purpose: String {
         switch self {
         case .exiftool: return tr("legge i metadata dei clip ARRI e Sony (necessario)")
-        case .ffprobe: return tr("legge i dati tecnici degli MXF Sony e dei file ProRes (consigliato)")
+        case .ffprobe: return tr("legge i dati tecnici di MPG, WAV/BWF, LRF, MP4, ProRes e degli altri formati senza lettore dedicato (consigliato)")
         case .ffmpeg: return tr("estrae il primo fotogramma dei clip ProRes e Sony per l'anteprima (consigliato)")
         case .artCmd: return tr("legge i metadata dei clip ARRI (ISO, lente, ND, WB, look, sensor FPS) e ne ricava l'anteprima ARRIRAW/ARRICORE")
         }

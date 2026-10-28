@@ -312,10 +312,10 @@ struct ThumbnailCell: View {
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.15))
-                    Image(systemName: cache.failureReason(clipID: clip.id) == nil ? "photo" : "exclamationmark.triangle")
+                    Image(systemName: clip.isAudio ? "waveform" : (cache.failureReason(clipID: clip.id) == nil ? "photo" : "exclamationmark.triangle"))
                         .foregroundStyle(.secondary)
                 }
-                .help(cache.failureReason(clipID: clip.id) ?? tr("Anteprima non ancora creata"))
+                .help(clip.isAudio ? tr("Clip audio: nessuna anteprima.") : (cache.failureReason(clipID: clip.id) ?? tr("Anteprima non ancora creata")))
             }
         }
         .frame(width: 88, height: 50)
@@ -331,7 +331,12 @@ struct ClipPreviewPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(clip.name).font(.headline).lineLimit(2)
-            if let image = ThumbnailImageStore.image(at: projects.thumbnails.imageURL(clipID: clip.id)) {
+            if clip.isAudio {
+                Text(tr("Clip audio: nessuna anteprima.")).font(.callout).foregroundStyle(.secondary)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
+            } else if let image = ThumbnailImageStore.image(at: projects.thumbnails.imageURL(clipID: clip.id)) {
                 Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity)
                     .background(Color.black)
@@ -350,7 +355,7 @@ struct ClipPreviewPanel: View {
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
             }
             Divider()
-            ForEach(["camera", "lens", "iso", "whiteBalance", "ndFilter", "sensorFPS", "shutter", "resolution", "codec", "timecode", "duration"], id: \.self) { id in
+            ForEach(["camera", "lens", "iso", "whiteBalance", "ndFilter", "sensorFPS", "shutter", "resolution", "codec", "timecode", "duration", "audioCodec", "audioChannels", "audioSampleRate", "audioBitDepth"], id: \.self) { id in
                 if let col = ClipColumns.column(id: id) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(col.localizedTitle).font(.caption).foregroundStyle(.secondary).frame(width: 84, alignment: .leading)
@@ -449,7 +454,7 @@ struct ClipTableView: View {
             if let status = projects.thumbnailStatus {
                 Text(status).font(.caption).foregroundStyle(.secondary)
             }
-            Text(tr("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D."))
+            Text(tr("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             if projects.clips.isEmpty {

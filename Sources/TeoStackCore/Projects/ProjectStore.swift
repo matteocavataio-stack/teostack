@@ -102,7 +102,21 @@ public final class ProjectStore {
             // Testi della cronologia in forma traducibile (chiave + parametri): così seguono la lingua scelta dall'utente.
             try db.execute(sql: "ALTER TABLE event ADD COLUMN i18n TEXT")
         }
+        m.registerMigration("v6-audio-and-more-formats") { db in
+            // Nuovi formati video (mpg, lrf), clip audio con metadata e file «._» di macOS che non sono clip: si riclassificano i file già registrati.
+            try db.execute(sql: "ALTER TABLE clip ADD COLUMN isAudio INTEGER NOT NULL DEFAULT 0")
+            for row in try Row.fetchAll(db, sql: "SELECT id, relativePath FROM clip") {
+                let path: String = row["relativePath"]
+                try db.execute(sql: "UPDATE clip SET isMedia = ?, isAudio = ? WHERE id = ?",
+                               arguments: [MediaClassifier.isMedia(relativePath: path) ? 1 : 0, MediaClassifier.isAudio(relativePath: path) ? 1 : 0, row["id"] as Int64])
+            }
+        }
         return m
+    }
+
+    /// Solo per i test (`@testable import`): esegue SQL grezzo, per esempio per riportare un database a uno schema precedente.
+    func executeRaw(_ sql: String) throws {
+        try wrap { try db.write { db in try db.execute(sql: sql) } }
     }
 
     // MARK: Utilità
@@ -519,8 +533,8 @@ public final class ProjectStore {
                     else if !statuses.isEmpty && statuses.allSatisfy({ $0 == .ok }) { aggregate = "ok" }
                     else { aggregate = "pending" }
                     try db.execute(sql: """
-                        INSERT INTO clip(offloadID, binID, relativePath, name, size, sourceHash, status, destStatusJSON, isMedia, modifiedAt)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO clip(offloadID, binID, relativePath, name, size, sourceHash, status, destStatusJSON, isMedia, modifiedAt, isAudio)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ON CONFLICT(offloadID, relativePath) DO UPDATE SET
                           size = excluded.size, sourceHash = excluded.sourceHash,
                           status = excluded.status, destStatusJSON = excluded.destStatusJSON,
@@ -528,7 +542,8 @@ public final class ProjectStore {
                         """, arguments: [offloadID, binID, f.relativePath, (f.relativePath as NSString).lastPathComponent, f.size,
                                          f.sourceHash, aggregate, ProjectStore.json(statuses.map { $0.rawValue }),
                                          MediaClassifier.isMedia(relativePath: f.relativePath) ? 1 : 0,
-                                         f.modificationDate?.timeIntervalSince1970])
+                                         f.modificationDate?.timeIntervalSince1970,
+                                         MediaClassifier.isAudio(relativePath: f.relativePath) ? 1 : 0])
                 }
             }
         }
@@ -563,7 +578,7 @@ public final class ProjectStore {
                     WITH RECURSIVE sub(id) AS (SELECT id FROM node WHERE id = ? UNION ALL SELECT n.id FROM node n JOIN sub ON n.parentID = sub.id)
                     SELECT c.*, o.startedAt AS offloadDate, b.name AS binName, CASE WHEN d.kind = 'library' THEN '' ELSE COALESCE(d.name, '') END AS dayName
                     FROM clip c JOIN offload o ON o.id = c.offloadID JOIN node b ON b.id = c.binID LEFT JOIN node d ON d.id = b.parentID
-                    WHERE c.binID IN (SELECT id FROM sub) AND (? = 0 OR c.isMedia = 1)
+                    WHERE c.binID IN (SELECT id FROM sub) AND (? = 0 OR c.isMedia = 1 OR c.isAudio = 1)
                     ORDER BY dayName COLLATE NOCASE, binName COLLATE NOCASE, c.relativePath COLLATE NOCASE
                     """, arguments: [nodeID, mediaOnly ? 1 : 0]).map {
                     ClipRecord(id: $0["id"], offloadID: $0["offloadID"], binID: $0["binID"], relativePath: $0["relativePath"],
@@ -572,7 +587,8 @@ public final class ProjectStore {
                                isMedia: ($0["isMedia"] as Int) == 1,
                                metadata: ProjectStore.decode([String: String].self, $0["metadataJSON"], default: [:]),
                                offloadDate: ProjectStore.date($0["offloadDate"]), binName: $0["binName"], dayName: $0["dayName"],
-                               modifiedAt: ($0["modifiedAt"] as Double?).map(ProjectStore.date))
+                               modifiedAt: ($0["modifiedAt"] as Double?).map(ProjectStore.date),
+                               isAudio: ($0["isAudio"] as Int) == 1)
                 }
             }
         }

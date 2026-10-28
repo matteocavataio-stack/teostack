@@ -170,6 +170,7 @@ struct RecapPanel: View {
             HStack(alignment: .top, spacing: 28) {
                 stat(tr("Spazio scaricato"), Format.bytes(recap.verifiedBytes))
                 stat(tr("Clip"), "\(recap.clipCount)")
+                if recap.audioCount > 0 { stat(tr("Audio"), "\(recap.audioCount)") }
                 stat(tr("Schede scaricate"), "\(recap.cardCount)")
                 stat(tr("Durata totale"), durationText(recap))
                 Spacer()
@@ -214,6 +215,9 @@ struct RecapPanel: View {
         }
         if recap.clipsWithoutFormat > 0 {
             out.append(tr("{0} clip senza codec né risoluzione (metadata non letti): compaiono come formato {1}.", recap.clipsWithoutFormat, ClipColumns.notAvailable))
+        }
+        if recap.audioWithoutFormat > 0 {
+            out.append(tr("{0} clip audio senza codec né frequenza (metadata non letti): compaiono come formato {1}.", recap.audioWithoutFormat, ClipColumns.notAvailable))
         }
         if recap.notVerifiedFiles > 0 {
             out.append(tr("{0} file non verificati OK non sono contati nello spazio scaricato.", recap.notVerifiedFiles))

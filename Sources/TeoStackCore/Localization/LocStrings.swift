@@ -29,16 +29,22 @@ enum LocStrings {
         ("Impossibile avviare ExifTool: {0}", "Unable to start ExifTool: {0}", "No se puede iniciar ExifTool: {0}", "No es pot iniciar ExifTool: {0}"),
         ("L'output di ExifTool non è un JSON valido.", "The ExifTool output is not valid JSON.", "La salida de ExifTool no es un JSON válido.", "La sortida d'ExifTool no és un JSON vàlid."),
         ("legge i metadata dei clip ARRI e Sony (necessario)", "reads the metadata of ARRI and Sony clips (required)", "lee los metadatos de los clips ARRI y Sony (necesario)", "llegeix les metadades dels clips ARRI i Sony (necessari)"),
-        ("legge i dati tecnici degli MXF Sony e dei file ProRes (consigliato)", "reads the technical data of Sony MXF and ProRes files (recommended)", "lee los datos técnicos de los MXF de Sony y de los archivos ProRes (recomendado)", "llegeix les dades tècniques dels MXF de Sony i dels fitxers ProRes (recomanat)"),
+        ("legge i dati tecnici di MPG, WAV/BWF, LRF, MP4, ProRes e degli altri formati senza lettore dedicato (consigliato)", "reads the technical data of MPG, WAV/BWF, LRF, MP4, ProRes and the other formats without a dedicated reader (recommended)", "lee los datos técnicos de MPG, WAV/BWF, LRF, MP4, ProRes y del resto de formatos sin lector dedicado (recomendado)", "llegeix les dades tècniques de MPG, WAV/BWF, LRF, MP4, ProRes i dels altres formats sense lector dedicat (recomanat)"),
         ("estrae il primo fotogramma dei clip ProRes e Sony per l'anteprima (consigliato)", "extracts the first frame of ProRes and Sony clips for the thumbnail (recommended)", "extrae el primer fotograma de los clips ProRes y Sony para la miniatura (recomendado)", "extreu el primer fotograma dels clips ProRes i Sony per a la miniatura (recomanat)"),
         ("legge i metadata dei clip ARRI (ISO, lente, ND, WB, look, sensor FPS) e ne ricava l'anteprima ARRIRAW/ARRICORE", "reads the metadata of ARRI clips (ISO, lens, ND, WB, look, sensor FPS) and creates the ARRIRAW/ARRICORE thumbnail", "lee los metadatos de los clips ARRI (ISO, objetivo, ND, WB, look, sensor FPS) y obtiene la miniatura ARRIRAW/ARRICORE", "llegeix les metadades dels clips ARRI (ISO, objectiu, ND, WB, look, sensor FPS) i n'obté la miniatura ARRIRAW/ARRICORE"),
         ("(poi, per verifica: {0})", "(then, to check: {0})", "(después, para comprobar: {0})", "(després, per comprovar: {0})"),
         ("(tieni l'intera cartella {0}: art-cmd ha bisogno della sottocartella lib)", "(keep the whole folder {0}: art-cmd needs the lib subfolder)", "(conserva la carpeta {0} completa: art-cmd necesita la subcarpeta lib)", "(conserva la carpeta {0} sencera: art-cmd necessita la subcarpeta lib)"),
         ("(se macOS lo blocca: {0})", "(if macOS blocks it: {0})", "(si macOS lo bloquea: {0})", "(si el macOS el bloqueja: {0})"),
+        ("ffprobe non trovato in «{0}».", "ffprobe not found in “{0}”.", "ffprobe no encontrado en «{0}».", "ffprobe no trobat a «{0}»."),
+        ("Impossibile avviare ffprobe: {0}", "Unable to start ffprobe: {0}", "No se puede iniciar ffprobe: {0}", "No es pot iniciar ffprobe: {0}"),
+        ("ffprobe non ha risposto entro {0} secondi.", "ffprobe did not respond within {0} seconds.", "ffprobe no respondió en {0} segundos.", "ffprobe no ha respost en {0} segons."),
+        ("ffprobe non riconosce il file.", "ffprobe does not recognise the file.", "ffprobe no reconoce el archivo.", "ffprobe no reconeix el fitxer."),
+        ("ffprobe non riconosce il file: {0}", "ffprobe does not recognise the file: {0}", "ffprobe no reconoce el archivo: {0}", "ffprobe no reconeix el fitxer: {0}"),
+        ("L'output di ffprobe non è un JSON valido.", "The ffprobe output is not valid JSON.", "La salida de ffprobe no es un JSON válido.", "La sortida d'ffprobe no és un JSON vàlid."),
         ("{0} formato non supportato ({1})", "{0} unsupported format ({1})", "{0} formato no admitido ({1})", "{0} format no compatible ({1})"),
         ("{0} file non raggiungibili", "{0} files not reachable", "{0} archivos no accesibles", "{0} fitxers no accessibles"),
         ("art-cmd non ha letto {0} clip ARRI (ISO, lente, ND, WB… {1})", "art-cmd could not read {0} ARRI clips (ISO, lens, ND, WB… {1})", "art-cmd no pudo leer {0} clips ARRI (ISO, objetivo, ND, WB… {1})", "art-cmd no ha pogut llegir {0} clips ARRI (ISO, objectiu, ND, WB… {1})"),
-        ("Né ExifTool né art-cmd sono installati: impossibile leggere i metadata.", "Neither ExifTool nor art-cmd is installed: metadata cannot be read.", "Ni ExifTool ni art-cmd están instalados: no se pueden leer los metadatos.", "Ni ExifTool ni art-cmd no estan instal·lats: no es poden llegir les metadades."),
+        ("Né ExifTool né art-cmd né ffprobe sono installati: impossibile leggere i metadata.", "None of ExifTool, art-cmd or ffprobe is installed: metadata cannot be read.", "Ni ExifTool ni art-cmd ni ffprobe están instalados: no se pueden leer los metadatos.", "Ni ExifTool ni art-cmd ni ffprobe no estan instal·lats: no es poden llegir les metadades."),
         ("{0}: art-cmd non ha restituito metadata", "{0}: art-cmd returned no metadata", "{0}: art-cmd no devolvió metadatos", "{0}: art-cmd no ha retornat metadades"),
         ("Servono da 1 a {0} destinazioni (selezionate: {1}).", "Between 1 and {0} destinations are required (selected: {1}).", "Se necesitan entre 1 y {0} destinos (seleccionados: {1}).", "Calen entre 1 i {0} destinacions (seleccionades: {1})."),
         ("Destinazione {0}", "Destination {0}", "Destino {0}", "Destinació {0}"),
@@ -58,15 +64,15 @@ enum LocStrings {
         ("La sorgente è cambiata rispetto al tentativo precedente (XXH64 diverso): file non copiato.", "The source has changed since the previous attempt (different XXH64): file not copied.", "El origen ha cambiado respecto al intento anterior (XXH64 distinto): archivo no copiado.", "L'origen ha canviat respecte a l'intent anterior (XXH64 diferent): fitxer no copiat."),
         ("Chiusura file", "Closing file", "Cierre del archivo", "Tancament del fitxer"),
         ("Dimensione riletta {0} byte, attesa {1} byte", "Size read back {0} bytes, expected {1} bytes", "Tamaño releído {0} bytes, esperado {1} bytes", "Mida rellegida {0} bytes, esperada {1} bytes"),
+    ]
+
+    private static let part1: [Entry] = [
         ("XXH64 destinazione {0} ≠ sorgente {1}", "Destination XXH64 {0} ≠ source {1}", "XXH64 del destino {0} ≠ origen {1}", "XXH64 de la destinació {0} ≠ origen {1}"),
         ("Un file con lo stesso nome è comparso durante l'offload: non sovrascritto.", "A file with the same name appeared during the offload: not overwritten.", "Apareció un archivo con el mismo nombre durante el offload: no se sobrescribe.", "Ha aparegut un fitxer amb el mateix nom durant l'offload: no se sobreescriu."),
         ("Rinomina file verificato", "Renaming verified file", "Renombrado del archivo verificado", "Canvi de nom del fitxer verificat"),
         ("Rilettura per verifica fallita: {0}", "Read-back for verification failed: {0}", "Falló la relectura para verificar: {0}", "Ha fallat la relectura per verificar: {0}"),
         ("Destinazione non raggiungibile", "Destination not reachable", "Destino no accesible", "Destinació no accessible"),
         ("Creazione cartella", "Folder creation", "Creación de la carpeta", "Creació de la carpeta"),
-    ]
-
-    private static let part1: [Entry] = [
         ("In attesa", "Waiting", "En espera", "En espera"),
         ("Copia", "Copy", "Copia", "Còpia"),
         ("Da verificare", "To verify", "Por verificar", "Per verificar"),
@@ -121,19 +127,19 @@ enum LocStrings {
         ("Anteprima non disponibile: formato non decodificabile con gli strumenti installati.", "Thumbnail not available: format cannot be decoded with the installed tools.", "Miniatura no disponible: formato no decodificable con las herramientas instaladas.", "Miniatura no disponible: format no descodificable amb les eines instal·lades."),
         ("Né ffmpeg né art-cmd sono installati: impossibile creare le anteprime.", "Neither ffmpeg nor art-cmd is installed: thumbnails cannot be created.", "Ni ffmpeg ni art-cmd están instalados: no se pueden crear las miniaturas.", "Ni ffmpeg ni art-cmd no estan instal·lats: no es poden crear les miniatures."),
         ("L'immagine prodotta da art-cmd non è leggibile.", "The image produced by art-cmd is not readable.", "La imagen producida por art-cmd no se puede leer.", "La imatge produïda per art-cmd no es pot llegir."),
+    ]
+
+    private static let part2: [Entry] = [
         ("Impossibile ridurre l'immagine dell'anteprima.", "Unable to shrink the thumbnail image.", "No se puede reducir la imagen de la miniatura.", "No es pot reduir la imatge de la miniatura."),
         ("Impossibile creare il file JPEG dell'anteprima.", "Unable to create the thumbnail JPEG file.", "No se puede crear el archivo JPEG de la miniatura.", "No es pot crear el fitxer JPEG de la miniatura."),
         ("Impossibile scrivere il file JPEG dell'anteprima.", "Unable to write the thumbnail JPEG file.", "No se puede escribir el archivo JPEG de la miniatura.", "No es pot escriure el fitxer JPEG de la miniatura."),
         ("Seleziona il programma «{0}»", "Select the program “{0}”", "Selecciona el programa «{0}»", "Selecciona el programa «{0}»"),
         ("Scegli", "Choose", "Elegir", "Tria"),
         ("Impossibile aprire il database dei progetti: {0}", "Unable to open the projects database: {0}", "No se puede abrir la base de datos de proyectos: {0}", "No es pot obrir la base de dades de projectes: {0}"),
-    ]
-
-    private static let part2: [Entry] = [
         ("Nessun progetto selezionato.", "No project selected.", "Ningún proyecto seleccionado.", "Cap projecte seleccionat."),
         ("Seleziona prima un progetto.", "Select a project first.", "Selecciona primero un proyecto.", "Selecciona primer un projecte."),
         ("Library (radice)", "Library (root)", "Library (raíz)", "Library (arrel)"),
-        ("Né ExifTool né art-cmd sono installati: metadata non letti (vedi l'avviso in alto per installarli).", "Neither ExifTool nor art-cmd is installed: metadata not read (see the notice at the top to install them).", "Ni ExifTool ni art-cmd están instalados: metadatos sin leer (mira el aviso de arriba para instalarlos).", "Ni ExifTool ni art-cmd no estan instal·lats: metadades sense llegir (mira l'avís de dalt per instal·lar-los)."),
+        ("Né ExifTool né art-cmd né ffprobe sono installati: metadata non letti (vedi l'avviso in alto per installarli).", "None of ExifTool, art-cmd or ffprobe is installed: metadata not read (see the notice at the top to install them).", "Ni ExifTool ni art-cmd ni ffprobe están instalados: metadatos sin leer (mira el aviso de arriba para instalarlos).", "Ni ExifTool ni art-cmd ni ffprobe no estan instal·lats: metadades sense llegir (mira l'avís de dalt per instal·lar-los)."),
         ("Lettura metadata…", "Reading metadata…", "Leyendo metadatos…", "Llegint metadades…"),
         ("Lettura metadata… {0}/{1}", "Reading metadata… {0}/{1}", "Leyendo metadatos… {0}/{1}", "Llegint metadades… {0}/{1}"),
         ("Metadata: {0}", "Metadata: {0}", "Metadatos: {0}", "Metadades: {0}"),
@@ -156,6 +162,7 @@ enum LocStrings {
         ("Riepilogo di «{0}»", "Summary of “{0}”", "Resumen de «{0}»", "Resum de «{0}»"),
         ("Ancora nessun offload in questa cartella.", "No offload in this folder yet.", "Todavía no hay ningún offload en esta carpeta.", "Encara no hi ha cap offload en aquesta carpeta."),
         ("Spazio scaricato", "Space offloaded", "Espacio descargado", "Espai descarregat"),
+        ("Audio", "Audio", "Audio", "Àudio"),
         ("Schede scaricate", "Cards offloaded", "Tarjetas descargadas", "Targetes descarregades"),
         ("Durata totale", "Total duration", "Duración total", "Durada total"),
         ("Formati utilizzati", "Formats used", "Formatos utilizados", "Formats utilitzats"),
@@ -164,6 +171,7 @@ enum LocStrings {
         ("Durata non disponibile: i metadata non sono ancora stati letti (usa «Leggi metadata» nel tab Clip).", "Duration not available: the metadata has not been read yet (use “Read metadata” in the Clips tab).", "Duración no disponible: los metadatos aún no se han leído (usa «Leer metadatos» en la pestaña Clips).", "Durada no disponible: les metadades encara no s'han llegit (usa «Llegeix metadades» a la pestanya Clips)."),
         ("La durata comprende solo i {0} clip di cui è nota; {1} clip senza durata (usa «Leggi metadata» nel tab Clip).", "The duration only includes the {0} clips whose duration is known; {1} clips without duration (use “Read metadata” in the Clips tab).", "La duración solo incluye los {0} clips cuya duración se conoce; {1} clips sin duración (usa «Leer metadatos» en la pestaña Clips).", "La durada només inclou els {0} clips dels quals es coneix; {1} clips sense durada (usa «Llegeix metadades» a la pestanya Clips)."),
         ("{0} clip senza codec né risoluzione (metadata non letti): compaiono come formato {1}.", "{0} clips without codec or resolution (metadata not read): they appear as format {1}.", "{0} clips sin códec ni resolución (metadatos sin leer): aparecen como formato {1}.", "{0} clips sense còdec ni resolució (metadades sense llegir): apareixen com a format {1}."),
+        ("{0} clip audio senza codec né frequenza (metadata non letti): compaiono come formato {1}.", "{0} audio clips without codec or sample rate (metadata not read): they appear as format {1}.", "{0} clips de audio sin códec ni frecuencia (metadatos sin leer): aparecen como formato {1}.", "{0} clips d'àudio sense còdec ni freqüència (metadades sense llegir): apareixen com a format {1}."),
         ("{0} file non verificati OK non sono contati nello spazio scaricato.", "{0} files not verified OK are not counted in the space offloaded.", "{0} archivos no verificados OK no se cuentan en el espacio descargado.", "{0} fitxers no verificats OK no es compten a l'espai descarregat."),
         ("{0} offload annullati o interrotti non sono contati come schede scaricate.", "{0} cancelled or interrupted offloads are not counted as cards offloaded.", "{0} offloads cancelados o interrumpidos no se cuentan como tarjetas descargadas.", "{0} offloads cancel·lats o interromputs no es compten com a targetes descarregades."),
         ("Sorgente", "Source", "Origen", "Origen"),
@@ -182,6 +190,9 @@ enum LocStrings {
         ("Cartella", "Folder", "Carpeta", "Carpeta"),
         ("Dimensione", "Size", "Tamaño", "Mida"),
         ("Stato", "Status", "Estado", "Estat"),
+    ]
+
+    private static let part3: [Entry] = [
         ("Destinazioni (verrà creata la cartella del bin dentro quella scelta)", "Destinations (the bin folder will be created inside the chosen one)", "Destinos (se creará la carpeta del bin dentro de la elegida)", "Destinacions (es crearà la carpeta del bin dins de la triada)"),
         ("Percorsi salvati", "Saved paths", "Rutas guardadas", "Rutes desades"),
         ("Salva i percorsi scelti", "Save the chosen paths", "Guardar las rutas elegidas", "Desa les rutes triades"),
@@ -190,9 +201,6 @@ enum LocStrings {
         ("Rimuovi dai salvati", "Remove from saved", "Quitar de las guardadas", "Treu de les desades"),
         ("Salva i percorsi di destinazione che usi di solito, per non sceglierli ogni volta", "Save the destination paths you usually use, so you do not have to choose them every time", "Guarda las rutas de destino que usas habitualmente para no elegirlas cada vez", "Desa les rutes de destinació que fas servir habitualment per no triar-les cada vegada"),
         ("Aggiungi destinazione", "Add destination", "Añadir destino", "Afegeix una destinació"),
-    ]
-
-    private static let part3: [Entry] = [
         ("nessuna cartella selezionata", "no folder selected", "ninguna carpeta seleccionada", "cap carpeta seleccionada"),
         ("Scegli…", "Choose…", "Elegir…", "Tria…"),
         ("Usa un percorso salvato per questa destinazione", "Use a saved path for this destination", "Usar una ruta guardada para este destino", "Usa una ruta desada per a aquesta destinació"),
@@ -245,6 +253,9 @@ enum LocStrings {
         ("Progetto", "Project", "Proyecto", "Projecte"),
         ("Nessun progetto: creane uno per iniziare", "No project: create one to get started", "Ningún proyecto: crea uno para empezar", "Cap projecte: crea'n un per començar"),
         ("{0}  ·  {1}  ·  {2} clip", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips"),
+    ]
+
+    private static let part4: [Entry] = [
         ("Creato il {0} · {1} clip", "Created on {0} · {1} clips", "Creado el {0} · {1} clips", "Creat el {0} · {1} clips"),
         ("Esporta report…", "Export report…", "Exportar informe…", "Exporta l'informe…"),
         ("Elimina progetto…", "Delete project…", "Eliminar proyecto…", "Elimina el projecte…"),
@@ -253,9 +264,6 @@ enum LocStrings {
         ("Elimina", "Delete", "Eliminar", "Elimina"),
         ("Verrà eliminato l'INTERO progetto dal programma ({0} bin, {1} offload, {2} file registrati). I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program ({0} bins, {1} offloads, {2} recorded files). Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa ({0} bins, {1} offloads, {2} archivos registrados). Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa ({0} bins, {1} offloads, {2} fitxers registrats). Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
         ("Verrà eliminato l'INTERO progetto dal programma. I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program. Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa. Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa. Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
-    ]
-
-    private static let part4: [Entry] = [
         ("Seleziona o crea un progetto", "Select or create a project", "Selecciona o crea un proyecto", "Selecciona o crea un projecte"),
         ("+ Giorno", "+ Day", "+ Día", "+ Dia"),
         ("Facoltativo: cartella con la data delle riprese", "Optional: folder with the shooting date", "Opcional: carpeta con la fecha del rodaje", "Opcional: carpeta amb la data del rodatge"),
@@ -267,6 +275,7 @@ enum LocStrings {
         ("Verrà eliminata SOLO la cartella «{0}» con le sue sottocartelle e i suoi {1} bin ({2} offload, {3} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", "ONLY the folder “{0}” will be deleted, with its subfolders and its {1} bins ({2} offloads, {3} recorded files). The rest of the project stays. Files on the disks are NOT touched.", "Se eliminará SOLO la carpeta «{0}» con sus subcarpetas y sus {1} bins ({2} offloads, {3} archivos registrados). El resto del proyecto se queda. Los archivos de los discos NO se tocan.", "S'eliminarà NOMÉS la carpeta «{0}» amb les seves subcarpetes i els seus {1} bins ({2} offloads, {3} fitxers registrats). La resta del projecte es queda. Els fitxers dels discos NO es toquen."),
         ("Elimina…", "Delete…", "Eliminar…", "Elimina…"),
         ("Sposta in", "Move to", "Mover a", "Mou a"),
+        ("Clip audio: nessuna anteprima.", "Audio clip: no thumbnail.", "Clip de audio: sin miniatura.", "Clip d'àudio: sense miniatura."),
         ("Anteprima non ancora creata", "Thumbnail not created yet", "Miniatura aún no creada", "Miniatura encara no creada"),
         ("Primo fotogramma", "First frame", "Primer fotograma", "Primer fotograma"),
         ("Anteprima non ancora creata.", "Thumbnail not created yet.", "Miniatura aún no creada.", "Miniatura encara no creada."),
@@ -280,7 +289,7 @@ enum LocStrings {
         ("Colonne", "Columns", "Columnas", "Columnes"),
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
         ("Metadata camera (N/D se non letti)", "Camera metadata (N/A if not read)", "Metadatos de la cámara (N/D si no se leen)", "Metadades de la càmera (N/D si no es llegeixen)"),
-        ("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.", "ExifTool provides camera, firmware, resolution, duration, file FPS, timecode, shooting date. art-cmd (ARRI Reference Tool) provides ISO, WB, lens, ND, look, sensor FPS, scene/take/reel, serial: these are the values of the first frame of the clip. The thumbnail is the first frame (ARRI: art-cmd with embedded look; other videos: ffmpeg). If a value cannot be read it shows N/A.", "ExifTool da cámara, firmware, resolución, duración, FPS del archivo, timecode y fecha de rodaje. art-cmd (ARRI Reference Tool) da ISO, WB, objetivo, ND, look, sensor FPS, escena/toma/reel y serial: son los valores del primer fotograma del clip. La miniatura es el primer fotograma (ARRI: art-cmd con el look incorporado; otros vídeos: ffmpeg). Si un valor no se puede leer muestra N/D.", "ExifTool dona càmera, firmware, resolució, durada, FPS del fitxer, timecode i data de rodatge. art-cmd (ARRI Reference Tool) dona ISO, WB, objectiu, ND, look, sensor FPS, escena/presa/reel i serial: són els valors del primer fotograma del clip. La miniatura és el primer fotograma (ARRI: art-cmd amb el look incorporat; altres vídeos: ffmpeg). Si un valor no es pot llegir mostra N/D."),
+        ("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.", "ExifTool provides camera, firmware, resolution, duration, file FPS, timecode and shooting date of ARRI clips. art-cmd (ARRI Reference Tool) provides ISO, WB, lens, ND, look, sensor FPS, scene/take/reel, serial: these are the values of the first frame of the clip. For MPG, WAV/BWF, LRF, MP4, ProRes and the other formats ffprobe reads codec, resolution, FPS, duration, audio, and timecode/date/camera only if written in the file. The thumbnail is the first frame (ARRI: art-cmd with embedded look; other videos: ffmpeg). If a value cannot be read it shows N/A.", "ExifTool da cámara, firmware, resolución, duración, FPS del archivo, timecode y fecha de rodaje de los clips ARRI. art-cmd (ARRI Reference Tool) da ISO, WB, objetivo, ND, look, sensor FPS, escena/toma/reel y serial: son los valores del primer fotograma del clip. Para MPG, WAV/BWF, LRF, MP4, ProRes y el resto de formatos lee ffprobe: códec, resolución, FPS, duración, audio, y timecode/fecha/cámara solo si están escritos en el archivo. La miniatura es el primer fotograma (ARRI: art-cmd con el look incorporado; otros vídeos: ffmpeg). Si un valor no se puede leer muestra N/D.", "ExifTool dona càmera, firmware, resolució, durada, FPS del fitxer, timecode i data de rodatge dels clips ARRI. art-cmd (ARRI Reference Tool) dona ISO, WB, objectiu, ND, look, sensor FPS, escena/presa/reel i serial: són els valors del primer fotograma del clip. Per a MPG, WAV/BWF, LRF, MP4, ProRes i la resta de formats llegeix ffprobe: còdec, resolució, FPS, durada, àudio, i timecode/data/càmera només si estan escrits al fitxer. La miniatura és el primer fotograma (ARRI: art-cmd amb el look incorporat; altres vídeos: ffmpeg). Si un valor no es pot llegir mostra N/D."),
         ("Nessuna clip: esegui un offload in un bin di questo progetto.", "No clips: run an offload into a bin of this project.", "Ningún clip: haz un offload en un bin de este proyecto.", "Cap clip: fes un offload en un bin d'aquest projecte."),
         ("Cronologia", "History", "Historial", "Historial"),
         ("Cancella…", "Clear…", "Borrar…", "Esborra…"),
@@ -307,6 +316,9 @@ enum LocStrings {
         ("Mostra nel Finder", "Show in Finder", "Mostrar en el Finder", "Mostra al Finder"),
         ("Chiudi", "Close", "Cerrar", "Tanca"),
         ("Esporta PDF…", "Export PDF…", "Exportar PDF…", "Exporta el PDF…"),
+    ]
+
+    private static let part5: [Entry] = [
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),
         ("Salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
@@ -316,9 +328,6 @@ enum LocStrings {
         ("Anteprima", "Thumbnail", "Miniatura", "Miniatura"),
         ("Giorno", "Day", "Día", "Dia"),
         ("Bin", "Bin", "Bin", "Bin"),
-    ]
-
-    private static let part5: [Entry] = [
         ("XXH64", "XXH64", "XXH64", "XXH64"),
         ("Percorso", "Path", "Ruta", "Ruta"),
         ("Camera", "Camera", "Cámara", "Càmera"),

@@ -94,6 +94,20 @@ Si scelgono quali report creare e la cartella: **ogni report è un PDF separato*
   Le forme dei caratteri differiscono leggermente da quelle dei riferimenti, le posizioni coincidono entro circa 1 pt.
 - PDF scritto dall'app senza librerie esterne; verificato con `pdftotext`, `pdfinfo` e confronto numerico con i PDF di riferimento.
 
+### Altri formati: MPG, WAV/BWF, LRF, MP4, ProRes… (ffprobe)
+
+Per i file che non sono ARRI i metadata si leggono con **ffprobe** (incluso nell'app): codec (es. «MPEG-2 Main», «H.264 High», «ProRes HQ»), risoluzione, frame rate, durata,
+e per l'audio codec, tracce, frequenza di campionamento e bit. **Timecode, data di creazione, camera e costruttore compaiono solo se il file li contiene** (timecode com'è scritto nel file, drop-frame
+incluso; data con «UTC» o lo scarto orario se il file lo dichiara, altrimenti senza fuso; per i BWF la data/ora di registrazione e il `time_reference` come ora del giorno con i millisecondi).
+Quello che manca resta N/D. ExifTool non si usa per questi formati: sui file MPEG sbaglia (nel file di prova dava l'audio come MPEG layer 3 a 0 Hz, mentre è AC-3 a 48 kHz).
+
+- **Video riconosciuti come clip:** ari, arx, mov, mxf, mp4, **mpg, mpeg, lrf** (elenco in `MediaClassifier.mediaExtensions`, aggiungere un formato = una parola).
+- **Audio** (wav, bwf, aif, aiff, mp3, m4a, aac, flac): compaiono nella tabella Clip con i loro metadata; non hanno anteprima, non sono contati nei clip video né sommati alla durata
+  (nel riepilogo hanno il loro numero «Audio» e i loro formati, in fondo all'elenco).
+- **File «._nome»** (le «risorse» che macOS crea sui dischi exFAT/FAT): si copiano e si verificano come ogni altro file, ma non sono clip né audio e non compaiono nei conteggi.
+- I dati già registrati vengono riclassificati da soli al primo avvio della nuova versione (nessun file o clip perso).
+- **Non verificato:** file reali di camere DJI (LRF) e di registratori audio: i test usano file generati con ffmpeg e un MPG vero. Con file originali si può verificare quali campi (camera, GPS, ecc.) contengono.
+
 ## Anteprima del primo fotogramma
 
 - Nel tab **Clip** la colonna **Anteprima** mostra il primo fotogramma di ogni clip; cliccando una riga si apre a destra il pannello con il fotogramma grande

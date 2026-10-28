@@ -22,15 +22,17 @@ public struct MetadataSummary: Equatable {
 ///
 /// Per ogni clip: ExifTool riconosce la famiglia e dà i dati del contenitore (durata, FPS del file…);
 /// per i clip ARRI `art-cmd` (se installato) aggiunge ISO, lente, ND, WB, look, sensor FPS… e prevale dove i dati si sovrappongono.
+/// Per tutto il resto (MPG, WAV/BWF, LRF, MP4, ProRes…) legge `ffprobe`: codec, risoluzione, frame rate, durata e audio dai dati veri del file
+/// (ExifTool sui file MPEG sbaglia, per esempio, codec e frequenza dell'audio: per questo non si usa per questi formati).
 public enum MetadataImporter {
     /// Estensioni su cui provare art-cmd quando ExifTool non è disponibile o non riconosce il file.
     static let artCmdExtensions: Set<String> = ["mxf", "mov"]
 
     public static func importMetadata(for clips: [ClipRecord], store: ProjectStore,
-                                      runner: ExifToolRunner?, art: ARTCmdRunner? = nil,
+                                      runner: ExifToolRunner?, art: ARTCmdRunner? = nil, probe: FFprobeRunner? = nil,
                                       progress: ((Int, Int) -> Void)? = nil) throws -> MetadataSummary {
-        if runner == nil && art == nil {
-            throw MetadataError.toolMissing(tr("Né ExifTool né art-cmd sono installati: impossibile leggere i metadata."))
+        if runner == nil && art == nil && probe == nil {
+            throw MetadataError.toolMissing(tr("Né ExifTool né art-cmd né ffprobe sono installati: impossibile leggere i metadata."))
         }
         var summary = MetadataSummary()
         var rootsCache: [Int64: [String]] = [:]
@@ -42,7 +44,7 @@ public enum MetadataImporter {
                 lock.lock(); done += 1; let n = done; lock.unlock()
                 progress?(n, clips.count)
             }
-            guard clip.isMedia, clip.status == "ok" else { return }
+            guard clip.isMedia || clip.isAudio, clip.status == "ok" else { return }
             lock.lock(); let cachedRoots = rootsCache[clip.offloadID]; lock.unlock()
             let roots: [String]
             if let cachedRoots { roots = cachedRoots } else {
@@ -59,7 +61,7 @@ public enum MetadataImporter {
 
             var values: [String: String] = [:]
             var isARRI = false
-            var exifFailed = false
+            var exifError: String?
             if let runner {
                 do {
                     let tags = try runner.read(file: file)
@@ -69,11 +71,9 @@ public enum MetadataImporter {
                     }
                 } catch let e as MetadataError {
                     if case .toolMissing = e { throw e }
-                    lock.lock(); summary.failed.append("\(clip.name): \(e)"); lock.unlock()
-                    exifFailed = true
+                    exifError = "\(clip.name): \(e)"
                 }
             }
-            if exifFailed && art == nil { return }
 
             let ext = (clip.relativePath as NSString).pathExtension.lowercased()
             if let art, isARRI || (values.isEmpty && artCmdExtensions.contains(ext)) {
@@ -91,8 +91,19 @@ public enum MetadataImporter {
                     if isARRI { lock.lock(); summary.artFailed.append("\(clip.name): \(e)"); lock.unlock() }
                 }
             }
+            // formati senza parser dedicato: ffprobe
+            if values.isEmpty, let probe {
+                do {
+                    values = FFprobeMetadataParser.parse(try probe.read(file: file))
+                } catch let e as MetadataError {
+                    if case .toolMissing = e { throw e }
+                    if exifError == nil { exifError = "\(clip.name): \(e)" }
+                }
+            }
             if values.isEmpty {
-                if !exifFailed { lock.lock(); summary.unsupported += 1; lock.unlock() }
+                lock.lock()
+                if let exifError { summary.failed.append(exifError) } else { summary.unsupported += 1 }
+                lock.unlock()
             } else {
                 try store.updateMetadata(clipID: clip.id, merging: values)
                 lock.lock(); summary.read += 1; lock.unlock()

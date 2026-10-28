@@ -151,9 +151,8 @@ public enum ReportContextBuilder {
         let offloads = try store.offloads(underNode: nodeID)
         let byOffload = Dictionary(uniqueKeysWithValues: offloads.map { ($0.id, $0) })
         var items = clips.map { clip -> ReportItem in
-            let ext = (clip.relativePath as NSString).pathExtension.lowercased()
-            let kind: ReportItem.Kind = MediaClassifier.mediaExtensions.contains(ext) ? .video
-                : (MediaClassifier.audioExtensions.contains(ext) ? .audio : .other)
+            let kind: ReportItem.Kind = MediaClassifier.isMedia(relativePath: clip.relativePath) ? .video
+                : (MediaClassifier.isAudio(relativePath: clip.relativePath) ? .audio : .other)
             let thumb = thumbnails.flatMap { $0.hasImage(clipID: clip.id) ? $0.imageURL(clipID: clip.id) : nil }
             return ReportItem(clip: clip, kind: kind, offload: byOffload[clip.offloadID], thumbnail: thumb)
         }

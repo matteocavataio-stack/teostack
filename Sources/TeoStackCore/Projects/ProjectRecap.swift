@@ -8,6 +8,8 @@ public struct ProjectRecap: Equatable {
         public var label: String
         public var clips: Int
         public var bytes: Int64
+        /// Formato audio (nella tabella «clips» sono file audio).
+        public var isAudio = false
     }
 
     /// Spazio dei file copiati e verificati OK (clip e file collegati: XML, sidecar, audio…), contati una volta sola.
@@ -17,6 +19,10 @@ public struct ProjectRecap: Equatable {
     public var fileCount = 0
     /// Clip video (file media).
     public var clipCount = 0
+    /// Clip audio (WAV, BWF…): contati a parte, non sommati ai clip video né alla durata.
+    public var audioCount = 0
+    /// Audio senza codec letto (metadata non letti).
+    public var audioWithoutFormat = 0
     /// Schede scaricate: offload completati che hanno portato almeno un file (una stessa scheda ripetuta nello stesso bin conta una volta).
     public var cardCount = 0
     /// Offload annullati o interrotti, non contati come schede.
@@ -59,6 +65,21 @@ public struct ProjectRecap: Equatable {
             recap.fileCount += 1
             if clip.status == "ok" { recap.verifiedBytes += clip.size } else { recap.notVerifiedFiles += 1 }
             if completedIDs.contains(clip.offloadID) { cardIDs.insert(clip.offloadID) }
+            if clip.isAudio {
+                recap.audioCount += 1
+                let codec = clip.metadata["audioCodec"]?.trimmingCharacters(in: .whitespaces) ?? ""
+                let rate = clip.metadata["audioSampleRate"]?.trimmingCharacters(in: .whitespaces) ?? ""
+                if codec.isEmpty && rate.isEmpty { recap.audioWithoutFormat += 1 }
+                let ext = (clip.name as NSString).pathExtension.uppercased()
+                let parts = [codec, clip.metadata["audioBitDepth"].map { "\($0) bit" } ?? "", rate.isEmpty ? "" : "\(rate) Hz", ext.isEmpty ? "" : ".\(ext)"]
+                let label = parts.filter { !$0.isEmpty }.joined(separator: " · ")
+                let key = "audio|" + label
+                var line = formats[key] ?? FormatLine(label: label.isEmpty ? ClipColumns.notAvailable : label, clips: 0, bytes: 0, isAudio: true)
+                line.clips += 1
+                line.bytes += clip.size
+                formats[key] = line
+                continue
+            }
             guard clip.isMedia else { continue }
             recap.clipCount += 1
             if let raw = clip.metadata["durationSeconds"], let seconds = Double(raw), seconds.isFinite, seconds >= 0 {
@@ -77,7 +98,7 @@ public struct ProjectRecap: Equatable {
             formats[key] = line
         }
         recap.cardCount = cardIDs.count
-        recap.formats = formats.values.sorted { ($0.clips, $1.label) > ($1.clips, $0.label) }
+        recap.formats = formats.values.sorted { ($0.isAudio ? 1 : 0, $1.clips, $0.label) < ($1.isAudio ? 1 : 0, $0.clips, $1.label) }
         return recap
     }
 }

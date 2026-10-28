@@ -59,6 +59,8 @@ public struct ClipRecord: Identifiable, Equatable {
     public var dayName: String
     /// Data di modifica del file (dalla sorgente); nil per gli offload registrati prima che fosse salvata.
     public var modifiedAt: Date? = nil
+    /// Clip audio (WAV, BWF…): ha i metadata ma non l'anteprima, e non entra nel conteggio dei clip video.
+    public var isAudio: Bool = false
 }
 
 /// Voce della cronologia di un progetto.
@@ -160,12 +162,25 @@ public enum NameValidator {
 /// Quali file contano come "clip" nei conteggi. Gli altri file (XML, ALE, sidecar…) vengono registrati ma non contati.
 /// Elenco modificabile: è un valore predefinito, da confermare con la struttura reale delle schede.
 public enum MediaClassifier {
-    public static var mediaExtensions: Set<String> = ["ari", "arx", "mov", "mxf", "mp4"]
+    /// Clip video: ARRI (ari, arx), MOV/MXF/MP4, MPEG (mpg, mpeg) e i proxy a bassa risoluzione DJI (lrf).
+    public static var mediaExtensions: Set<String> = ["ari", "arx", "mov", "mxf", "mp4", "mpg", "mpeg", "lrf"]
     /// Clip audio (nei report compaiono come «Audio Clips»).
     public static var audioExtensions: Set<String> = ["wav", "bwf", "aif", "aiff", "mp3", "m4a", "aac", "flac"]
 
+    /// I file «._nome» sono le risorse che macOS crea accanto ai file sui dischi non Mac (exFAT, FAT): contengono solo attributi,
+    /// non sono clip. Vengono copiati e verificati come tutti gli altri file, ma non contano come clip né audio.
+    public static func isAppleDouble(relativePath: String) -> Bool {
+        (relativePath as NSString).lastPathComponent.hasPrefix("._")
+    }
+
+    private static func ext(_ relativePath: String) -> String { (relativePath as NSString).pathExtension.lowercased() }
+
     public static func isMedia(relativePath: String) -> Bool {
-        mediaExtensions.contains((relativePath as NSString).pathExtension.lowercased())
+        !isAppleDouble(relativePath: relativePath) && mediaExtensions.contains(ext(relativePath))
+    }
+
+    public static func isAudio(relativePath: String) -> Bool {
+        !isAppleDouble(relativePath: relativePath) && audioExtensions.contains(ext(relativePath))
     }
 }
 

@@ -21,7 +21,8 @@
   nessuna ricreazione del percorso se il disco sparisce (`destinationAnchor`). FileVerifier legge e calcola l'hash in parallelo.
 - Progetti (`Projects/`): Progetto → Library → [giorno] → [sottocartelle] → bin. Bin creato in automatico all'avvio dell'offload col nome della sorgente (modificabile; se esiste lo riusa).
   Sposta nodi (trascinamento o «Sposta in»), elimina solo il selezionato, cronologia per progetto (solo «Offload completato … tutti OK», cancellabile). Destinazione su disco = `<cartella scelta>/<nome bin>`.
-- Metadata: ExifTool + art-cmd (ARRI, cartella `~/ARRI`); Sony Venice ancora in attesa di file di esempio (XML sidecar + output ExifTool). Metadata/anteprime in parallelo (`ParallelRunner`).
+- Metadata: ExifTool + art-cmd (ARRI, cartella `~/ARRI`); **ffprobe** per tutto il resto (MPG, WAV/BWF, LRF, MP4, ProRes: `FFprobeRunner` + `FFprobeMetadataParser`, solo ciò che il file dichiara; ExifTool sbaglia sui MPEG);
+  audio = `ClipRecord.isAudio` (colonna `clip.isAudio`, migrazione v6), file «._» di macOS mai clip (`MediaClassifier.isAppleDouble`); Sony Venice ancora in attesa di file di esempio (XML sidecar + output ExifTool). Metadata/anteprime in parallelo (`ParallelRunner`).
 - Report (`Reports/`): 5 PDF separati nel formato Silverstack «Classic» (Shooting Day, Clips, Volume, Thumbnail, Contact Print), scritti da un PDF writer proprio con font DejaVu Sans Mono incorporato;
   nome file `<Report_Name>-<bin>-<aaaa-mm-gg-HHmm>.pdf`; report di una cartella = tutti i bin contenuti; Clips e Thumbnail stampano solo le colonne scelte dall'utente («Name» sempre). Campi sconosciuti vuoti.
 - Installer (`packaging/`): app universale Intel+ARM, icona dal logo, ExifTool/ffmpeg/ffprobe inclusi (`fetch-tools.sh`, con cache e ripiego GitHub se evermeet.cx dà 429), `.pkg` (scarica art-cmd da ARRI) e `.dmg`. Firma ad-hoc: al primo avvio clic destro → Apri.

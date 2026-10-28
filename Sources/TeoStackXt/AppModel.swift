@@ -302,8 +302,9 @@ final class ProjectsViewModel: ObservableObject {
         guard let store, !clips.isEmpty, !isReadingMetadata else { return }
         let exif = ExifToolRunner.locate()
         let art = ARTCmdRunner.locate()
-        guard exif != nil || art != nil else {
-            metadataStatus = tr("Né ExifTool né art-cmd sono installati: metadata non letti (vedi l'avviso in alto per installarli).")
+        let probe = FFprobeRunner.locate()
+        guard exif != nil || art != nil || probe != nil else {
+            metadataStatus = tr("Né ExifTool né art-cmd né ffprobe sono installati: metadata non letti (vedi l'avviso in alto per installarli).")
             if let job = thumbnailsForJobID { generateThumbnails(forJobID: job) }
             return
         }
@@ -311,7 +312,7 @@ final class ProjectsViewModel: ObservableObject {
         metadataStatus = tr("Lettura metadata…")
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
-                let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: exif, art: art) { done, total in
+                let summary = try MetadataImporter.importMetadata(for: clips, store: store, runner: exif, art: art, probe: probe) { done, total in
                     DispatchQueue.main.async { self?.metadataStatus = tr("Lettura metadata… {0}/{1}", done, total) }
                 }
                 DispatchQueue.main.async {
