@@ -107,7 +107,7 @@ struct ToolbarButton: View {
                 Image(systemName: symbol).font(.system(size: 20)).frame(height: 24)
                 Text(title).appFont(.caption).lineLimit(1)
             }
-            .frame(minWidth: 82)
+            .frame(minWidth: 74)
             .padding(.vertical, 4)
             .background(RoundedRectangle(cornerRadius: 6).fill(isSelected ? Color.accentColor.opacity(0.22) : Color.clear))
             .contentShape(Rectangle())
@@ -135,8 +135,8 @@ struct ProjectBar: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(tr("Progetto")).appFont(.headline)
+        HStack(spacing: 8) {
+            Text(tr("Progetto")).appFont(.headline).lineLimit(1).fixedSize()
             if projects.projects.isEmpty {
                 Text(tr("Nessun progetto: creane uno per iniziare")).foregroundStyle(.secondary)
             } else {
@@ -147,14 +147,17 @@ struct ProjectBar: View {
                     }
                 }
                 .labelsHidden()
-                .frame(maxWidth: 340)
+                .frame(maxWidth: 260)
                 if let p = projects.selectedProject {
+                    // il testo informativo cede spazio per primo: i pulsanti a destra non devono mai uscire dalla finestra
                     Text(tr("Creato il {0} · {1} clip", Self.formattedDate(p.createdAt), p.clipCount))
                         .foregroundStyle(.secondary)
                         .appFont(.callout)
+                        .lineLimit(1)
+                        .layoutPriority(-1)
                 }
             }
-            Spacer()
+            Spacer(minLength: 4)
             ToolbarButton(title: tr("Nuovo progetto"), symbol: "folder.badge.plus") { request = .newProject }
             ToolbarButton(title: tr("Rinomina"), symbol: "pencil") {
                 if let p = projects.selectedProject { request = .renameProject(p.name) }
@@ -178,6 +181,7 @@ struct ProjectBar: View {
             ToolbarButton(title: tr("Impostazioni"), symbol: "gearshape") { showSettings = true }
                 .help(tr("Cambia i colori dello sfondo e delle scritte, il carattere e la dimensione."))
         }
+        .lineLimit(1)
         .padding(10)
         .alert(tr("Eliminare il progetto «{0}»?", projects.selectedProject?.name ?? ""), isPresented: $confirmDelete) {
             Button(tr("Elimina"), role: .destructive) { projects.deleteProject() }
@@ -240,6 +244,12 @@ struct SidebarView: View {
             HStack {
                 LanguageMenu()
                 Spacer()
+                Button {
+                    NotificationCenter.default.post(name: .openSettings, object: nil)
+                } label: {
+                    Label(tr("Impostazioni"), systemImage: "gearshape")
+                }
+                .help(tr("Cambia i colori dello sfondo e delle scritte, il carattere e la dimensione."))
             }
             .padding(8)
         }
