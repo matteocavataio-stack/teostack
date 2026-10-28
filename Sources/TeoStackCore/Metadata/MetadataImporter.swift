@@ -35,6 +35,7 @@ public enum MetadataImporter {
             throw MetadataError.toolMissing(tr("Né ExifTool né art-cmd né ffprobe sono installati: impossibile leggere i metadata."))
         }
         var summary = MetadataSummary()
+        let registry = ReaderRegistry.standard()
         var rootsCache: [Int64: [String]] = [:]
         var done = 0
         let lock = NSLock()
@@ -59,54 +60,24 @@ public enum MetadataImporter {
             }
             guard let file else { lock.lock(); summary.missingFile += 1; lock.unlock(); return }
 
-            var values: [String: String] = [:]
-            var isARRI = false
-            var exifError: String?
-            if let runner {
-                do {
-                    let tags = try runner.read(file: file)
-                    if ARRIMetadataParser.canParse(tags) {
-                        isARRI = true
-                        values = ARRIMetadataParser.parse(tags)
-                    }
-                } catch let e as MetadataError {
-                    if case .toolMissing = e { throw e }
-                    exifError = "\(clip.name): \(e)"
+            let tools = ReaderTools(exiftool: runner, ffprobe: probe, artCmd: art)
+            let result = registry.read(ClipFile(url: URL(fileURLWithPath: file), tools: tools))
+            var firstError: String?
+            for diagnostic in result.diagnostics {
+                switch diagnostic {
+                case .toolMissing(let message): throw MetadataError.toolMissing(message)
+                case .toolFailed(let message): if firstError == nil { firstError = "\(clip.name): \(message)" }
+                case .artCmdFailed(let message):
+                    lock.lock()
+                    summary.artFailed.append(message.map { "\(clip.name): \($0)" } ?? tr("{0}: art-cmd non ha restituito metadata", clip.name))
+                    lock.unlock()
+                case .note: break
                 }
             }
-
-            let ext = (clip.relativePath as NSString).pathExtension.lowercased()
-            if let art, isARRI || (values.isEmpty && artCmdExtensions.contains(ext)) {
-                do {
-                    let json = try art.read(file: file)
-                    let extra = ARTMetadataParser.parse(json)
-                    if !extra.isEmpty {
-                        values.merge(extra) { _, new in new }
-                    } else if isARRI {
-                        lock.lock(); summary.artFailed.append(tr("{0}: art-cmd non ha restituito metadata", clip.name)); lock.unlock()
-                    }
-                } catch let e as MetadataError {
-                    if case .toolMissing = e { throw e }
-                    // su un clip riconosciuto come ARRI l'errore va segnalato; su un file sconosciuto è solo "formato non supportato"
-                    if isARRI { lock.lock(); summary.artFailed.append("\(clip.name): \(e)"); lock.unlock() }
-                }
-            }
-            // formati senza parser dedicato: ffprobe
-            if values.isEmpty, let probe {
-                do {
-                    values = FFprobeMetadataParser.parse(try probe.read(file: file))
-                } catch let e as MetadataError {
-                    if case .toolMissing = e { throw e }
-                    if exifError == nil { exifError = "\(clip.name): \(e)" }
-                }
-            }
-            // WAV broadcast: scena, take, nastro, tracce, timecode, registratore dall'intestazione del file (bext + iXML); prevalgono su ffprobe
-            if clip.isAudio, let bwf = BroadcastWaveReader.read(path: file) {
-                values.merge(BroadcastWaveMetadataParser.parse(bwf)) { _, new in new }
-            }
+            let values = result.columns
             if values.isEmpty {
                 lock.lock()
-                if let exifError { summary.failed.append(exifError) } else { summary.unsupported += 1 }
+                if let firstError { summary.failed.append(firstError) } else { summary.unsupported += 1 }
                 lock.unlock()
             } else {
                 try store.updateMetadata(clipID: clip.id, merging: values)

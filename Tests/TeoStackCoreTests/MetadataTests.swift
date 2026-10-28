@@ -453,10 +453,10 @@ final class ARTCmdRunnerAndImporterTests: XCTestCase {
     func testArtCmdAloneWorksOnMxfAndMovButSkipsOtherClips() throws {
         let bin = try offloadedBin()
         let summary = try MetadataImporter.importMetadata(for: try store.clips(underNode: bin.id), store: store, runner: nil, art: try fakeArt())
-        XCTAssertEqual(summary.read, 3)       // 2 .mov + 1 .mxf
-        XCTAssertEqual(summary.unsupported, 1) // il .ari (frame singolo) non viene passato ad art-cmd
+        XCTAssertEqual(summary.read, 4)       // 2 .mov + 1 .mxf + 1 .ari (ExifTool non legge gli .ari: li legge art-cmd)
+        XCTAssertEqual(summary.unsupported, 0)
         let clips = try store.clips(underNode: bin.id)
-        XCTAssertTrue(clips.first { $0.name == "A001C003.ari" }?.metadata.isEmpty == true)
+        XCTAssertEqual(clips.first { $0.name == "A001C003.ari" }?.metadata["iso"], "800")
         XCTAssertEqual(clips.first { $0.name == "C0001.MXF" }?.metadata["iso"], "800")
         XCTAssertNil(clips.first { $0.name == "C0001.MXF" }?.metadata["durationSeconds"], "senza ExifTool la durata resta N/D")
     }
