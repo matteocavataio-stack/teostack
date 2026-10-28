@@ -157,6 +157,9 @@ Il pulsante **Cancella…** in cima alla colonna svuota la cronologia del proget
   cronologia già registrate prima e i menu standard di macOS (che seguono la lingua del sistema).
 - **Schede collegate:** il menu «Schede collegate» elenca schede e dischi esterni montati; ⌘O apre la scelta manuale della sorgente.
 - **Fine offload:** suono (diverso se ci sono problemi, disattivabile) e rimbalzo nel Dock se l'app è in secondo piano; con tutti i file OK compare «Espelli sorgente».
+- **Sorgente che si svuota da sola:** quando l'offload finisce con **tutti i file OK** la parte «Sorgente» (elenco file, dimensione, nome del bin) si svuota e torna il riquadro «Trascina qui la scheda»,
+  pronta per la scheda successiva. Destinazioni, avanzamento, messaggio «TUTTI I FILE OK» e cronologia restano; «Espelli sorgente» resta disponibile finché non scegli un'altra sorgente.
+  Con **problemi (MISMATCH/errori) o offload annullato** l'elenco NON si svuota: serve per vedere quali file non sono andati bene e per «Riprendi». Si disattiva con la casella «Svuota la sorgente a fine offload».
 - **Misurare la velocità sul tuo Mac:** `TEOSTACK_BENCH=1 swift test --filter BenchmarkTests` (dati di prova in cartelle temporanee) oppure
   `TEOSTACK_BENCH=1 TEOSTACK_BENCH_MB=8000 TEOSTACK_BENCH_DST=/Volumes/SSD1 swift test --filter BenchmarkTests` per provare un disco vero; stampa MB/s di copia e tempi totali.
   Per una scheda reale (in sola lettura): aggiungi `TEOSTACK_BENCH_SRC=/Volumes/NOME_SCHEDA`.

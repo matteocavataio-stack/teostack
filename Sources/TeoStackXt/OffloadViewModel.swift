@@ -101,8 +101,30 @@ final class OffloadViewModel: ObservableObject {
         if let url = pickFolder(message: tr("Seleziona la scheda (sorgente)")) { setSource(url) }
     }
 
+    /// «Svuota la sorgente a fine offload» (impostazione dell'app, attiva se non è mai stata cambiata).
+    static var clearSourceWhenDone: Bool {
+        UserDefaults.standard.object(forKey: "clearSourceWhenDone") as? Bool ?? true
+    }
+
+    /// Scheda dell'ultimo offload riuscito dopo che la parte «Sorgente» si è svuotata da sola: serve per «Espelli sorgente».
+    private var finishedSourceVolume: URL?
+
+    /// Svuota SOLO la parte «Sorgente» (elenco file, nome del bin, dimensione), pronta per la scheda successiva.
+    /// Destinazioni, avanzamento, esito e cronologia restano; la scheda resta espellibile.
+    private func clearSource() {
+        finishedSourceVolume = ejectableSourceVolume
+        sourceURL = nil
+        rows = []
+        totalSize = 0
+        skippedItems = []
+        fileStates = []
+        scan = nil
+        binName = ""
+    }
+
     func setSource(_ url: URL) {
         guard runState != .running else { return }
+        finishedSourceVolume = nil
         sourceURL = url
         binName = NameValidator.suggestedBinName(fromSource: url.lastPathComponent)
         result = nil
@@ -349,6 +371,9 @@ final class OffloadViewModel: ObservableObject {
         if result.outcome == .preflightFailed {
             errorMessage = result.preflightErrors.joined(separator: "\n")
         }
+        // Con tutti i file OK (e l'offload registrato) la sorgente si svuota da sola. Con problemi o annullato resta l'elenco dei file,
+        // perché serve a vedere quali non sono andati a buon fine e a «Riprendi».
+        if result.outcome == .completed, result.allOK, errorMessage == nil, Self.clearSourceWhenDone { clearSource() }
     }
 
     /// Suono (diverso se ci sono problemi) e rimbalzo nel Dock se l'app non è in primo piano.
@@ -375,6 +400,9 @@ final class OffloadViewModel: ObservableObject {
 
     /// Volume su cui si trova la sorgente, se è un disco esterno che si può espellere.
     var ejectableSourceVolume: URL? {
+        if sourceURL == nil, let volume = finishedSourceVolume {      // dopo lo svuotamento automatico della sorgente
+            return Self.connectedVolumes().contains(where: { $0.path == volume.path }) ? volume : nil
+        }
         guard let source = sourceURL, let volume = try? source.resourceValues(forKeys: [.volumeURLKey]).volume,
               Self.connectedVolumes().contains(where: { $0.path == volume.path }) else { return nil }
         return volume
@@ -383,7 +411,10 @@ final class OffloadViewModel: ObservableObject {
     /// Espelle la scheda sorgente (solo su richiesta, dopo un offload con tutti i file OK).
     func ejectSource() {
         guard let volume = ejectableSourceVolume else { return }
-        do { try NSWorkspace.shared.unmountAndEjectDevice(at: volume) } catch {
+        do {
+            try NSWorkspace.shared.unmountAndEjectDevice(at: volume)
+            if sourceURL == nil { finishedSourceVolume = nil }
+        } catch {
             errorMessage = tr("Impossibile espellere «{0}»: {1}", volume.lastPathComponent, error.localizedDescription)
         }
     }

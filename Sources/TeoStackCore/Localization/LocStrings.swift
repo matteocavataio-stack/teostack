@@ -222,6 +222,8 @@ enum LocStrings {
         ("Verifica durante la copia", "Verify while copying", "Verificar durante la copia", "Verifica durant la còpia"),
         ("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita.", "Each file is read back and compared as soon as it is written, while the copy continues: faster with SSD disks. Turn it off with slow disks (HDD): verification will then start when the copy is finished.", "Cada archivo se relee y se compara en cuanto se escribe, mientras la copia continúa: más rápido con discos SSD. Desactívalo con discos lentos (HDD): la verificación empezará al terminar la copia.", "Cada fitxer es rellegeix i es compara tan bon punt s'escriu, mentre la còpia continua: més ràpid amb discos SSD. Desactiva-ho amb discos lents (HDD): la verificació començarà quan la còpia hagi acabat."),
         ("Suono al termine", "Sound when finished", "Sonido al terminar", "So en acabar"),
+        ("Svuota la sorgente a fine offload", "Clear the source when the offload ends", "Vaciar el origen al terminar el offload", "Buida l'origen en acabar l'offload"),
+        ("Quando tutti i file sono OK la parte «Sorgente» si svuota da sola, pronta per la scheda successiva. Se ci sono problemi resta l'elenco dei file.", "When all files are OK the “Source” section clears itself, ready for the next card. If there are problems the file list stays.", "Cuando todos los archivos están OK la parte «Origen» se vacía sola, lista para la siguiente tarjeta. Si hay problemas, la lista de archivos se queda.", "Quan tots els fitxers són OK la part «Origen» es buida sola, a punt per a la targeta següent. Si hi ha problemes, la llista de fitxers es queda."),
         ("Espelli sorgente", "Eject source", "Expulsar origen", "Expulsa l'origen"),
         ("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK", "Unmounts and ejects the card: only after an offload with all files OK", "Desmonta y expulsa la tarjeta: solo tras un offload con todos los archivos OK", "Desmunta i expulsa la targeta: només després d'un offload amb tots els fitxers OK"),
         ("NON AVVIATO: controlli preliminari falliti", "NOT STARTED: preliminary checks failed", "NO INICIADO: fallaron las comprobaciones previas", "NO INICIAT: han fallat les comprovacions prèvies"),
@@ -251,11 +253,11 @@ enum LocStrings {
         ("Per ordinare il progetto, per esempio CAM_A. I bin si creano da soli quando avvii un offload.", "To organise the project, for example CAM_A. Bins are created automatically when you start an offload.", "Para ordenar el proyecto, por ejemplo CAM_A. Los bins se crean solos al iniciar un offload.", "Per ordenar el projecte, per exemple CAM_A. Els bins es creen sols quan inicies un offload."),
         ("Rinomina solo nel programma: le cartelle già create sui dischi non vengono rinominate.", "Renames only inside the program: folders already created on the disks are not renamed.", "Solo renombra dentro del programa: las carpetas ya creadas en los discos no se renombran.", "Només canvia el nom dins del programa: les carpetes ja creades als discos no es reanomenen."),
         ("Progetto", "Project", "Proyecto", "Projecte"),
-        ("Nessun progetto: creane uno per iniziare", "No project: create one to get started", "Ningún proyecto: crea uno para empezar", "Cap projecte: crea'n un per començar"),
-        ("{0}  ·  {1}  ·  {2} clip", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips"),
     ]
 
     private static let part4: [Entry] = [
+        ("Nessun progetto: creane uno per iniziare", "No project: create one to get started", "Ningún proyecto: crea uno para empezar", "Cap projecte: crea'n un per començar"),
+        ("{0}  ·  {1}  ·  {2} clip", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips"),
         ("Creato il {0} · {1} clip", "Created on {0} · {1} clips", "Creado el {0} · {1} clips", "Creat el {0} · {1} clips"),
         ("Esporta report…", "Export report…", "Exportar informe…", "Exporta l'informe…"),
         ("Elimina progetto…", "Delete project…", "Eliminar proyecto…", "Elimina el projecte…"),
@@ -314,11 +316,11 @@ enum LocStrings {
         ("Colonne dei report Clips e Thumbnail (stesse del tab Clip)", "Columns of the Clips and Thumbnail reports (same as the Clips tab)", "Columnas de los informes Clips y Thumbnail (las mismas de la pestaña Clips)", "Columnes dels informes Clips i Thumbnail (les mateixes de la pestanya Clips)"),
         ("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip).", "“Name” is always present. Shooting Day, Volume and Contact Print have a fixed format. Thumbnails appear if they have already been generated (Clips tab).", "«Name» siempre está presente. Shooting Day, Volume y Contact Print tienen un formato fijo. Las miniaturas aparecen si ya se han generado (pestaña Clips).", "«Name» sempre hi és. Shooting Day, Volume i Contact Print tenen un format fix. Les miniatures apareixen si ja s'han generat (pestanya Clips)."),
         ("Mostra nel Finder", "Show in Finder", "Mostrar en el Finder", "Mostra al Finder"),
-        ("Chiudi", "Close", "Cerrar", "Tanca"),
-        ("Esporta PDF…", "Export PDF…", "Exportar PDF…", "Exporta el PDF…"),
     ]
 
     private static let part5: [Entry] = [
+        ("Chiudi", "Close", "Cerrar", "Tanca"),
+        ("Esporta PDF…", "Export PDF…", "Exportar PDF…", "Exporta el PDF…"),
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),
         ("Salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),

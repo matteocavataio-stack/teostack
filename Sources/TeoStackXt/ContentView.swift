@@ -456,6 +456,7 @@ struct ControlBar: View {
     @ObservedObject var vm: OffloadViewModel
     @AppStorage("overlapVerification") private var overlapVerification = true
     @AppStorage("soundOnFinish") private var soundOnFinish = true
+    @AppStorage("clearSourceWhenDone") private var clearSourceWhenDone = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -483,6 +484,9 @@ struct ControlBar: View {
                     .disabled(vm.isRunning)
                     .help(tr("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita."))
                 Toggle(tr("Suono al termine"), isOn: $soundOnFinish).toggleStyle(.checkbox)
+                Toggle(tr("Svuota la sorgente a fine offload"), isOn: $clearSourceWhenDone)
+                    .toggleStyle(.checkbox)
+                    .help(tr("Quando tutti i file sono OK la parte «Sorgente» si svuota da sola, pronta per la scheda successiva. Se ci sono problemi resta l'elenco dei file."))
                 if let result = vm.result, result.outcome == .completed, result.allOK, vm.runState == .idle, vm.ejectableSourceVolume != nil {
                     Button(tr("Espelli sorgente")) { vm.ejectSource() }
                         .help(tr("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK"))
