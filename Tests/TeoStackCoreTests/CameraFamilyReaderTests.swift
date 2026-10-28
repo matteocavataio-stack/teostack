@@ -167,6 +167,38 @@ final class CameraFamilyReaderTests: XCTestCase {
         XCTAssertEqual(try TestSupport.snapshot(of: dir), before, "i file non vengono toccati")
     }
 
+    /// Struttura come negli esempi pubblici (ticket ffmpeg #5901, ExifTool forum): CreationDate, Device, Duration, LtcChangeTable, Acquisition/Group/Item.
+    /// I nomi delle voci di acquisizione di VENICE non sono verificati su un file vero.
+    func testSonyNonRealTimeMetaWithAcquisitionItems() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <NonRealTimeMeta xmlns="urn:schemas-professionalDisc:nonRealTimeMeta:ver.2.00" lastUpdate="2022-06-09T21:14:00+00:00">
+          <TargetMaterial umidRef="0x060A2B340101010501010D4313000000"/>
+          <Duration value="252"/>
+          <LtcChangeTable tcFps="25" halfStep="false"><LtcChange frameCount="0" value="00000000" status="increment"/></LtcChangeTable>
+          <CreationDate value="2022-06-09T21:14:00Z"/>
+          <Device manufacturer="Sony" modelName="MPC-3610" serialNo="000123"/>
+          <AcquisitionRecord>
+            <Group name="CameraUnitMetadataSet">
+              <Item name="ISOSensitivity" value="800"/>
+              <Item name="WhiteBalance" value="5600"/>
+              <Item name="ShutterSpeed_Angle" value="172.80"/>
+              <Item name="CaptureGammaEquation" value="s-log3-cine"/>
+            </Group>
+            <Group name="LensUnitMetadataSet"><Item name="IrisFNumber" value="2.8"/></Group>
+          </AcquisitionRecord>
+        </NonRealTimeMeta>
+        """
+        let flat = try XCTUnwrap(SidecarXML.flatten(Data(xml.utf8)))
+        XCTAssertEqual(flat["Item:CameraUnitMetadataSet/ISOSensitivity"], "800")
+        let m = SidecarMapper.map(flat)
+        XCTAssertEqual(m.cameraModel, "MPC-3610"); XCTAssertEqual(m.cameraSerial, "000123"); XCTAssertEqual(m.frameCount, 252)
+        XCTAssertEqual(m.iso, "800"); XCTAssertEqual(m.whiteBalance, "5600 K"); XCTAssertEqual(m.shutterAngle, "172.8°")
+        XCTAssertEqual(m.aperture, "2.8"); XCTAssertEqual(m.gamma, "s-log3-cine")
+        XCTAssertNil(m.lensModel, "nessun nome di lente nel file: non si inventa")
+        XCTAssertNil(m.timecodeStart, "il formato del valore LtcChange non è verificato: non si interpreta")
+    }
+
     func testGarbageSidecarIsIgnored() throws {
         try needTools()
         let f = dir.appendingPathComponent("C0008.MP4")

@@ -35,6 +35,7 @@ public enum SidecarXML {
     private final class Flattener: NSObject, XMLParserDelegate {
         var values: [String: String] = [:]
         private var stack: [String] = []
+        private var groupNames: [String?] = []
         private var text = ""
         private var counts: [String: Int] = [:]
 
@@ -42,6 +43,13 @@ public enum SidecarXML {
 
         func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String] = [:]) {
             stack.append(local(name))
+            groupNames.append(local(name) == "Group" ? attributes["name"] : nil)
+            // «<Item name="ISOSensitivity" value="800"/>» dentro «<Group name="CameraUnitMetadataSet">» → chiave «Item:CameraUnitMetadataSet/ISOSensitivity»
+            if local(name) == "Item", let item = attributes["name"], let value = attributes["value"], values.count < SidecarXML.maxEntries {
+                let group = groupNames.dropLast().reversed().compactMap { $0 }.first ?? "-"
+                let t = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !t.isEmpty, t.count <= 500 { values["Item:\(group)/\(item)"] = t }
+            }
             text = ""
             let path = stack.joined(separator: "/")
             let n = (counts[path] ?? 0) + 1
@@ -64,6 +72,7 @@ public enum SidecarXML {
             }
             text = ""
             _ = stack.popLast()
+            _ = groupNames.popLast()
         }
     }
 }
@@ -98,6 +107,20 @@ enum SidecarMapper {
         if let w = attr("VideoLayout", "pixel").flatMap(Int.init), let h = attr("VideoLayout", "numOfVerticalLine").flatMap(Int.init), w > 0, h > 0 {
             m.width = w; m.height = h
         }
+        // «<Duration value="252"/>»: numero di fotogrammi (come lo leggono ffmpeg e telemetry-parser)
+        if let frames = attr("Duration", "value").flatMap(Int.init), frames > 0 { m.frameCount = frames }
+        // Voci di acquisizione («Item» con nome e valore): solo i nomi del dizionario SMPTE RDD 18 che si ritrovano anche nei MOV (isosensitivity, whitebalance,
+        // shutterspeed_angle, irisfnumber). NON verificato su un XML vero di VENICE: i nomi esatti dipendono dal modello.
+        func item(_ name: String) -> String? {
+            for key in flat.keys.sorted() where key.hasPrefix("Item:") && key.lowercased().hasSuffix("/" + name.lowercased()) { return flat[key] }
+            return nil
+        }
+        if let iso = ExifMapper.leadingNumber(item("ISOSensitivity")), iso > 0 { m.iso = String(Int(iso.rounded())) }
+        if let k = ExifMapper.leadingNumber(item("WhiteBalance")), k > 0 { m.whiteBalance = "\(Int(k.rounded())) K" }
+        if let a = ExifMapper.leadingNumber(item("ShutterSpeed_Angle")), a > 0 { m.shutterAngle = "\(TagBag.format(a, decimals: 1))°" }
+        if let f = ExifMapper.leadingNumber(item("IrisFNumber")), f > 0 { m.aperture = TagBag.format(f, decimals: 1) }
+        m.gamma = ExifMapper.real(item("CaptureGammaEquation"))
+        m.colorSpace = ExifMapper.real(item("CaptureColorPrimaries"))
         for (k, v) in flat { m.rawFields["sidecar:" + k] = v }
         m.status = m.hasValues ? .read : .unsupported
         return m
