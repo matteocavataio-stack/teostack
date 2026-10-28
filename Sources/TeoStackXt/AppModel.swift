@@ -351,6 +351,21 @@ final class ProjectsViewModel: ObservableObject {
         }
     }
 
+    /// Esporta in un file i metadata dei clip mostrati (JSON, CSV o ALE). Ogni riga porta l'XXH64 calcolato in copia.
+    func exportMetadata(_ format: MetadataExporter.Format) {
+        guard !clips.isEmpty else { return }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "metadata.\(format.fileExtension)"
+        panel.message = tr("Esporta i metadata dei clip mostrati.")
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try MetadataExporter.data(for: clips, format: format).write(to: url, options: .atomic)
+            metadataStatus = tr("Metadata esportati: {0} clip in «{1}».", clips.count, url.lastPathComponent)
+        } catch {
+            errorMessage = tr("Impossibile scrivere il file: {0}", "\(error)")
+        }
+    }
+
     /// Rilegge i metadata di tutti i clip mostrati (selezione corrente).
     func readMetadataForSelection() {
         runMetadataImport(clips: clips)

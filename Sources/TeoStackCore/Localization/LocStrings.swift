@@ -163,6 +163,9 @@ enum LocStrings {
         ("Importati {0} file in {1} bin ({2} già presenti).", "Imported {0} files into {1} bin(s) ({2} already present).", "Importados {0} archivos en {1} bin(s) ({2} ya presentes).", "Importats {0} fitxers a {1} bin(s) ({2} ja presents)."),
         ("{0} elementi non importabili (collegamenti o file speciali).", "{0} items could not be imported (links or special files).", "{0} elementos no importables (enlaces o archivos especiales).", "{0} elements no importables (enllaços o fitxers especials)."),
         ("Nessun file da importare nella selezione.", "No files to import in the selection.", "Ningún archivo que importar en la selección.", "Cap fitxer per importar a la selecció."),
+        ("Esporta i metadata dei clip mostrati.", "Export the metadata of the clips shown.", "Exporta los metadatos de los clips mostrados.", "Exporta les metadades dels clips mostrats."),
+        ("Metadata esportati: {0} clip in «{1}».", "Metadata exported: {0} clips to “{1}”.", "Metadatos exportados: {0} clips en «{1}».", "Metadades exportades: {0} clips a «{1}»."),
+        ("Impossibile scrivere il file: {0}", "Cannot write the file: {0}", "No se puede escribir el archivo: {0}", "No es pot escriure el fitxer: {0}"),
         ("Né ExifTool né art-cmd né ffprobe sono installati: metadata non letti (vedi l'avviso in alto per installarli).", "None of ExifTool, art-cmd or ffprobe is installed: metadata not read (see the notice at the top to install them).", "Ni ExifTool ni art-cmd ni ffprobe están instalados: metadatos sin leer (mira el aviso de arriba para instalarlos).", "Ni ExifTool ni art-cmd ni ffprobe no estan instal·lats: metadades sense llegir (mira l'avís de dalt per instal·lar-los)."),
         ("Lettura metadata…", "Reading metadata…", "Leyendo metadatos…", "Llegint metadades…"),
         ("Lettura metadata… {0}/{1}", "Reading metadata… {0}/{1}", "Leyendo metadatos… {0}/{1}", "Llegint metadades… {0}/{1}"),
@@ -187,12 +190,12 @@ enum LocStrings {
         ("Schede scaricate: {0}", "Cards offloaded: {0}", "Tarjetas descargadas: {0}", "Targetes descarregades: {0}"),
         ("Spazio verificato: {0}", "Verified space: {0}", "Espacio verificado: {0}", "Espai verificat: {0}"),
         ("File importati: {0}", "Imported files: {0}", "Archivos importados: {0}", "Fitxers importats: {0}"),
-        ("Ancora nessun offload né file importato in questa cartella.", "No offload or imported file in this folder yet.", "Todavía no hay ningún offload ni archivo importado en esta carpeta.", "Encara no hi ha cap offload ni fitxer importat en aquesta carpeta."),
-        ("Panoramica clip", "Clips Overview", "Resumen de clips", "Resum de clips"),
-        ("File", "Files", "Archivos", "Fitxers"),
     ]
 
     private static let part3: [Entry] = [
+        ("Ancora nessun offload né file importato in questa cartella.", "No offload or imported file in this folder yet.", "Todavía no hay ningún offload ni archivo importado en esta carpeta.", "Encara no hi ha cap offload ni fitxer importat en aquesta carpeta."),
+        ("Panoramica clip", "Clips Overview", "Resumen de clips", "Resum de clips"),
+        ("File", "Files", "Archivos", "Fitxers"),
         ("Dimensione", "Size", "Tamaño", "Mida"),
         ("Clip video sorgente", "Source Video Clips", "Clips de vídeo de origen", "Clips de vídeo d'origen"),
         ("Clip audio", "Audio Clips", "Clips de audio", "Clips d'àudio"),
@@ -250,12 +253,12 @@ enum LocStrings {
         ("Copia {0}%  {1}", "Copy {0}%  {1}", "Copia {0}%  {1}", "Còpia {0}%  {1}"),
         ("Verifica {0}%  {1}", "Verify {0}%  {1}", "Verificación {0}%  {1}", "Verificació {0}%  {1}"),
         ("Tempo {0}", "Time {0}", "Tiempo {0}", "Temps {0}"),
-        ("ETA {0}", "ETA {0}", "ETA {0}", "ETA {0}"),
-        ("OK {0}", "OK {0}", "OK {0}", "OK {0}"),
-        ("MISMATCH {0}", "MISMATCH {0}", "MISMATCH {0}", "MISMATCH {0}"),
     ]
 
     private static let part4: [Entry] = [
+        ("ETA {0}", "ETA {0}", "ETA {0}", "ETA {0}"),
+        ("OK {0}", "OK {0}", "OK {0}", "OK {0}"),
+        ("MISMATCH {0}", "MISMATCH {0}", "MISMATCH {0}", "MISMATCH {0}"),
         ("ERRORE {0}", "ERROR {0}", "ERROR {0}", "ERROR {0}"),
         ("Destinazione interrotta: {0}", "Destination interrupted: {0}", "Destino interrumpido: {0}", "Destinació interrompuda: {0}"),
         ("Lettura sorgente: {0}", "Source read: {0}", "Lectura del origen: {0}", "Lectura de l'origen: {0}"),
@@ -313,12 +316,12 @@ enum LocStrings {
         ("Esporta report", "Export report", "Exportar informe", "Exporta l'informe"),
         ("Eliminare il progetto «{0}»?", "Delete the project “{0}”?", "¿Eliminar el proyecto «{0}»?", "Vols eliminar el projecte «{0}»?"),
         ("Elimina", "Delete", "Eliminar", "Elimina"),
-        ("Verrà eliminato l'INTERO progetto dal programma ({0} bin, {1} offload, {2} file registrati). I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program ({0} bins, {1} offloads, {2} recorded files). Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa ({0} bins, {1} offloads, {2} archivos registrados). Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa ({0} bins, {1} offloads, {2} fitxers registrats). Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
-        ("Verrà eliminato l'INTERO progetto dal programma. I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program. Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa. Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa. Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
-        ("Seleziona o crea un progetto", "Select or create a project", "Selecciona o crea un proyecto", "Selecciona o crea un projecte"),
     ]
 
     private static let part5: [Entry] = [
+        ("Verrà eliminato l'INTERO progetto dal programma ({0} bin, {1} offload, {2} file registrati). I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program ({0} bins, {1} offloads, {2} recorded files). Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa ({0} bins, {1} offloads, {2} archivos registrados). Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa ({0} bins, {1} offloads, {2} fitxers registrats). Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
+        ("Verrà eliminato l'INTERO progetto dal programma. I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program. Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa. Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa. Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
+        ("Seleziona o crea un progetto", "Select or create a project", "Selecciona o crea un proyecto", "Selecciona o crea un projecte"),
         ("+ Giorno", "+ Day", "+ Día", "+ Dia"),
         ("Facoltativo: cartella con la data delle riprese", "Optional: folder with the shooting date", "Opcional: carpeta con la fecha del rodaje", "Opcional: carpeta amb la data del rodatge"),
         ("+ Cartella", "+ Folder", "+ Carpeta", "+ Carpeta"),
@@ -336,12 +339,15 @@ enum LocStrings {
         ("Primo fotogramma", "First frame", "Primer fotograma", "Primer fotograma"),
         ("Anteprima non ancora creata.", "Thumbnail not created yet.", "Miniatura aún no creada.", "Miniatura encara no creada."),
         ("Crea anteprime", "Create thumbnails", "Crear miniaturas", "Crea miniatures"),
+        ("Tutti i tag letti ({0})", "All tags read ({0})", "Todas las etiquetas leídas ({0})", "Totes les etiquetes llegides ({0})"),
         ("file", "files", "archivos", "fitxers"),
         ("clip", "clips", "clips", "clips"),
         ("Mostra anche i file non video (XML, sidecar…)", "Also show non-video files (XML, sidecars…)", "Mostrar también los archivos que no son vídeo (XML, sidecars…)", "Mostra també els fitxers que no són vídeo (XML, sidecars…)"),
         ("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).", "Creates the first-frame thumbnail of the clips that do not have one (from the verified copy on the destination disk).", "Crea la miniatura del primer fotograma de los clips que no la tienen (a partir de la copia verificada en el disco de destino).", "Crea la miniatura del primer fotograma dels clips que no en tenen (a partir de la còpia verificada al disc de destinació)."),
         ("Leggi metadata", "Read metadata", "Leer metadatos", "Llegeix metadades"),
         ("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).", "Re-reads the metadata of the clips shown with ExifTool and art-cmd (from the verified copy on the destination disk).", "Vuelve a leer los metadatos de los clips mostrados con ExifTool y art-cmd (a partir de la copia verificada en el disco de destino).", "Torna a llegir les metadades dels clips mostrats amb ExifTool i art-cmd (a partir de la còpia verificada al disc de destinació)."),
+        ("Esporta metadata", "Export metadata", "Exportar metadatos", "Exporta metadades"),
+        ("Salva i metadata dei clip mostrati in JSON, CSV o ALE (Avid). Ogni riga include l'XXH64 del file.", "Saves the metadata of the clips shown as JSON, CSV or ALE (Avid). Every row includes the file XXH64.", "Guarda los metadatos de los clips mostrados en JSON, CSV o ALE (Avid). Cada fila incluye el XXH64 del archivo.", "Desa les metadades dels clips mostrats en JSON, CSV o ALE (Avid). Cada fila inclou l'XXH64 del fitxer."),
         ("Colonne", "Columns", "Columnas", "Columnes"),
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
         ("Metadata camera (N/D se non letti)", "Camera metadata (N/A if not read)", "Metadatos de la cámara (N/D si no se leen)", "Metadades de la càmera (N/D si no es llegeixen)"),
@@ -373,15 +379,15 @@ enum LocStrings {
         ("Chiudi", "Close", "Cerrar", "Tanca"),
         ("Esporta PDF…", "Export PDF…", "Exportar PDF…", "Exporta el PDF…"),
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
+    ]
+
+    private static let part6: [Entry] = [
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),
         ("Salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
         ("Errori: {0}", "Errors: {0}", "Errores: {0}", "Errors: {0}"),
         ("salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
         ("Report", "Report", "Informe", "Informe"),
         ("Esporta report…", "Export report…", "Exportar informe…", "Exporta l'informe…"),
-    ]
-
-    private static let part6: [Entry] = [
         ("Anteprima", "Thumbnail", "Miniatura", "Miniatura"),
         ("Giorno", "Day", "Día", "Dia"),
         ("Bin", "Bin", "Bin", "Bin"),
@@ -417,6 +423,12 @@ enum LocStrings {
         ("Audio tracce", "Audio tracks", "Pistas de audio", "Pistes d'àudio"),
         ("Audio sample rate", "Audio sample rate", "Frecuencia de muestreo del audio", "Freqüència de mostreig de l'àudio"),
         ("Audio bit", "Audio bits", "Bits de audio", "Bits d'àudio"),
+        ("Contenitore", "Container", "Contenedor", "Contenidor"),
+        ("Fotogrammi", "Frames", "Fotogramas", "Fotogrames"),
+        ("Gamma", "Gamma", "Gamma", "Gamma"),
+        ("Diaframma", "Aperture", "Diafragma", "Diafragma"),
+        ("T-stop", "T-stop", "T-stop", "T-stop"),
+        ("Angolo shutter", "Shutter angle", "Ángulo de obturación", "Angle d'obturació"),
         ("Registratore", "Recorder", "Grabador", "Gravador"),
         ("Nomi tracce", "Track names", "Nombres de pistas", "Noms de pistes"),
     ]

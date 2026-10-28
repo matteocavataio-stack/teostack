@@ -422,13 +422,30 @@ struct ClipPreviewPanel: View {
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
             }
             Divider()
-            ForEach(["camera", "lens", "iso", "whiteBalance", "ndFilter", "sensorFPS", "shutter", "resolution", "codec", "timecode", "duration", "audioCodec", "audioChannels", "audioSampleRate", "audioBitDepth"], id: \.self) { id in
+            ForEach(["camera", "lens", "iso", "whiteBalance", "ndFilter", "sensorFPS", "shutter", "resolution", "codec", "timecode", "duration", "audioCodec", "audioChannels", "audioSampleRate", "audioBitDepth", "container", "gamma", "aperture", "tStop", "shutterAngle", "frameCount"], id: \.self) { id in
                 if let col = ClipColumns.column(id: id) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(col.localizedTitle).font(.caption).foregroundStyle(.secondary).frame(width: 84, alignment: .leading)
                         Text(ClipColumns.value(col, of: clip)).font(.callout).textSelection(.enabled)
                     }
                 }
+            }
+            let raw = clip.metadata.filter { $0.key.hasPrefix(ClipMetadata.rawPrefix) }
+            if !raw.isEmpty {
+                DisclosureGroup(tr("Tutti i tag letti ({0})", raw.count)) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 3) {
+                            ForEach(raw.keys.sorted(), id: \.self) { key in
+                                Text("\(key.dropFirst(ClipMetadata.rawPrefix.count)): \(raw[key] ?? "")")
+                                    .font(.caption.monospaced())
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 220)
+                }
+                .font(.callout)
             }
             Spacer(minLength: 0)
         }
@@ -501,6 +518,14 @@ struct ClipTableView: View {
                 Button(tr("Leggi metadata")) { projects.readMetadataForSelection() }
                     .disabled(projects.isReadingMetadata || projects.clips.isEmpty)
                     .help(tr("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione)."))
+                Menu(tr("Esporta metadata")) {
+                    ForEach(MetadataExporter.Format.allCases) { f in
+                        Button(f.rawValue.uppercased()) { projects.exportMetadata(f) }
+                    }
+                }
+                .disabled(projects.clips.isEmpty)
+                .fixedSize()
+                .help(tr("Salva i metadata dei clip mostrati in JSON, CSV o ALE (Avid). Ogni riga include l'XXH64 del file."))
                 Menu(tr("Colonne")) {
                     Section(tr("Dati dell'offload")) {
                         ForEach(ClipColumns.all.filter { !$0.isMetadata }) { c in

@@ -59,6 +59,12 @@ public enum ClipColumns {
         ClipColumn(id: "audioChannels", title: "Audio tracce", isMetadata: true, width: 90),
         ClipColumn(id: "audioSampleRate", title: "Audio sample rate", isMetadata: true, width: 110),
         ClipColumn(id: "audioBitDepth", title: "Audio bit", isMetadata: true, width: 80),
+        ClipColumn(id: "container", title: "Contenitore", isMetadata: true, width: 110),
+        ClipColumn(id: "frameCount", title: "Fotogrammi", isMetadata: true, width: 90),
+        ClipColumn(id: "gamma", title: "Gamma", isMetadata: true, width: 100),
+        ClipColumn(id: "aperture", title: "Diaframma", isMetadata: true, width: 80),
+        ClipColumn(id: "tStop", title: "T-stop", isMetadata: true, width: 70),
+        ClipColumn(id: "shutterAngle", title: "Angolo shutter", isMetadata: true, width: 100),
         ClipColumn(id: "recorder", title: "Registratore", isMetadata: true, width: 130),
         ClipColumn(id: "trackNames", title: "Nomi tracce", isMetadata: true, width: 170),
     ]
