@@ -26,6 +26,9 @@
   audio = `ClipRecord.isAudio` (colonna `clip.isAudio`, migrazione v6), file «._» di macOS mai clip (`MediaClassifier.isAppleDouble`); Sony Venice ancora in attesa di file di esempio (XML sidecar + output ExifTool). Metadata/anteprime in parallelo (`ParallelRunner`).
 - Report (`Reports/`): 5 PDF separati nel formato Silverstack «Classic» (Shooting Day, Clips, Volume, Thumbnail, Contact Print), scritti da un PDF writer proprio con font DejaVu Sans Mono incorporato;
   nome file `<Report_Name>-<bin>-<aaaa-mm-gg-HHmm>.pdf`; report di una cartella = tutti i bin contenuti; Clips e Thumbnail stampano solo le colonne scelte dall'utente («Name» sempre). Campi sconosciuti vuoti.
+- ASC MHL 2.0 (`MHL/`): a offload riuscito, su ogni destinazione i cui file sono TUTTI verificati OK, `ASCMHLWriter` scrive `<copia>/ascmhl/NNNN_<bin>_<data>Z.mhl` + `ascmhl_chain.xml` (processo «transfer», XXH64, hash di cartelle content/structure, C4 della catena in `C4ID.swift`).
+  Usa gli hash già verificati dal motore; i file già presenti nella cartella ma non dell'offload vengono riletti; generazioni successive segnano «verified»/«failed»/«original». Mai su annullamento; mai se un file non è OK.
+  Validato contro lo strumento ufficiale `ascmhl` 1.2 (stessi hash, XSD, `verify`). Opzione `Configuration.ascMHL` (casella «Crea certificato ASC MHL», di serie attiva, autore = operatore dei report), fase `OffloadPhase.certifying`, esito `OffloadResult.mhl`.
 - Installer (`packaging/`): app universale Intel+ARM, icona dal logo, ExifTool/ffmpeg/ffprobe inclusi (`fetch-tools.sh`, con cache e ripiego GitHub se evermeet.cx dà 429), `.pkg` (scarica art-cmd da ARRI) e `.dmg`. Firma ad-hoc: al primo avvio clic destro → Apri.
 
 ## Lingue (Italiano / English / Castellano / Català)

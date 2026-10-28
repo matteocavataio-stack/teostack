@@ -39,6 +39,84 @@ class OffloadEngineTests: XCTestCase {
         return OffloadEngine(job: job, scan: scan, configuration: config, resume: resume)
     }
 
+    // MARK: ASC MHL
+
+    func testASCMHLIsWrittenOnEveryDestinationWithVerifiedHashes() throws {
+        let dests = makeDests(2)
+        let before = try TestSupport.snapshot(of: card.root)
+        let engine = try makeEngine(dests: dests) { $0.ascMHL = ASCMHLOptions(author: "DIT Teo") }
+        var phases: [OffloadPhase] = []
+        engine.onPhase = { phases.append($0) }
+        let result = engine.run()
+        XCTAssertTrue(result.allOK)
+        XCTAssertTrue(phases.contains(.certifying))
+        XCTAssertEqual(result.mhl.count, 2)
+        for d in 0..<2 {
+            guard case let .written(folder, file, generation, files)? = result.mhl[d] else { return XCTFail("MHL non scritto sulla destinazione \(d)") }
+            XCTAssertEqual(folder, "ascmhl")
+            XCTAssertEqual(generation, 1)
+            XCTAssertEqual(files, card.files.count)
+            let xml = try String(contentsOf: dests[d].appendingPathComponent("ascmhl/" + file), encoding: .utf8)
+            XCTAssertTrue(xml.contains("<author>DIT Teo</author>"))
+            for fr in result.files {
+                XCTAssertTrue(xml.contains(">\(try XCTUnwrap(fr.sourceHash))</xxh64>"), "manca l'hash di \(fr.relativePath)")
+            }
+            XCTAssertTrue(FileManager.default.fileExists(atPath: dests[d].appendingPathComponent("ascmhl/ascmhl_chain.xml").path))
+        }
+        XCTAssertEqual(try TestSupport.snapshot(of: card.root), before, "la sorgente non va toccata")
+        if let keep = ProcessInfo.processInfo.environment["TEOSTACK_KEEP_ENGINE_MHL"] {
+            try? FileManager.default.removeItem(atPath: keep)
+            try FileManager.default.copyItem(at: dests[0], to: URL(fileURLWithPath: keep))
+        }
+    }
+
+    func testNoASCMHLWhenDisabled() throws {
+        let dests = makeDests(1)
+        let result = try makeEngine(dests: dests).run()
+        XCTAssertTrue(result.allOK)
+        XCTAssertTrue(result.mhl.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: dests[0].appendingPathComponent("ascmhl").path))
+    }
+
+    func testASCMHLNotWrittenWhereAFileIsNotVerifiedOK() throws {
+        let dests = makeDests(2)
+        let victim = dests[1].appendingPathComponent("CLIP/C0001M01.XML")
+        try FileManager.default.createDirectory(at: victim.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("contenuto diverso".utf8).write(to: victim)
+        let result = try makeEngine(dests: dests) { $0.ascMHL = ASCMHLOptions() }.run()
+        XCTAssertFalse(result.allOK)
+        guard case .written? = result.mhl[0] else { return XCTFail("la destinazione tutta OK deve avere il MHL") }
+        guard case .skipped? = result.mhl[1] else { return XCTFail("la destinazione con un file non OK non deve avere il MHL") }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: dests[1].appendingPathComponent("ascmhl").path))
+    }
+
+    func testASCMHLNotWrittenWhenCancelled() throws {
+        let dests = makeDests(1)
+        let engine = try makeEngine(dests: dests) { $0.ascMHL = ASCMHLOptions() }
+        engine.onFileUpdate = { u in if u.status == .ok { engine.cancel() } }
+        let result = engine.run()
+        XCTAssertEqual(result.outcome, .cancelled)
+        XCTAssertTrue(result.mhl.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: dests[0].appendingPathComponent("ascmhl").path))
+    }
+
+    func testASCMHLAfterResumeStillListsEveryFile() throws {
+        let dests = makeDests(1)
+        let journalDir = try TestSupport.makeTempDir("journal")
+        defer { try? FileManager.default.removeItem(at: journalDir) }
+        let store = JournalStore(directory: journalDir)
+        let first = try makeEngine(dests: dests) { $0.journalStore = store; $0.ascMHL = ASCMHLOptions() }
+        var once = true
+        first.onFileUpdate = { u in if u.status == .ok, once { once = false; first.cancel() } }
+        XCTAssertEqual(first.run().outcome, .cancelled)
+        let journal = try XCTUnwrap(store.latestResumable())
+        let result = try makeEngine(dests: dests, resume: journal) { $0.journalStore = store; $0.ascMHL = ASCMHLOptions() }.run()
+        XCTAssertTrue(result.allOK)
+        guard case let .written(_, _, generation, files)? = result.mhl[0] else { return XCTFail("MHL non scritto") }
+        XCTAssertEqual(generation, 1)
+        XCTAssertEqual(files, card.files.count)
+    }
+
     // MARK: Caso felice
 
     func testOffloadToThreeDestinationsAllOKAndIdentical() throws {

@@ -512,6 +512,7 @@ struct ControlBar: View {
     @AppStorage("overlapVerification") private var overlapVerification = true
     @AppStorage("soundOnFinish") private var soundOnFinish = true
     @AppStorage("clearSourceWhenDone") private var clearSourceWhenDone = true
+    @AppStorage("ascMHL") private var ascMHL = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -539,6 +540,10 @@ struct ControlBar: View {
                     .disabled(vm.isRunning)
                     .help(tr("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita."))
                 Toggle(tr("Suono al termine"), isOn: $soundOnFinish).toggleStyle(.checkbox)
+                Toggle(tr("Crea certificato ASC MHL"), isOn: $ascMHL)
+                    .toggleStyle(.checkbox)
+                    .disabled(vm.isRunning)
+                    .help(tr("A offload riuscito scrive nella cartella della copia la cartella «ascmhl» con il certificato degli hash (formato ASC MHL 2.0, come Silverstack). Non viene creato se qualche file non è verificato OK."))
                 Toggle(tr("Svuota la sorgente a fine offload"), isOn: $clearSourceWhenDone)
                     .toggleStyle(.checkbox)
                     .help(tr("Quando tutti i file sono OK la parte «Sorgente» si svuota da sola, pronta per la scheda successiva. Se ci sono problemi resta l'elenco dei file."))
@@ -561,7 +566,7 @@ struct ResultBanner: View {
     var body: some View {
         let mismatches = result.files.reduce(0) { $0 + $1.destinations.filter { $0.status == .mismatch }.count }
         let errors = result.files.reduce(0) { $0 + $1.destinations.filter { $0.status == .error }.count }
-        Group {
+        VStack(alignment: .leading, spacing: 4) {
             switch result.outcome {
             case .preflightFailed:
                 banner(tr("NON AVVIATO: controlli preliminari falliti"), .red)
@@ -574,6 +579,27 @@ struct ResultBanner: View {
                     banner(tr("ATTENZIONE: {0} MISMATCH, {1} ERRORI, {2} destinazioni interrotte. I file non OK non vanno considerati copiati.", mismatches, errors, result.destinationErrors.compactMap { $0 }.count), .red)
                 }
             }
+            mhlLine
+        }
+    }
+
+    /// Esito del certificato ASC MHL (solo se la funzione era attiva).
+    @ViewBuilder private var mhlLine: some View {
+        let written = result.mhl.filter { if case .written = $0 { return true } else { return false } }.count
+        let problems: [String] = result.mhl.compactMap {
+            switch $0 {
+            case .skipped(let reason)?: return reason
+            case .failed(let reason)?: return reason
+            default: return nil
+            }
+        }
+        if written > 0 {
+            Text(tr("Certificato ASC MHL scritto su {0} destinazione/i (cartella «ascmhl»).", written))
+                .font(.callout).foregroundStyle(.secondary)
+        }
+        if !problems.isEmpty {
+            Text(tr("Certificato ASC MHL NON creato su {0} destinazione/i: {1}", problems.count, Array(Set(problems)).sorted().joined(separator: "; ")))
+                .font(.callout).foregroundStyle(.orange)
         }
     }
 

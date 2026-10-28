@@ -19,6 +19,12 @@ enum LocStrings {
         ("Sincronizzazione su disco", "Sync to disk", "Sincronización en el disco", "Sincronització al disc"),
         ("Impostazione date", "Setting dates", "Establecimiento de fechas", "Establiment de dates"),
         ("Lettura attributi", "Reading attributes", "Lectura de atributos", "Lectura d'atributs"),
+        ("La cronologia ASC MHL già presente nella cartella non si legge: {0}", "The ASC MHL history already in the folder cannot be read: {0}", "El historial ASC MHL que ya hay en la carpeta no se puede leer: {0}", "L'historial ASC MHL que ja hi ha a la carpeta no es pot llegir: {0}"),
+        ("Il nome «{0}» contiene caratteri non ammessi in un file XML.", "The name “{0}” contains characters that are not allowed in an XML file.", "El nombre «{0}» contiene caracteres no permitidos en un archivo XML.", "El nom «{0}» conté caràcters no permesos en un fitxer XML."),
+        ("Annullato.", "Cancelled.", "Cancelado.", "Cancel·lat."),
+        ("manca {0}", "{0} is missing", "falta {0}", "falta {0}"),
+        ("{0} esiste già", "{0} already exists", "{0} ya existe", "{0} ja existeix"),
+        ("Rinomina", "Rename", "Renombrar", "Canvia el nom"),
         ("art-cmd non ha prodotto un JSON di metadata valido.", "art-cmd did not produce valid metadata JSON.", "art-cmd no produjo un JSON de metadatos válido.", "art-cmd no ha produït un JSON de metadades vàlid."),
         ("art-cmd non ha prodotto alcuna immagine.", "art-cmd did not produce any image.", "art-cmd no produjo ninguna imagen.", "art-cmd no ha produït cap imatge."),
         ("art-cmd non ha prodotto l'anteprima.", "art-cmd did not produce the thumbnail.", "art-cmd no produjo la miniatura.", "art-cmd no ha produït la miniatura."),
@@ -58,19 +64,21 @@ enum LocStrings {
         ("Non copiato: destinazione in errore ({0})", "Not copied: destination in error ({0})", "No copiado: destino con error ({0})", "No copiat: destinació amb error ({0})"),
         ("Esiste già un elemento con questo nome che non è un file: non viene toccato.", "An item with this name that is not a file already exists: it is left untouched.", "Ya existe un elemento con este nombre que no es un archivo: no se toca.", "Ja existeix un element amb aquest nom que no és un fitxer: no es toca."),
         ("File già presente in destinazione: non copiato, solo verificato", "File already present at the destination: not copied, only verified", "Archivo ya presente en el destino: no se copia, solo se verifica", "Fitxer ja present a la destinació: no es copia, només es verifica"),
+    ]
+
+    private static let part1: [Entry] = [
         ("Sorgente non leggibile: {0}", "Source not readable: {0}", "Origen ilegible: {0}", "Origen il·legible: {0}"),
         ("Errore di lettura della sorgente: {0}", "Source read error: {0}", "Error de lectura del origen: {0}", "Error de lectura de l'origen: {0}"),
         ("La dimensione della sorgente è cambiata durante la lettura (attesi {0} byte, letti {1}).", "The source size changed while reading ({0} bytes expected, {1} read).", "El tamaño del origen cambió durante la lectura (esperados {0} bytes, leídos {1}).", "La mida de l'origen ha canviat durant la lectura (esperats {0} bytes, llegits {1})."),
         ("La sorgente è cambiata rispetto al tentativo precedente (XXH64 diverso): file non copiato.", "The source has changed since the previous attempt (different XXH64): file not copied.", "El origen ha cambiado respecto al intento anterior (XXH64 distinto): archivo no copiado.", "L'origen ha canviat respecte a l'intent anterior (XXH64 diferent): fitxer no copiat."),
         ("Chiusura file", "Closing file", "Cierre del archivo", "Tancament del fitxer"),
         ("Dimensione riletta {0} byte, attesa {1} byte", "Size read back {0} bytes, expected {1} bytes", "Tamaño releído {0} bytes, esperado {1} bytes", "Mida rellegida {0} bytes, esperada {1} bytes"),
-    ]
-
-    private static let part1: [Entry] = [
         ("XXH64 destinazione {0} ≠ sorgente {1}", "Destination XXH64 {0} ≠ source {1}", "XXH64 del destino {0} ≠ origen {1}", "XXH64 de la destinació {0} ≠ origen {1}"),
         ("Un file con lo stesso nome è comparso durante l'offload: non sovrascritto.", "A file with the same name appeared during the offload: not overwritten.", "Apareció un archivo con el mismo nombre durante el offload: no se sobrescribe.", "Ha aparegut un fitxer amb el mateix nom durant l'offload: no se sobreescriu."),
         ("Rinomina file verificato", "Renaming verified file", "Renombrado del archivo verificado", "Canvi de nom del fitxer verificat"),
         ("Rilettura per verifica fallita: {0}", "Read-back for verification failed: {0}", "Falló la relectura para verificar: {0}", "Ha fallat la relectura per verificar: {0}"),
+        ("Destinazione con errore", "Destination with error", "Destino con error", "Destinació amb error"),
+        ("Non tutti i file sono verificati OK", "Not all files are verified OK", "No todos los archivos están verificados OK", "No tots els fitxers estan verificats OK"),
         ("Destinazione non raggiungibile", "Destination not reachable", "Destino no accesible", "Destinació no accessible"),
         ("Creazione cartella", "Folder creation", "Creación de la carpeta", "Creació de la carpeta"),
         ("In attesa", "Waiting", "En espera", "En espera"),
@@ -80,6 +88,7 @@ enum LocStrings {
         ("ERRORE", "ERROR", "ERROR", "ERROR"),
         ("Pronto", "Ready", "Listo", "A punt"),
         ("Controlli preliminari", "Preliminary checks", "Comprobaciones previas", "Comprovacions prèvies"),
+        ("Certificato ASC MHL", "ASC MHL certificate", "Certificado ASC MHL", "Certificat ASC MHL"),
         ("Terminato", "Finished", "Terminado", "Acabat"),
         ("collegamento simbolico (non copiato)", "symbolic link (not copied)", "enlace simbólico (no copiado)", "enllaç simbòlic (no copiat)"),
         ("tipo di file speciale (non copiato)", "special file type (not copied)", "tipo de archivo especial (no copiado)", "tipus de fitxer especial (no copiat)"),
@@ -118,6 +127,9 @@ enum LocStrings {
         ("Elemento del progetto non trovato.", "Project item not found.", "Elemento del proyecto no encontrado.", "Element del projecte no trobat."),
         ("ffmpeg non trovato in «{0}».", "ffmpeg not found in “{0}”.", "ffmpeg no encontrado en «{0}».", "ffmpeg no trobat a «{0}»."),
         ("Impossibile avviare ffmpeg: {0}", "Unable to start ffmpeg: {0}", "No se puede iniciar ffmpeg: {0}", "No es pot iniciar ffmpeg: {0}"),
+    ]
+
+    private static let part2: [Entry] = [
         ("ffmpeg non ha risposto entro {0} secondi.", "ffmpeg did not respond within {0} seconds.", "ffmpeg no respondió en {0} segundos.", "ffmpeg no ha respost en {0} segons."),
         ("ffmpeg non ha estratto il fotogramma", "ffmpeg did not extract the frame", "ffmpeg no extrajo el fotograma", "ffmpeg no ha extret el fotograma"),
         ("ffmpeg non ha estratto il fotogramma: {0}", "ffmpeg did not extract the frame: {0}", "ffmpeg no extrajo el fotograma: {0}", "ffmpeg no ha extret el fotograma: {0}"),
@@ -127,9 +139,6 @@ enum LocStrings {
         ("per i clip ARRI serve art-cmd (ARRI Reference Tool), non installato", "ARRI clips need art-cmd (ARRI Reference Tool), which is not installed", "los clips ARRI necesitan art-cmd (ARRI Reference Tool), que no está instalado", "els clips ARRI necessiten art-cmd (ARRI Reference Tool), que no està instal·lat"),
         ("ffmpeg non installato", "ffmpeg not installed", "ffmpeg no instalado", "ffmpeg no instal·lat"),
         ("Anteprima non disponibile: formato non decodificabile con gli strumenti installati.", "Thumbnail not available: format cannot be decoded with the installed tools.", "Miniatura no disponible: formato no decodificable con las herramientas instaladas.", "Miniatura no disponible: format no descodificable amb les eines instal·lades."),
-    ]
-
-    private static let part2: [Entry] = [
         ("Né ffmpeg né art-cmd sono installati: impossibile creare le anteprime.", "Neither ffmpeg nor art-cmd is installed: thumbnails cannot be created.", "Ni ffmpeg ni art-cmd están instalados: no se pueden crear las miniaturas.", "Ni ffmpeg ni art-cmd no estan instal·lats: no es poden crear les miniatures."),
         ("L'immagine prodotta da art-cmd non è leggibile.", "The image produced by art-cmd is not readable.", "La imagen producida por art-cmd no se puede leer.", "La imatge produïda per art-cmd no es pot llegir."),
         ("Impossibile ridurre l'immagine dell'anteprima.", "Unable to shrink the thumbnail image.", "No se puede reducir la imagen de la miniatura.", "No es pot reduir la imatge de la miniatura."),
@@ -181,6 +190,9 @@ enum LocStrings {
         ("Altri file", "Other Files", "Otros archivos", "Altres fitxers"),
         ("Totale", "Total", "Total", "Total"),
         ("Backup (verificati)", "Backups (Verified)", "Copias (verificadas)", "Còpies (verificades)"),
+    ]
+
+    private static let part3: [Entry] = [
         ("Formati video", "Video Formats", "Formatos de vídeo", "Formats de vídeo"),
         ("Tipo file", "File type", "Tipo de archivo", "Tipus de fitxer"),
         ("Risoluzione", "Resolution", "Resolución", "Resolució"),
@@ -190,9 +202,6 @@ enum LocStrings {
         ("Somme per camera", "Camera Sums", "Totales por cámara", "Totals per càmera"),
         ("Bobine", "Reels", "Bobinas", "Bobines"),
         ("Frame", "Frames", "Fotogramas", "Fotogrames"),
-    ]
-
-    private static let part3: [Entry] = [
         ("Formati audio", "Audio Formats", "Formatos de audio", "Formats d'àudio"),
         ("Frequenza", "Sample rate", "Frecuencia", "Freqüència"),
         ("Bit", "Bits", "Bits", "Bits"),
@@ -244,22 +253,26 @@ enum LocStrings {
         ("Tempo: {0}", "Time: {0}", "Tiempo: {0}", "Temps: {0}"),
         ("ETA: {0}", "ETA: {0}", "ETA: {0}", "ETA: {0}"),
         ("Riprendi", "Resume", "Reanudar", "Reprèn"),
+    ]
+
+    private static let part4: [Entry] = [
         ("Annulla", "Cancel", "Cancelar", "Cancel·la"),
         ("Avvia", "Start", "Iniciar", "Inicia"),
         ("Verifica durante la copia", "Verify while copying", "Verificar durante la copia", "Verifica durant la còpia"),
         ("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita.", "Each file is read back and compared as soon as it is written, while the copy continues: faster with SSD disks. Turn it off with slow disks (HDD): verification will then start when the copy is finished.", "Cada archivo se relee y se compara en cuanto se escribe, mientras la copia continúa: más rápido con discos SSD. Desactívalo con discos lentos (HDD): la verificación empezará al terminar la copia.", "Cada fitxer es rellegeix i es compara tan bon punt s'escriu, mentre la còpia continua: més ràpid amb discos SSD. Desactiva-ho amb discos lents (HDD): la verificació començarà quan la còpia hagi acabat."),
         ("Suono al termine", "Sound when finished", "Sonido al terminar", "So en acabar"),
+        ("Crea certificato ASC MHL", "Create ASC MHL certificate", "Crear certificado ASC MHL", "Crea certificat ASC MHL"),
+        ("A offload riuscito scrive nella cartella della copia la cartella «ascmhl» con il certificato degli hash (formato ASC MHL 2.0, come Silverstack). Non viene creato se qualche file non è verificato OK.", "After a successful offload, writes an «ascmhl» folder with the hash certificate (ASC MHL 2.0 format, like Silverstack) inside the copy folder. It is not created if any file is not verified OK.", "Tras un offload correcto escribe en la carpeta de la copia la carpeta «ascmhl» con el certificado de hashes (formato ASC MHL 2.0, como Silverstack). No se crea si algún archivo no está verificado OK.", "Després d'un offload correcte escriu a la carpeta de la còpia la carpeta «ascmhl» amb el certificat de hashes (format ASC MHL 2.0, com Silverstack). No es crea si algun fitxer no està verificat OK."),
         ("Svuota la sorgente a fine offload", "Clear the source when the offload ends", "Vaciar el origen al terminar el offload", "Buida l'origen en acabar l'offload"),
         ("Quando tutti i file sono OK la parte «Sorgente» si svuota da sola, pronta per la scheda successiva. Se ci sono problemi resta l'elenco dei file.", "When all files are OK the “Source” section clears itself, ready for the next card. If there are problems the file list stays.", "Cuando todos los archivos están OK la parte «Origen» se vacía sola, lista para la siguiente tarjeta. Si hay problemas, la lista de archivos se queda.", "Quan tots els fitxers són OK la part «Origen» es buida sola, a punt per a la targeta següent. Si hi ha problemes, la llista de fitxers es queda."),
         ("Espelli sorgente", "Eject source", "Expulsar origen", "Expulsa l'origen"),
         ("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK", "Unmounts and ejects the card: only after an offload with all files OK", "Desmonta y expulsa la tarjeta: solo tras un offload con todos los archivos OK", "Desmunta i expulsa la targeta: només després d'un offload amb tots els fitxers OK"),
-    ]
-
-    private static let part4: [Entry] = [
         ("NON AVVIATO: controlli preliminari falliti", "NOT STARTED: preliminary checks failed", "NO INICIADO: fallaron las comprobaciones previas", "NO INICIAT: han fallat les comprovacions prèvies"),
         ("ANNULLATO: i file parziali sono stati rimossi. «Riprendi» continua dai file già verificati.", "CANCELLED: partial files were removed. “Resume” continues from the files already verified.", "CANCELADO: se eliminaron los archivos parciales. «Reanudar» continúa desde los archivos ya verificados.", "CANCEL·LAT: s'han eliminat els fitxers parcials. «Reprèn» continua des dels fitxers ja verificats."),
         ("TUTTI I FILE OK: {0} file riletti dal disco con XXH64 identico alla sorgente su {1} destinazione/i.", "ALL FILES OK: {0} files read back from disk with XXH64 identical to the source on {1} destination(s).", "TODOS LOS ARCHIVOS OK: {0} archivos releídos del disco con XXH64 idéntico al del origen en {1} destino(s).", "TOTS ELS FITXERS OK: {0} fitxers rellegits del disc amb XXH64 idèntic al de l'origen a {1} destinació/ons."),
         ("ATTENZIONE: {0} MISMATCH, {1} ERRORI, {2} destinazioni interrotte. I file non OK non vanno considerati copiati.", "WARNING: {0} MISMATCH, {1} ERRORS, {2} destinations interrupted. Files that are not OK must not be considered copied.", "ATENCIÓN: {0} MISMATCH, {1} ERRORES, {2} destinos interrumpidos. Los archivos que no estén OK no deben considerarse copiados.", "ATENCIÓ: {0} MISMATCH, {1} ERRORS, {2} destinacions interrompudes. Els fitxers que no estiguin OK no s'han de considerar copiats."),
+        ("Certificato ASC MHL scritto su {0} destinazione/i (cartella «ascmhl»).", "ASC MHL certificate written on {0} destination(s) («ascmhl» folder).", "Certificado ASC MHL escrito en {0} destino(s) (carpeta «ascmhl»).", "Certificat ASC MHL escrit a {0} destinació/ons (carpeta «ascmhl»)."),
+        ("Certificato ASC MHL NON creato su {0} destinazione/i: {1}", "ASC MHL certificate NOT created on {0} destination(s): {1}", "Certificado ASC MHL NO creado en {0} destino(s): {1}", "Certificat ASC MHL NO creat a {0} destinació/ons: {1}"),
         ("Lingua dell'interfaccia", "Interface language", "Idioma de la interfaz", "Idioma de la interfície"),
         ("Seleziona la scheda (sorgente)", "Select the card (source)", "Selecciona la tarjeta (origen)", "Selecciona la targeta (origen)"),
         ("Impossibile leggere la sorgente: {0}", "Unable to read the source: {0}", "No se puede leer el origen: {0}", "No es pot llegir l'origen: {0}"),
@@ -278,7 +291,6 @@ enum LocStrings {
         ("Rinomina progetto", "Rename project", "Renombrar proyecto", "Canvia el nom del projecte"),
         ("Nuova cartella giorno", "New day folder", "Nueva carpeta de día", "Nova carpeta de dia"),
         ("Nuova cartella", "New folder", "Nueva carpeta", "Nova carpeta"),
-        ("Rinomina", "Rename", "Renombrar", "Canvia el nom"),
         ("Esempio: DAY01_20261016", "Example: DAY01_20261016", "Ejemplo: DAY01_20261016", "Exemple: DAY01_20261016"),
         ("Per ordinare il progetto, per esempio CAM_A. I bin si creano da soli quando avvii un offload.", "To organise the project, for example CAM_A. Bins are created automatically when you start an offload.", "Para ordenar el proyecto, por ejemplo CAM_A. Los bins se crean solos al iniciar un offload.", "Per ordenar el projecte, per exemple CAM_A. Els bins es creen sols quan inicies un offload."),
         ("Rinomina solo nel programma: le cartelle già create sui dischi non vengono rinominate.", "Renames only inside the program: folders already created on the disks are not renamed.", "Solo renombra dentro del programa: las carpetas ya creadas en los discos no se renombran.", "Només canvia el nom dins del programa: les carpetes ja creades als discos no es reanomenen."),
@@ -304,6 +316,9 @@ enum LocStrings {
         ("Eliminare «{0}»?", "Delete “{0}”?", "¿Eliminar «{0}»?", "Vols eliminar «{0}»?"),
         ("Verrà eliminato SOLO il bin «{0}» ({1} offload, {2} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", "ONLY the bin “{0}” will be deleted ({1} offloads, {2} recorded files). The rest of the project stays. Files on the disks are NOT touched.", "Se eliminará SOLO el bin «{0}» ({1} offloads, {2} archivos registrados). El resto del proyecto se queda. Los archivos de los discos NO se tocan.", "S'eliminarà NOMÉS el bin «{0}» ({1} offloads, {2} fitxers registrats). La resta del projecte es queda. Els fitxers dels discos NO es toquen."),
         ("Verrà eliminata SOLO la cartella «{0}» con le sue sottocartelle e i suoi {1} bin ({2} offload, {3} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", "ONLY the folder “{0}” will be deleted, with its subfolders and its {1} bins ({2} offloads, {3} recorded files). The rest of the project stays. Files on the disks are NOT touched.", "Se eliminará SOLO la carpeta «{0}» con sus subcarpetas y sus {1} bins ({2} offloads, {3} archivos registrados). El resto del proyecto se queda. Los archivos de los discos NO se tocan.", "S'eliminarà NOMÉS la carpeta «{0}» amb les seves subcarpetes i els seus {1} bins ({2} offloads, {3} fitxers registrats). La resta del projecte es queda. Els fitxers dels discos NO es toquen."),
+    ]
+
+    private static let part5: [Entry] = [
         ("Elimina…", "Delete…", "Eliminar…", "Elimina…"),
         ("Sposta in", "Move to", "Mover a", "Mou a"),
         ("Verificato: tutti i file sono stati riletti dal disco con XXH64 identico alla sorgente", "Verified: all files were read back from disk with XXH64 identical to the source", "Verificado: todos los archivos se han releído del disco con XXH64 idéntico al del origen", "Verificat: tots els fitxers s'han rellegit del disc amb XXH64 idèntic al de l'origen"),
@@ -316,9 +331,6 @@ enum LocStrings {
         ("file", "files", "archivos", "fitxers"),
         ("clip", "clips", "clips", "clips"),
         ("Mostra anche i file non video (XML, sidecar…)", "Also show non-video files (XML, sidecars…)", "Mostrar también los archivos que no son vídeo (XML, sidecars…)", "Mostra també els fitxers que no són vídeo (XML, sidecars…)"),
-    ]
-
-    private static let part5: [Entry] = [
         ("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).", "Creates the first-frame thumbnail of the clips that do not have one (from the verified copy on the destination disk).", "Crea la miniatura del primer fotograma de los clips que no la tienen (a partir de la copia verificada en el disco de destino).", "Crea la miniatura del primer fotograma dels clips que no en tenen (a partir de la còpia verificada al disc de destinació)."),
         ("Leggi metadata", "Read metadata", "Leer metadatos", "Llegeix metadades"),
         ("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).", "Re-reads the metadata of the clips shown with ExifTool and art-cmd (from the verified copy on the destination disk).", "Vuelve a leer los metadatos de los clips mostrados con ExifTool y art-cmd (a partir de la copia verificada en el disco de destino).", "Torna a llegir les metadades dels clips mostrats amb ExifTool i art-cmd (a partir de la còpia verificada al disc de destinació)."),
@@ -367,6 +379,9 @@ enum LocStrings {
         ("Camera", "Camera", "Cámara", "Càmera"),
         ("Serial camera", "Camera serial", "Serie de la cámara", "Sèrie de la càmera"),
         ("Firmware", "Firmware", "Firmware", "Firmware"),
+    ]
+
+    private static let part6: [Entry] = [
         ("Reel", "Reel", "Reel", "Reel"),
         ("Scena", "Scene", "Escena", "Escena"),
         ("Take", "Take", "Toma", "Presa"),
@@ -379,9 +394,6 @@ enum LocStrings {
         ("Sensor FPS", "Sensor FPS", "Sensor FPS", "Sensor FPS"),
         ("ND Filter", "ND Filter", "Filtro ND", "Filtre ND"),
         ("Look Info", "Look Info", "Info del look", "Info del look"),
-    ]
-
-    private static let part6: [Entry] = [
         ("Lente", "Lens", "Objetivo", "Objectiu"),
         ("ISO", "ISO", "ISO", "ISO"),
         ("WB", "WB", "WB", "WB"),

@@ -106,6 +106,11 @@ final class OffloadViewModel: ObservableObject {
         UserDefaults.standard.object(forKey: "clearSourceWhenDone") as? Bool ?? true
     }
 
+    /// «Crea certificato ASC MHL» (impostazione dell'app, attiva se non è mai stata cambiata).
+    static var ascMHLEnabled: Bool {
+        UserDefaults.standard.object(forKey: "ascMHL") as? Bool ?? true
+    }
+
     /// Scheda dell'ultimo offload riuscito dopo che la parte «Sorgente» si è svuotata da sola: serve per «Espelli sorgente».
     private var finishedSourceVolume: URL?
 
@@ -313,6 +318,9 @@ final class OffloadViewModel: ObservableObject {
         var config = OffloadEngine.Configuration()
         config.journalStore = journalStore
         config.overlapVerification = Self.overlapVerificationEnabled
+        if Self.ascMHLEnabled {
+            config.ascMHL = ASCMHLOptions(author: UserDefaults.standard.string(forKey: "reportOperator"))
+        }
         let engine = OffloadEngine(job: job, scan: scan, configuration: config, resume: resume)
         self.engine = engine
         runState = .running

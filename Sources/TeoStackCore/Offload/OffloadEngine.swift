@@ -35,6 +35,8 @@ public final class OffloadEngine {
         /// I file più piccoli di questa soglia usano `fsync` e un solo svuotamento della cache del disco prima della verifica,
         /// invece di un F_FULLFSYNC per ogni file. 0 = F_FULLFSYNC per ogni file.
         public var deferredSyncThreshold: Int64 = 64 * 1024 * 1024
+        /// Se presente, a offload riuscito su una destinazione si scrive la cartella `ascmhl` (ASC MHL 2.0) dentro la copia. nil = disattivato.
+        public var ascMHL: ASCMHLOptions?
         public init() {}
     }
 
@@ -180,15 +182,21 @@ public final class OffloadEngine {
         if !configuration.overlapVerification && !isCancelled { startVerifiers(in: verifiers) }
         verifiers.wait()
         let cancelled = isCancelled
+        var mhl: [ASCMHLOutcome?] = []
         if cancelled {
             cleanUpPartialFiles()
         } else {
             applyDirectoryDates()
+            if let options = configuration.ascMHL {
+                setPhase(.certifying)
+                mhl = writeASCMHL(options)
+            }
         }
         stopTimer()
         setPhase(.finished)
         emitSnapshot(sampleRates: false)
-        let result = makeResult(cancelled ? .cancelled : .completed, preflightErrors: [])
+        var result = makeResult(cancelled ? .cancelled : .completed, preflightErrors: [])
+        result.mhl = mhl
         saveJournal(cancelled ? .cancelled : .completed, force: true)
         return result
     }
@@ -563,6 +571,35 @@ public final class OffloadEngine {
             }
         }
         lock.unlock()
+    }
+
+    /// Scrive la cartella `ascmhl` su ogni destinazione i cui file sono TUTTI verificati OK (un certificato non deve attestare ciò che non è verificato).
+    private func writeASCMHL(_ options: ASCMHLOptions) -> [ASCMHLOutcome?] {
+        lock.lock()
+        let snapshot = results
+        let dead = deadReason
+        lock.unlock()
+        var outcomes: [ASCMHLOutcome?] = []
+        for d in 0..<job.destinationRoots.count {
+            if dead[d] != nil {
+                outcomes.append(.skipped(tr("Destinazione con errore")))
+                continue
+            }
+            guard !snapshot.isEmpty, snapshot.allSatisfy({ d < $0.destinations.count && $0.destinations[d].status == .ok }) else {
+                outcomes.append(.skipped(tr("Non tutti i file sono verificati OK")))
+                continue
+            }
+            var hashes: [String: String] = [:]
+            for file in snapshot { if let h = file.sourceHash { hashes[file.relativePath] = h } }
+            do {
+                let written = try ASCMHLWriter.write(root: job.destinationRoots[d], knownHashes: hashes, options: options, isCancelled: { self.isCancelled })
+                outcomes.append(.written(folder: ASCMHLWriter.folderName, file: written.file.lastPathComponent,
+                                         generation: written.generation, files: written.fileCount))
+            } catch {
+                outcomes.append(.failed(String(describing: error)))
+            }
+        }
+        return outcomes
     }
 
     private func applyDirectoryDates() {

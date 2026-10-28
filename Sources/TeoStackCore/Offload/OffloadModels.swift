@@ -107,6 +107,8 @@ public struct OffloadResult {
     public var destinationErrors: [String?]      // errore fatale per destinazione (disco pieno, scollegato…)
     public var skippedAlreadyVerified: Int       // file saltati in "Riprendi" perché già OK
     public var elapsed: TimeInterval
+    /// Esito della scrittura ASC MHL per destinazione (vuoto se la funzione era spenta o l'offload annullato).
+    public var mhl: [ASCMHLOutcome?] = []
 
     /// true solo se OGNI file è OK su OGNI destinazione.
     public var allOK: Bool {
@@ -122,13 +124,14 @@ public struct OffloadResult {
 }
 
 public enum OffloadPhase: String, Codable {
-    case idle, preflight, copying, verifying, finished
+    case idle, preflight, copying, verifying, certifying, finished
     public var label: String {
         switch self {
         case .idle: return tr("Pronto")
         case .preflight: return tr("Controlli preliminari")
         case .copying: return tr("Copia")
         case .verifying: return tr("Verifica")
+        case .certifying: return tr("Certificato ASC MHL")
         case .finished: return tr("Terminato")
         }
     }
