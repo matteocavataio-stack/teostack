@@ -52,6 +52,9 @@ enum LocStrings {
         ("art-cmd non ha letto {0} clip ARRI (ISO, lente, ND, WB… {1})", "art-cmd could not read {0} ARRI clips (ISO, lens, ND, WB… {1})", "art-cmd no pudo leer {0} clips ARRI (ISO, objetivo, ND, WB… {1})", "art-cmd no ha pogut llegir {0} clips ARRI (ISO, objectiu, ND, WB… {1})"),
         ("Né ExifTool né art-cmd né ffprobe sono installati: impossibile leggere i metadata.", "None of ExifTool, art-cmd or ffprobe is installed: metadata cannot be read.", "Ni ExifTool ni art-cmd ni ffprobe están instalados: no se pueden leer los metadatos.", "Ni ExifTool ni art-cmd ni ffprobe no estan instal·lats: no es poden llegir les metadades."),
         ("{0}: art-cmd non ha restituito metadata", "{0}: art-cmd returned no metadata", "{0}: art-cmd no devolvió metadatos", "{0}: art-cmd no ha retornat metadades"),
+        ("ExifTool non è installato.", "ExifTool is not installed.", "ExifTool no está instalado.", "ExifTool no està instal·lat."),
+        ("ffprobe non è installato.", "ffprobe is not installed.", "ffprobe no está instalado.", "ffprobe no està instal·lat."),
+        ("art-cmd non è installato.", "art-cmd is not installed.", "art-cmd no está instalado.", "art-cmd no està instal·lat."),
         ("Servono da 1 a {0} destinazioni (selezionate: {1}).", "Between 1 and {0} destinations are required (selected: {1}).", "Se necesitan entre 1 y {0} destinos (seleccionados: {1}).", "Calen entre 1 i {0} destinacions (seleccionades: {1})."),
         ("Destinazione {0}", "Destination {0}", "Destino {0}", "Destinació {0}"),
         ("{0}: la stessa cartella è selezionata più volte.", "{0}: the same folder is selected more than once.", "{0}: la misma carpeta está seleccionada más de una vez.", "{0}: la mateixa carpeta està seleccionada més d'una vegada."),
@@ -61,12 +64,12 @@ enum LocStrings {
         ("{0}: cartella non raggiungibile «{1}» (disco scollegato?).", "{0}: folder not reachable “{1}” (disk disconnected?).", "{0}: carpeta no accesible «{1}» (¿disco desconectado?).", "{0}: carpeta no accessible «{1}» (disc desconnectat?)."),
         ("{0}: nessun permesso di scrittura su «{1}».", "{0}: no write permission on “{1}”.", "{0}: sin permiso de escritura en «{1}».", "{0}: sense permís d'escriptura a «{1}»."),
         ("{0}: spazio insufficiente. Servono {1}, disponibili {2}.", "{0}: not enough space. {1} needed, {2} available.", "{0}: espacio insuficiente. Se necesitan {1}, disponibles {2}.", "{0}: espai insuficient. Calen {1}, disponibles {2}."),
-        ("Non copiato: destinazione in errore ({0})", "Not copied: destination in error ({0})", "No copiado: destino con error ({0})", "No copiat: destinació amb error ({0})"),
-        ("Esiste già un elemento con questo nome che non è un file: non viene toccato.", "An item with this name that is not a file already exists: it is left untouched.", "Ya existe un elemento con este nombre que no es un archivo: no se toca.", "Ja existeix un element amb aquest nom que no és un fitxer: no es toca."),
-        ("File già presente in destinazione: non copiato, solo verificato", "File already present at the destination: not copied, only verified", "Archivo ya presente en el destino: no se copia, solo se verifica", "Fitxer ja present a la destinació: no es copia, només es verifica"),
     ]
 
     private static let part1: [Entry] = [
+        ("Non copiato: destinazione in errore ({0})", "Not copied: destination in error ({0})", "No copiado: destino con error ({0})", "No copiat: destinació amb error ({0})"),
+        ("Esiste già un elemento con questo nome che non è un file: non viene toccato.", "An item with this name that is not a file already exists: it is left untouched.", "Ya existe un elemento con este nombre que no es un archivo: no se toca.", "Ja existeix un element amb aquest nom que no és un fitxer: no es toca."),
+        ("File già presente in destinazione: non copiato, solo verificato", "File already present at the destination: not copied, only verified", "Archivo ya presente en el destino: no se copia, solo se verifica", "Fitxer ja present a la destinació: no es copia, només es verifica"),
         ("Sorgente non leggibile: {0}", "Source not readable: {0}", "Origen ilegible: {0}", "Origen il·legible: {0}"),
         ("Errore di lettura della sorgente: {0}", "Source read error: {0}", "Error de lectura del origen: {0}", "Error de lectura de l'origen: {0}"),
         ("La dimensione della sorgente è cambiata durante la lettura (attesi {0} byte, letti {1}).", "The source size changed while reading ({0} bytes expected, {1} read).", "El tamaño del origen cambió durante la lectura (esperados {0} bytes, leídos {1}).", "La mida de l'origen ha canviat durant la lectura (esperats {0} bytes, llegits {1})."),
@@ -124,12 +127,12 @@ enum LocStrings {
         ("Riletti dal disco con XXH64 identico alla sorgente su {0} destinazione/i. Durata {1}.", "Read back from disk with XXH64 identical to the source on {0} destination(s). Duration {1}.", "Releídos del disco con XXH64 idéntico al del origen en {0} destino(s). Duración {1}.", "Rellegits del disc amb XXH64 idèntic al de l'origen a {0} destinació/ons. Durada {1}."),
         ("Clip non trovata.", "Clip not found.", "Clip no encontrado.", "Clip no trobat."),
         ("I file si importano dentro un bin.", "Files are imported into a bin.", "Los archivos se importan dentro de un bin.", "Els fitxers s'importen dins d'un bin."),
-        ("Elemento del progetto non trovato.", "Project item not found.", "Elemento del proyecto no encontrado.", "Element del projecte no trobat."),
-        ("ffmpeg non trovato in «{0}».", "ffmpeg not found in “{0}”.", "ffmpeg no encontrado en «{0}».", "ffmpeg no trobat a «{0}»."),
-        ("Impossibile avviare ffmpeg: {0}", "Unable to start ffmpeg: {0}", "No se puede iniciar ffmpeg: {0}", "No es pot iniciar ffmpeg: {0}"),
     ]
 
     private static let part2: [Entry] = [
+        ("Elemento del progetto non trovato.", "Project item not found.", "Elemento del proyecto no encontrado.", "Element del projecte no trobat."),
+        ("ffmpeg non trovato in «{0}».", "ffmpeg not found in “{0}”.", "ffmpeg no encontrado en «{0}».", "ffmpeg no trobat a «{0}»."),
+        ("Impossibile avviare ffmpeg: {0}", "Unable to start ffmpeg: {0}", "No se puede iniciar ffmpeg: {0}", "No es pot iniciar ffmpeg: {0}"),
         ("ffmpeg non ha risposto entro {0} secondi.", "ffmpeg did not respond within {0} seconds.", "ffmpeg no respondió en {0} segundos.", "ffmpeg no ha respost en {0} segons."),
         ("ffmpeg non ha estratto il fotogramma", "ffmpeg did not extract the frame", "ffmpeg no extrajo el fotograma", "ffmpeg no ha extret el fotograma"),
         ("ffmpeg non ha estratto il fotogramma: {0}", "ffmpeg did not extract the frame: {0}", "ffmpeg no extrajo el fotograma: {0}", "ffmpeg no ha extret el fotograma: {0}"),
@@ -187,12 +190,12 @@ enum LocStrings {
         ("Dimensione", "Size", "Tamaño", "Mida"),
         ("Clip video sorgente", "Source Video Clips", "Clips de vídeo de origen", "Clips de vídeo d'origen"),
         ("Clip audio", "Audio Clips", "Clips de audio", "Clips d'àudio"),
-        ("Altri file", "Other Files", "Otros archivos", "Altres fitxers"),
-        ("Totale", "Total", "Total", "Total"),
-        ("Backup (verificati)", "Backups (Verified)", "Copias (verificadas)", "Còpies (verificades)"),
     ]
 
     private static let part3: [Entry] = [
+        ("Altri file", "Other Files", "Otros archivos", "Altres fitxers"),
+        ("Totale", "Total", "Total", "Total"),
+        ("Backup (verificati)", "Backups (Verified)", "Copias (verificadas)", "Còpies (verificades)"),
         ("Formati video", "Video Formats", "Formatos de vídeo", "Formats de vídeo"),
         ("Tipo file", "File type", "Tipo de archivo", "Tipus de fitxer"),
         ("Risoluzione", "Resolution", "Resolución", "Resolució"),
@@ -250,12 +253,12 @@ enum LocStrings {
         ("ERRORE {0}", "ERROR {0}", "ERROR {0}", "ERROR {0}"),
         ("Destinazione interrotta: {0}", "Destination interrupted: {0}", "Destino interrumpido: {0}", "Destinació interrompuda: {0}"),
         ("Lettura sorgente: {0}", "Source read: {0}", "Lectura del origen: {0}", "Lectura de l'origen: {0}"),
-        ("Tempo: {0}", "Time: {0}", "Tiempo: {0}", "Temps: {0}"),
-        ("ETA: {0}", "ETA: {0}", "ETA: {0}", "ETA: {0}"),
-        ("Riprendi", "Resume", "Reanudar", "Reprèn"),
     ]
 
     private static let part4: [Entry] = [
+        ("Tempo: {0}", "Time: {0}", "Tiempo: {0}", "Temps: {0}"),
+        ("ETA: {0}", "ETA: {0}", "ETA: {0}", "ETA: {0}"),
+        ("Riprendi", "Resume", "Reanudar", "Reprèn"),
         ("Annulla", "Cancel", "Cancelar", "Cancel·la"),
         ("Avvia", "Start", "Iniciar", "Inicia"),
         ("Verifica durante la copia", "Verify while copying", "Verificar durante la copia", "Verifica durant la còpia"),
@@ -300,6 +303,8 @@ enum LocStrings {
         ("Creato il {0} · {1} clip", "Created on {0} · {1} clips", "Creado el {0} · {1} clips", "Creat el {0} · {1} clips"),
         ("Elimina progetto", "Delete project", "Eliminar proyecto", "Elimina el projecte"),
         ("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "Deletes the WHOLE project. To delete only a day or a bin use “Delete selection” in the sidebar.", "Elimina el proyecto ENTERO. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "Elimina el projecte SENCER. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
+        ("Schermata di scarico: sorgente, destinazioni e avanzamento.", "Offload screen: source, destinations and progress.", "Pantalla de volcado: origen, destinos y progreso.", "Pantalla de descàrrega: origen, destinacions i progrés."),
+        ("Elenco dei clip del progetto con metadata, anteprime e riepilogo.", "List of the project clips with metadata, thumbnails and summary.", "Lista de los clips del proyecto con metadatos, miniaturas y resumen.", "Llista dels clips del projecte amb metadades, miniatures i resum."),
         ("Importa media", "Import media", "Importar medios", "Importa mitjans"),
         ("Aggiunge clip al progetto senza scaricarli: i file restano dove sono (non vengono copiati né modificati). Servono a leggere i metadata e a esportare i report.", "Adds clips to the project without offloading them: the files stay where they are (they are not copied or modified). They are used to read the metadata and to export the reports.", "Añade clips al proyecto sin descargarlos: los archivos se quedan donde están (no se copian ni se modifican). Sirven para leer los metadatos y exportar los informes.", "Afegeix clips al projecte sense descarregar-los: els fitxers es queden on són (no es copien ni es modifiquen). Serveixen per llegir les metadades i exportar els informes."),
         ("Esporta report", "Export report", "Exportar informe", "Exporta l'informe"),
@@ -311,14 +316,14 @@ enum LocStrings {
         ("+ Giorno", "+ Day", "+ Día", "+ Dia"),
         ("Facoltativo: cartella con la data delle riprese", "Optional: folder with the shooting date", "Opcional: carpeta con la fecha del rodaje", "Opcional: carpeta amb la data del rodatge"),
         ("+ Cartella", "+ Folder", "+ Carpeta", "+ Carpeta"),
+    ]
+
+    private static let part5: [Entry] = [
         ("Facoltativo: sottocartella per ordinare il progetto, dentro la cartella selezionata", "Optional: subfolder to organise the project, inside the selected folder", "Opcional: subcarpeta para ordenar el proyecto, dentro de la carpeta seleccionada", "Opcional: subcarpeta per ordenar el projecte, dins de la carpeta seleccionada"),
         ("Elimina selezione…", "Delete selection…", "Eliminar selección…", "Elimina la selecció…"),
         ("Eliminare «{0}»?", "Delete “{0}”?", "¿Eliminar «{0}»?", "Vols eliminar «{0}»?"),
         ("Verrà eliminato SOLO il bin «{0}» ({1} offload, {2} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", "ONLY the bin “{0}” will be deleted ({1} offloads, {2} recorded files). The rest of the project stays. Files on the disks are NOT touched.", "Se eliminará SOLO el bin «{0}» ({1} offloads, {2} archivos registrados). El resto del proyecto se queda. Los archivos de los discos NO se tocan.", "S'eliminarà NOMÉS el bin «{0}» ({1} offloads, {2} fitxers registrats). La resta del projecte es queda. Els fitxers dels discos NO es toquen."),
         ("Verrà eliminata SOLO la cartella «{0}» con le sue sottocartelle e i suoi {1} bin ({2} offload, {3} file registrati). Il resto del progetto resta. I file sui dischi NON vengono toccati.", "ONLY the folder “{0}” will be deleted, with its subfolders and its {1} bins ({2} offloads, {3} recorded files). The rest of the project stays. Files on the disks are NOT touched.", "Se eliminará SOLO la carpeta «{0}» con sus subcarpetas y sus {1} bins ({2} offloads, {3} archivos registrados). El resto del proyecto se queda. Los archivos de los discos NO se tocan.", "S'eliminarà NOMÉS la carpeta «{0}» amb les seves subcarpetes i els seus {1} bins ({2} offloads, {3} fitxers registrats). La resta del projecte es queda. Els fitxers dels discos NO es toquen."),
-    ]
-
-    private static let part5: [Entry] = [
         ("Elimina…", "Delete…", "Eliminar…", "Elimina…"),
         ("Sposta in", "Move to", "Mover a", "Mou a"),
         ("Verificato: tutti i file sono stati riletti dal disco con XXH64 identico alla sorgente", "Verified: all files were read back from disk with XXH64 identical to the source", "Verificado: todos los archivos se han releído del disco con XXH64 idéntico al del origen", "Verificat: tots els fitxers s'han rellegit del disc amb XXH64 idèntic al de l'origen"),
@@ -374,14 +379,14 @@ enum LocStrings {
         ("Anteprima", "Thumbnail", "Miniatura", "Miniatura"),
         ("Giorno", "Day", "Día", "Dia"),
         ("Bin", "Bin", "Bin", "Bin"),
+    ]
+
+    private static let part6: [Entry] = [
         ("XXH64", "XXH64", "XXH64", "XXH64"),
         ("Percorso", "Path", "Ruta", "Ruta"),
         ("Camera", "Camera", "Cámara", "Càmera"),
         ("Serial camera", "Camera serial", "Serie de la cámara", "Sèrie de la càmera"),
         ("Firmware", "Firmware", "Firmware", "Firmware"),
-    ]
-
-    private static let part6: [Entry] = [
         ("Reel", "Reel", "Reel", "Reel"),
         ("Scena", "Scene", "Escena", "Escena"),
         ("Take", "Take", "Toma", "Presa"),

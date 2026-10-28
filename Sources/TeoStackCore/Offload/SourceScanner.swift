@@ -7,6 +7,16 @@ public struct ImportGroup {
     public var skipped: [SkippedItem]
 }
 
+/// Un bin da creare con «Importa media»: per una cartella scelta ha il nome della cartella, per un file scelto ha lo STESSO nome del file.
+public struct ImportBin {
+    /// Nome proposto (già ripulito dai caratteri non ammessi nei nomi dei bin).
+    public let name: String
+    /// Cartella di base da cui si leggono i file (la cartella scelta, o la cartella che contiene il file scelto).
+    public let root: URL
+    public var files: [SourceFile]
+    public var skipped: [SkippedItem]
+}
+
 /// Scansione di SOLA LETTURA della sorgente (nessuna scrittura, nessuna modifica).
 public enum SourceScanner {
     /// Cartelle e file scelti dall'utente per «Importa media» → gruppi per cartella di base. Sola lettura: nulla viene copiato né modificato.
@@ -45,6 +55,41 @@ public enum SourceScanner {
             }
         }
         return groups.filter { !$0.files.isEmpty || !$0.skipped.isEmpty }
+    }
+
+    /// Cartelle e file scelti per «Importa media» → un bin per ogni cartella (col nome della cartella) e uno per ogni file singolo (col nome IDENTICO al file).
+    /// Un file scelto che sta dentro una cartella scelta non crea un secondo bin. Sola lettura.
+    public static func importBins(for urls: [URL]) throws -> [ImportBin] {
+        var bins: [ImportBin] = []
+        var covered = Set<String>()
+        var loose: [(url: URL, info: DiskIO.StatInfo)] = []
+        for url in urls {
+            let path = url.standardizedFileURL.path
+            let info = try DiskIO.lstatInfo(path: path)
+            if info.isDirectory {
+                guard covered.insert(path + "/").inserted else { continue }
+                let scan = try scan(root: url)
+                for f in scan.files { covered.insert(path + "/" + f.relativePath) }
+                bins.append(ImportBin(name: NameValidator.suggestedBinName(fromSource: url.lastPathComponent),
+                                      root: url.standardizedFileURL, files: scan.files, skipped: scan.skipped))
+            } else {
+                loose.append((url, info))
+            }
+        }
+        for (url, info) in loose {
+            let path = url.standardizedFileURL.path
+            guard covered.insert(path).inserted else { continue }
+            let name = url.lastPathComponent
+            let parent = url.deletingLastPathComponent().standardizedFileURL
+            if info.isRegular {
+                let file = SourceFile(relativePath: name, size: info.size, modificationDate: info.times.modification, creationDate: info.times.creation)
+                bins.append(ImportBin(name: NameValidator.suggestedBinName(fromSource: name), root: parent, files: [file], skipped: []))
+            } else {
+                let reason = info.isSymlink ? tr("collegamento simbolico (non copiato)") : tr("tipo di file speciale (non copiato)")
+                bins.append(ImportBin(name: "", root: parent, files: [], skipped: [SkippedItem(relativePath: name, reason: reason)]))
+            }
+        }
+        return bins
     }
 
     /// Voci create dal sistema operativo sui volumi: non fanno parte del girato e non vengono copiate.

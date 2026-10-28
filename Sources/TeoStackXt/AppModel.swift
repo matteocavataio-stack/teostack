@@ -319,11 +319,10 @@ final class ProjectsViewModel: ObservableObject {
             do {
                 var imports: [(binID: Int64, result: ProjectStore.ImportResult)] = []
                 var skipped = 0
-                for group in try SourceScanner.importGroups(for: urls) {
+                for group in try SourceScanner.importBins(for: urls) {
                     skipped += group.skipped.count
                     guard !group.files.isEmpty else { continue }
-                    let suggested = NameValidator.suggestedBinName(fromSource: group.root.lastPathComponent)
-                    let bin = try store.findOrCreateBin(parentID: parentID, name: suggested.isEmpty ? tr("Importati") : suggested).node
+                    let bin = try store.findOrCreateBin(parentID: parentID, name: group.name.isEmpty ? tr("Importati") : group.name).node
                     imports.append((bin.id, try store.importFiles(binID: bin.id, rootPath: group.root.path, files: group.files)))
                 }
                 DispatchQueue.main.async { self?.finishImport(imports, skipped: skipped) }

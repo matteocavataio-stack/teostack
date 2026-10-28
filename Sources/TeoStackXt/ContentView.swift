@@ -28,7 +28,7 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProjectBar(projects: app.projects, request: $request, showReport: $showReport)
+            ProjectBar(projects: app.projects, request: $request, showReport: $showReport, tab: $tab)
                 .sheet(isPresented: $showReport) {
                     ReportSheet(projects: app.projects) { showReport = false }
                 }
@@ -39,12 +39,6 @@ struct ContentView: View {
                     .frame(minWidth: 220, idealWidth: 260, maxWidth: 420)
                 VStack(spacing: 0) {
                     HStack {
-                        Picker("", selection: $tab) {
-                            ForEach(MainTab.allCases) { Text($0.title).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(maxWidth: 260)
                         Spacer()
                         Button(showHistory ? tr("Nascondi cronologia") : tr("Mostra cronologia")) { showHistory.toggle() }
                     }

@@ -96,6 +96,8 @@ struct ToolbarButton: View {
     let title: String
     let symbol: String
     var destructive = false
+    /// Scheda attiva (Offload / Clip): evidenziata.
+    var isSelected = false
     let action: () -> Void
     @Environment(\.isEnabled) private var isEnabled
 
@@ -107,10 +109,12 @@ struct ToolbarButton: View {
             }
             .frame(minWidth: 82)
             .padding(.vertical, 4)
+            .background(RoundedRectangle(cornerRadius: 6).fill(isSelected ? Color.accentColor.opacity(0.22) : Color.clear))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .foregroundStyle(destructive ? Color.red : Color.primary)
+        .foregroundStyle(destructive ? Color.red : (isSelected ? Color.accentColor : Color.primary))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .opacity(isEnabled ? 1 : 0.35)
     }
 }
@@ -119,6 +123,7 @@ struct ProjectBar: View {
     @ObservedObject var projects: ProjectsViewModel
     @Binding var request: NameRequest?
     @Binding var showReport: Bool
+    @Binding var tab: MainTab
     @State private var confirmDelete = false
 
     private static func formattedDate(_ date: Date) -> String {
@@ -157,6 +162,11 @@ struct ProjectBar: View {
             ToolbarButton(title: tr("Elimina progetto"), symbol: "trash", destructive: true) { confirmDelete = true }
                 .disabled(projects.selectedProject == nil)
                 .help(tr("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale."))
+            Divider().frame(height: 36)
+            ToolbarButton(title: tr("Offload"), symbol: "externaldrive", isSelected: tab == .offload) { tab = .offload }
+                .help(tr("Schermata di scarico: sorgente, destinazioni e avanzamento."))
+            ToolbarButton(title: tr("Clip"), symbol: "film", isSelected: tab == .clips) { tab = .clips }
+                .help(tr("Elenco dei clip del progetto con metadata, anteprime e riepilogo."))
             Divider().frame(height: 36)
             ToolbarButton(title: tr("Importa media"), symbol: "square.and.arrow.down") { projects.importMedia() }
                 .disabled(projects.currentContainer == nil || projects.isImporting)

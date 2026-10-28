@@ -39,6 +39,31 @@ final class ImportMediaTests: XCTestCase {
         XCTAssertThrowsError(try SourceScanner.importGroups(for: [base.appendingPathComponent("non_esiste")]))
     }
 
+    func testImportedBinsAreNamedLikeTheFileOrFolder() throws {
+        let bins = try SourceScanner.importBins(for: [
+            base.appendingPathComponent("CardA"),
+            base.appendingPathComponent("Loose/one.mov"),
+            base.appendingPathComponent("Loose/two.mpg"),
+            base.appendingPathComponent("Loose/one.mov"),                      // scelto due volte: un solo bin
+            base.appendingPathComponent("CardA/S01.wav"),                      // dentro una cartella già scelta: nessun bin in più
+        ])
+        XCTAssertEqual(bins.map(\.name), ["CardA", "one.mov", "two.mpg"], "il bin di un file ha lo stesso nome del file")
+        XCTAssertEqual(bins[1].files.map(\.relativePath), ["one.mov"])
+        XCTAssertEqual(bins[1].root.lastPathComponent, "Loose")
+        XCTAssertEqual(bins[0].files.count, 4)
+        XCTAssertThrowsError(try SourceScanner.importBins(for: [base.appendingPathComponent("non_esiste")]))
+
+        // importandoli davvero: il bin ha il nome del file e riusarlo non crea doppioni
+        let store = try ProjectStore(path: nil)
+        let p = try store.createProject(name: "Film")
+        let library = try store.tree(projectID: p.id)
+        for b in bins.dropFirst() {
+            let node = try store.findOrCreateBin(parentID: library.id, name: b.name).node
+            XCTAssertEqual(node.name, b.name)
+            XCTAssertEqual(try store.importFiles(binID: node.id, rootPath: b.root.path, files: b.files).added, 1)
+        }
+    }
+
     func testImportedClipsAreNeverMarkedVerifiedAndSourceFilesAreUntouched() throws {
         let store = try ProjectStore(path: nil)
         let (p, bin) = try bin(store)
