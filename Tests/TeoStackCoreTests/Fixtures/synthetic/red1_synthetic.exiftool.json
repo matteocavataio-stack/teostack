@@ -1,0 +1,19 @@
+{
+ "Red:CameraType": "RED ONE",
+ "Red:DateCreated": "2026:03:12",
+ "Red:FirmwareVersion": 30,
+ "Red:FrameRate": 25,
+ "Red:ISO": 320,
+ "Red:ImageHeight": 1152,
+ "Red:ImageWidth": 2048,
+ "Red:Model": "RED ONE MYSTERIUM-X",
+ "Red:OriginalFileName": "B001_C002_0101XY.R3D",
+ "Red:RedcodeVersion": 1,
+ "Red:ReelNumber": "B001",
+ "Red:Revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+ "Red:SerialNumber": "SN-1",
+ "Red:StartEdgeCode": "00:00:10:00",
+ "Red:StartTimecode": "00:00:10:00",
+ "Red:Take": 12,
+ "Red:TimeCreated": "10:15:30"
+}

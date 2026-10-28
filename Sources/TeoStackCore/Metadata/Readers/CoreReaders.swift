@@ -203,6 +203,7 @@ public extension ReaderRegistry {
     static func standard() -> ReaderRegistry {
         ReaderRegistry(readers: [
             ARRIReader(),
+            REDReader(),
             BWFReader(),
             ARRIArtCmdFallbackReader(),
             FFprobeGenericReader(),
