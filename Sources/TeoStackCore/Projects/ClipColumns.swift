@@ -70,6 +70,7 @@ public enum ClipColumns {
         case "ok": return "OK"
         case "mismatch": return "MISMATCH"
         case "error": return tr("ERRORE")
+        case ClipRecord.importedStatus: return tr("Importato")
         default: return tr("In attesa")
         }
     }

@@ -91,6 +91,30 @@ struct NameSheet: View {
 
 // MARK: - Barra progetto
 
+/// Pulsante della barra in alto: icona sopra, testo sotto (come nella barra di Silverstack).
+struct ToolbarButton: View {
+    let title: String
+    let symbol: String
+    var destructive = false
+    let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                Image(systemName: symbol).font(.system(size: 20)).frame(height: 24)
+                Text(title).font(.caption).lineLimit(1)
+            }
+            .frame(minWidth: 82)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(destructive ? Color.red : Color.primary)
+        .opacity(isEnabled ? 1 : 0.35)
+    }
+}
+
 struct ProjectBar: View {
     @ObservedObject var projects: ProjectsViewModel
     @Binding var request: NameRequest?
@@ -117,7 +141,7 @@ struct ProjectBar: View {
                     }
                 }
                 .labelsHidden()
-                .frame(maxWidth: 460)
+                .frame(maxWidth: 340)
                 if let p = projects.selectedProject {
                     Text(tr("Creato il {0} · {1} clip", Self.formattedDate(p.createdAt), p.clipCount))
                         .foregroundStyle(.secondary)
@@ -125,16 +149,20 @@ struct ProjectBar: View {
                 }
             }
             Spacer()
-            Button(tr("Esporta report…")) { showReport = true }
-                .disabled(projects.selectedProject == nil)
-            Button(tr("Nuovo progetto")) { request = .newProject }
-            Button(tr("Rinomina")) {
+            ToolbarButton(title: tr("Nuovo progetto"), symbol: "folder.badge.plus") { request = .newProject }
+            ToolbarButton(title: tr("Rinomina"), symbol: "pencil") {
                 if let p = projects.selectedProject { request = .renameProject(p.name) }
             }
             .disabled(projects.selectedProject == nil)
-            Button(tr("Elimina progetto…"), role: .destructive) { confirmDelete = true }
+            ToolbarButton(title: tr("Elimina progetto"), symbol: "trash", destructive: true) { confirmDelete = true }
                 .disabled(projects.selectedProject == nil)
                 .help(tr("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale."))
+            Divider().frame(height: 36)
+            ToolbarButton(title: tr("Importa media"), symbol: "square.and.arrow.down") { projects.importMedia() }
+                .disabled(projects.currentContainer == nil || projects.isImporting)
+                .help(tr("Aggiunge clip al progetto senza scaricarli: i file restano dove sono (non vengono copiati né modificati). Servono a leggere i metadata e a esportare i report."))
+            ToolbarButton(title: tr("Esporta report"), symbol: "doc.text") { showReport = true }
+                .disabled(projects.selectedProject == nil)
         }
         .padding(10)
         .alert(tr("Eliminare il progetto «{0}»?", projects.selectedProject?.name ?? ""), isPresented: $confirmDelete) {
@@ -168,6 +196,7 @@ struct SidebarView: View {
                     HStack(spacing: 6) {
                         Image(systemName: icon(node.kind))
                         Text(node.name).lineLimit(1)
+                        if let verification = node.verification { VerificationDot(state: verification) }
                         Spacer()
                         Text("\(node.clipCount)").foregroundStyle(.secondary).monospacedDigit()
                     }
@@ -262,6 +291,34 @@ struct SidebarView: View {
                     Button(t.label) { projects.moveNode(id: node.id, toParent: t.id) }
                 }
             }
+        }
+    }
+}
+
+/// Pallino accanto al bin: verde = verificato, rosso = non verificato, arancione = offload in corso.
+struct VerificationDot: View {
+    let state: BinVerification
+
+    var body: some View {
+        Image(systemName: "circle.fill")
+            .font(.system(size: 9))
+            .foregroundStyle(color)
+            .help(text)
+    }
+
+    private var color: Color {
+        switch state {
+        case .verified: return .green
+        case .notVerified: return .red
+        case .inProgress: return .orange
+        }
+    }
+
+    private var text: String {
+        switch state {
+        case .verified: return tr("Verificato: tutti i file sono stati riletti dal disco con XXH64 identico alla sorgente")
+        case .notVerified: return tr("Non verificato: ci sono file con problemi, un offload annullato o file importati senza copia")
+        case .inProgress: return tr("Offload in corso")
         }
     }
 }

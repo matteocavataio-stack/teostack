@@ -17,6 +17,16 @@ public struct ProjectSummary: Identifiable, Equatable {
     public var clipCount: Int
 }
 
+/// Stato di verifica di un bin (pallino verde/rosso nella barra laterale).
+public enum BinVerification: String, Equatable {
+    /// Tutti i file riletti dal disco con XXH64 identico alla sorgente, su tutte le destinazioni.
+    case verified
+    /// C'è qualcosa di non verificato: file con MISMATCH/errore, offload annullato o interrotto, o file importati senza copia.
+    case notVerified
+    /// Un offload è in corso.
+    case inProgress
+}
+
 /// Nodo dell'albero: Library → (giorno e/o sottocartelle, facoltativi) → bin.
 public struct TreeNode: Identifiable, Equatable {
     public let id: Int64
@@ -26,6 +36,8 @@ public struct TreeNode: Identifiable, Equatable {
     public var name: String
     public var clipCount: Int
     public var children: [TreeNode]?      // nil per i bin (foglie): serve a SwiftUI per non mostrare la freccia
+    /// Solo per i bin con almeno un offload o un'importazione; nil per gli altri nodi e per i bin vuoti.
+    public var verification: BinVerification? = nil
 }
 
 public struct OffloadRecord: Identifiable, Equatable {
@@ -61,6 +73,17 @@ public struct ClipRecord: Identifiable, Equatable {
     public var modifiedAt: Date? = nil
     /// Clip audio (WAV, BWF…): ha i metadata ma non l'anteprima, e non entra nel conteggio dei clip video.
     public var isAudio: Bool = false
+
+    /// Stato «importato»: file registrato senza copiarlo (non verificato, ma leggibile da dove si trova).
+    public static let importedStatus = "imported"
+
+    /// Il file si può leggere (metadata, anteprima): copia verificata OK oppure file importato.
+    public var hasLocalFile: Bool { status == "ok" || status == Self.importedStatus }
+
+    /// La destinazione `d` ha il file da leggere (copia verificata OK o file importato).
+    public func fileAvailable(onDestination d: Int) -> Bool {
+        d < destinationStatuses.count && (destinationStatuses[d] == "ok" || destinationStatuses[d] == Self.importedStatus)
+    }
 }
 
 /// Voce della cronologia di un progetto.

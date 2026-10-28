@@ -169,9 +169,10 @@ final class AudioClipsStoreTests: XCTestCase {
         XCTAssertEqual(try store.projects().first { $0.id == p.id }?.clipCount, 2, "il conteggio clip resta video: MPG + LRF")
 
         let recap = try store.recap(underNode: bin.id)
-        XCTAssertEqual(recap.clipCount, 2)
-        XCTAssertEqual(recap.audioCount, 1)
-        XCTAssertEqual(recap.fileCount, 6)
+        XCTAssertEqual(recap.video.clips, 2)
+        XCTAssertEqual(recap.audio.clips, 1)
+        XCTAssertEqual(recap.total.files, 6)
+        XCTAssertEqual(recap.other.files, 3, "notes.txt e i due file «._»")
         XCTAssertEqual(recap.audioWithoutFormat, 1, "metadata non ancora letti")
     }
 
@@ -233,10 +234,11 @@ final class AudioClipsStoreTests: XCTestCase {
         XCTAssertNil(byName["T2_04002.wav"]?["resolution"])
 
         let recap = try store.recap(underNode: bin.id)
-        XCTAssertEqual(recap.clipCount, 2)
-        XCTAssertEqual(recap.audioCount, 1)
-        XCTAssertEqual(recap.clipsWithDuration, 2, "la durata dell'audio non si somma ai clip video")
-        XCTAssertTrue(recap.formats.contains { $0.label == "MPEG-2 Main · 720x480 · .MPG" && !$0.isAudio })
-        XCTAssertTrue(recap.formats.contains { $0.label == "PCM · 16 bit · 44100 Hz · .WAV" && $0.isAudio })
+        XCTAssertEqual(recap.video.clips, 2)
+        XCTAssertEqual(recap.audio.clips, 1)
+        XCTAssertEqual(recap.video.clipsWithDuration, 2)
+        XCTAssertEqual(recap.audio.clipsWithDuration, 1, "la durata dell'audio sta nella sua riga, non in quella dei video")
+        XCTAssertTrue(recap.videoFormats.contains { $0.codec == "MPEG-2 Main" && $0.resolution == "720x480" && $0.fileType == "MPG" && $0.fps == "29.97" })
+        XCTAssertTrue(recap.audioFormats.contains { $0.codec == "PCM" && $0.sampleRate == "44100" && $0.bitDepth == "16" && $0.channels == "1" })
     }
 }

@@ -84,7 +84,7 @@ public enum ThumbnailGenerator {
                 lock.lock(); done += 1; let n = done; lock.unlock()
                 progress?(n, clips.count)
             }
-            guard clip.isMedia, clip.status == "ok" else { return }
+            guard clip.isMedia, clip.hasLocalFile else { return }
             if !regenerate && cache.hasImage(clipID: clip.id) { lock.lock(); summary.alreadyPresent += 1; lock.unlock(); return }
             lock.lock(); let cachedRoots = rootsCache[clip.offloadID]; lock.unlock()
             let roots: [String]
@@ -93,7 +93,7 @@ public enum ThumbnailGenerator {
                 lock.lock(); rootsCache[clip.offloadID] = roots; lock.unlock()
             }
             var file: String?
-            for (d, root) in roots.enumerated() where d < clip.destinationStatuses.count && clip.destinationStatuses[d] == "ok" {
+            for (d, root) in roots.enumerated() where clip.fileAvailable(onDestination: d) {
                 let candidate = (root as NSString).appendingPathComponent(clip.relativePath)
                 if FileManager.default.fileExists(atPath: candidate) { file = candidate; break }
             }

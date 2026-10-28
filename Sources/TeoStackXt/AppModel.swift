@@ -69,6 +69,9 @@ final class ProjectsViewModel: ObservableObject {
     @Published var isReadingMetadata = false
     @Published var thumbnailStatus: String?
     @Published var isGeneratingThumbnails = false
+    @Published var isImporting = false
+    /// Esito dell'ultima importazione («Importa media»).
+    @Published var importStatus: String?
     /// Aumenta ogni volta che cambiano le anteprime su disco: fa ridisegnare la tabella.
     @Published var thumbnailRevision = 0
 
@@ -290,7 +293,63 @@ final class ProjectsViewModel: ObservableObject {
     /// Legge i metadata dei clip di un offload appena concluso.
     func importMetadata(forJobID jobID: UUID) {
         guard let store else { return }
-        runMetadataImport(clips: (try? store.clips(forJobID: jobID)) ?? [], thumbnailsForJobID: jobID)
+        runMetadataImport(clips: (try? store.clips(forJobID: jobID)) ?? [], thumbnailsForJobIDs: [jobID])
+    }
+
+    // MARK: Importa media (clip aggiunti senza scaricarli)
+
+    /// Sceglie cartelle o file già presenti su disco e li registra nel progetto SENZA copiarli né toccarli: servono a leggere i metadata
+    /// e a esportare i report. Ogni cartella diventa un bin (col nome della cartella) dentro la cartella selezionata; i file singoli
+    /// vanno nel bin della loro cartella. I clip importati risultano «Importato», mai «OK» (nessuna copia è stata verificata).
+    func importMedia() {
+        guard let store, let container = currentContainer else { errorMessage = tr("Seleziona prima un progetto."); return }
+        guard !isImporting else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.message = tr("Scegli le cartelle o i file da importare. Non vengono copiati né modificati: servono a leggere i metadata e a esportare i report.")
+        panel.prompt = tr("Importa")
+        guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
+        let urls = panel.urls
+        let parentID = container.id
+        isImporting = true
+        importStatus = tr("Importazione in corso…")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                var imports: [(binID: Int64, result: ProjectStore.ImportResult)] = []
+                var skipped = 0
+                for group in try SourceScanner.importGroups(for: urls) {
+                    skipped += group.skipped.count
+                    guard !group.files.isEmpty else { continue }
+                    let suggested = NameValidator.suggestedBinName(fromSource: group.root.lastPathComponent)
+                    let bin = try store.findOrCreateBin(parentID: parentID, name: suggested.isEmpty ? tr("Importati") : suggested).node
+                    imports.append((bin.id, try store.importFiles(binID: bin.id, rootPath: group.root.path, files: group.files)))
+                }
+                DispatchQueue.main.async { self?.finishImport(imports, skipped: skipped) }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.isImporting = false
+                    self?.importStatus = nil
+                    self?.errorMessage = "\(error)"
+                }
+            }
+        }
+    }
+
+    private func finishImport(_ imports: [(binID: Int64, result: ProjectStore.ImportResult)], skipped: Int) {
+        isImporting = false
+        let added = imports.reduce(0) { $0 + $1.result.added }
+        let already = imports.reduce(0) { $0 + $1.result.alreadyPresent }
+        var text = tr("Importati {0} file in {1} bin ({2} già presenti).", added, imports.count, already)
+        if skipped > 0 { text += " " + tr("{0} elementi non importabili (collegamenti o file speciali).", skipped) }
+        importStatus = imports.isEmpty ? tr("Nessun file da importare nella selezione.") : text
+        if let last = imports.last { binRegistered(id: last.binID) } else { reload() }
+        // metadata e anteprime dei file appena importati
+        if let store {
+            let clips = imports.flatMap { (try? store.clips(forJobID: $0.result.jobID)) ?? [] }
+            runMetadataImport(clips: clips, thumbnailsForJobIDs: imports.map { $0.result.jobID })
+        }
     }
 
     /// Rilegge i metadata di tutti i clip mostrati (selezione corrente).
@@ -298,14 +357,14 @@ final class ProjectsViewModel: ObservableObject {
         runMetadataImport(clips: clips)
     }
 
-    private func runMetadataImport(clips: [ClipRecord], thumbnailsForJobID: UUID? = nil) {
+    private func runMetadataImport(clips: [ClipRecord], thumbnailsForJobIDs: [UUID] = []) {
         guard let store, !clips.isEmpty, !isReadingMetadata else { return }
         let exif = ExifToolRunner.locate()
         let art = ARTCmdRunner.locate()
         let probe = FFprobeRunner.locate()
         guard exif != nil || art != nil || probe != nil else {
             metadataStatus = tr("Né ExifTool né art-cmd né ffprobe sono installati: metadata non letti (vedi l'avviso in alto per installarli).")
-            if let job = thumbnailsForJobID { generateThumbnails(forJobID: job) }
+            generateThumbnails(forJobIDs: thumbnailsForJobIDs)
             return
         }
         isReadingMetadata = true
@@ -317,12 +376,12 @@ final class ProjectsViewModel: ObservableObject {
                 }
                 DispatchQueue.main.async {
                     self?.finishMetadataImport(tr("Metadata: {0}", summary.text))
-                    if let job = thumbnailsForJobID { self?.generateThumbnails(forJobID: job) }
+                    self?.generateThumbnails(forJobIDs: thumbnailsForJobIDs)
                 }
             } catch {
                 DispatchQueue.main.async {
                     self?.finishMetadataImport(tr("Metadata non letti: {0}", error))
-                    if let job = thumbnailsForJobID { self?.generateThumbnails(forJobID: job) }
+                    self?.generateThumbnails(forJobIDs: thumbnailsForJobIDs)
                 }
             }
         }
@@ -337,9 +396,9 @@ final class ProjectsViewModel: ObservableObject {
     // MARK: Anteprime (primo fotogramma)
 
     /// Crea le anteprime dei clip di un offload appena concluso (dopo la lettura dei metadata, che servono a riconoscere i clip ARRI).
-    func generateThumbnails(forJobID jobID: UUID) {
-        guard let store else { return }
-        runThumbnails(clips: (try? store.clips(forJobID: jobID)) ?? [], regenerate: false)
+    func generateThumbnails(forJobIDs jobIDs: [UUID]) {
+        guard let store, !jobIDs.isEmpty else { return }
+        runThumbnails(clips: jobIDs.flatMap { (try? store.clips(forJobID: $0)) ?? [] }, regenerate: false)
     }
 
     /// Crea (o ritenta) le anteprime dei clip mostrati.

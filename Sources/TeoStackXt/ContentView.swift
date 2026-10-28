@@ -136,15 +136,16 @@ struct TargetBar: View {
 
 // MARK: - Riepilogo della cartella selezionata
 
-/// Quanto è stato scaricato nella cartella selezionata (giorno, sottocartella, Library o bin): spazio, clip, schede, durata, formati.
-/// Solo dati registrati: quello che non si conosce è dichiarato, mai stimato.
+/// Quanto c'è nella cartella selezionata (giorno, sottocartella, Library o bin), con le tabelle del «Shooting Day Report»:
+/// panoramica clip, backup verificati, formati video, somme per camera (e formati audio).
+/// Solo dati registrati: quello che non si conosce è dichiarato (durata parziale, N/D), mai stimato.
 struct RecapPanel: View {
     @ObservedObject var projects: ProjectsViewModel
     @AppStorage("showRecap") private var expanded = true
 
     var body: some View {
         if let recap = projects.recap, let id = projects.selectedNodeID, let node = projects.node(id) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Button {
                         expanded.toggle()
@@ -153,74 +154,121 @@ struct RecapPanel: View {
                     }
                     .buttonStyle(.plain)
                     Text(tr("Riepilogo di «{0}»", node.name)).font(.headline).lineLimit(1)
+                    if !recap.isEmpty { Text(summaryLine(recap)).font(.callout).foregroundStyle(.secondary).lineLimit(1) }
                     Spacer()
                 }
-                if expanded { details(recap) }
+                if let status = projects.importStatus {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                }
+                if expanded {
+                    ScrollView {
+                        details(recap).padding(.trailing, 10)
+                    }
+                    .frame(maxHeight: 290)
+                }
             }
             .padding(10)
             Divider()
         }
     }
 
+    private func summaryLine(_ recap: ProjectRecap) -> String {
+        var parts = [tr("Schede scaricate: {0}", recap.cardCount), tr("Spazio verificato: {0}", Format.bytes(recap.verifiedBytes))]
+        if recap.importedFiles > 0 { parts.append(tr("File importati: {0}", recap.importedFiles)) }
+        return parts.joined(separator: " · ")
+    }
+
     @ViewBuilder
     private func details(_ recap: ProjectRecap) -> some View {
         if recap.isEmpty {
-            Text(tr("Ancora nessun offload in questa cartella.")).font(.callout).foregroundStyle(.secondary)
+            Text(tr("Ancora nessun offload né file importato in questa cartella.")).font(.callout).foregroundStyle(.secondary)
         } else {
-            HStack(alignment: .top, spacing: 28) {
-                stat(tr("Spazio scaricato"), Format.bytes(recap.verifiedBytes))
-                stat(tr("Clip"), "\(recap.clipCount)")
-                if recap.audioCount > 0 { stat(tr("Audio"), "\(recap.audioCount)") }
-                stat(tr("Schede scaricate"), "\(recap.cardCount)")
-                stat(tr("Durata totale"), durationText(recap))
-                Spacer()
+            VStack(alignment: .leading, spacing: 18) {
+                table(tr("Panoramica clip"), columns: [tr("Clip"), tr("Durata"), tr("File"), tr("Dimensione")], rows: [
+                    [tr("Clip video sorgente")] + overviewCells(recap.video),
+                    [tr("Clip audio")] + overviewCells(recap.audio),
+                    [tr("Altri file")] + overviewCells(recap.other),
+                    [tr("Totale")] + overviewCells(recap.total),
+                ])
+                table(tr("Backup (verificati)"), columns: [tr("Clip")], rows: recap.backups.map { [$0.label, String($0.clips)] })
+                if !recap.videoFormats.isEmpty {
+                    table(tr("Formati video"), columns: [tr("Tipo file"), tr("Risoluzione"), tr("FPS"), tr("Clip")],
+                          rows: recap.videoFormats.map { [$0.codec ?? na, $0.fileType.isEmpty ? na : $0.fileType, $0.resolution ?? na, $0.fps ?? na, String($0.group.clips)] })
+                }
+                if !recap.cameras.isEmpty {
+                    table(tr("Somme per camera"), columns: [tr("Bobine"), tr("Frame"), tr("Clip"), tr("Durata"), tr("File"), tr("Dimensione")],
+                          rows: recap.cameras.map {
+                              [$0.camera ?? na, String($0.reelCount), $0.frames.map(String.init) ?? na, String($0.group.clips),
+                               durationText($0.group), String($0.group.files), Format.bytes($0.group.size)]
+                          })
+                }
+                if !recap.audioFormats.isEmpty {
+                    table(tr("Formati audio"), columns: [tr("Frequenza"), tr("Bit"), tr("Canali"), tr("Clip")],
+                          rows: recap.audioFormats.map { [$0.codec ?? na, $0.sampleRate ?? na, $0.bitDepth ?? na, $0.channels ?? na, String($0.group.clips)] })
+                }
+                ForEach(notes(recap), id: \.self) { note in
+                    Text(note).font(.caption).foregroundStyle(.orange)
+                }
             }
-            if !recap.formats.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(tr("Formati utilizzati")).font(.caption).foregroundStyle(.secondary)
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), alignment: .leading)], alignment: .leading, spacing: 2) {
-                        ForEach(recap.formats, id: \.label) { line in
-                            Text(tr("{0} — {1} clip, {2}", line.label, line.clips, Format.bytes(line.bytes)))
-                                .font(.callout).lineLimit(1).truncationMode(.middle)
-                        }
+        }
+    }
+
+    private var na: String { ClipColumns.notAvailable }
+
+    private func overviewCells(_ g: ProjectRecap.Group) -> [String] {
+        [String(g.clips), durationText(g), String(g.files), Format.bytes(g.size)]
+    }
+
+    /// «0» se non ci sono clip; N/D se nessun clip ha la durata; «≥ …» se la conoscono solo alcuni.
+    private func durationText(_ g: ProjectRecap.Group) -> String {
+        if g.clips == 0 { return Format.duration(0) }
+        if g.clipsWithDuration == 0 { return na }
+        let text = Format.duration(g.durationSeconds)
+        return g.clipsWithoutDuration > 0 ? "≥ \(text)" : text
+    }
+
+    /// Tabella: titolo + intestazioni di colonna, poi le righe (la prima colonna è il nome della riga, le altre sono a destra).
+    private func table(_ title: String, columns: [String], rows: [[String]]) -> some View {
+        Grid(alignment: .trailing, horizontalSpacing: 22, verticalSpacing: 4) {
+            GridRow {
+                Text(title).font(.title3.bold()).frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(Array(columns.enumerated()), id: \.offset) { _, name in
+                    Text(name).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Divider()
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, cells in
+                GridRow {
+                    ForEach(Array(cells.enumerated()), id: \.offset) { index, cell in
+                        Text(cell)
+                            .font(.callout.monospacedDigit())
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: index == 0 ? .infinity : nil, alignment: index == 0 ? .leading : .trailing)
                     }
                 }
             }
-            ForEach(notes(recap), id: \.self) { note in
-                Text(note).font(.caption).foregroundStyle(.orange)
-            }
         }
-    }
-
-    private func stat(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.title3.monospacedDigit().bold())
-        }
-    }
-
-    private func durationText(_ recap: ProjectRecap) -> String {
-        guard recap.clipsWithDuration > 0 else { return ClipColumns.notAvailable }
-        let total = Int(recap.durationSeconds.rounded())
-        let clock = String(format: "%d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
-        return tr("{0} ({1} min)", clock, Int((recap.durationSeconds / 60).rounded()))
     }
 
     private func notes(_ recap: ProjectRecap) -> [String] {
         var out: [String] = []
-        if recap.clipCount > 0 && recap.clipsWithDuration == 0 {
+        if recap.video.clips > 0 && recap.video.clipsWithDuration == 0 {
             out.append(tr("Durata non disponibile: i metadata non sono ancora stati letti (usa «Leggi metadata» nel tab Clip)."))
-        } else if recap.clipsWithoutDuration > 0 {
-            out.append(tr("La durata comprende solo i {0} clip di cui è nota; {1} clip senza durata (usa «Leggi metadata» nel tab Clip).", recap.clipsWithDuration, recap.clipsWithoutDuration))
+        } else if recap.video.clipsWithoutDuration > 0 {
+            out.append(tr("La durata comprende solo i {0} clip di cui è nota; {1} clip senza durata (usa «Leggi metadata» nel tab Clip).", recap.video.clipsWithDuration, recap.video.clipsWithoutDuration))
         }
-        if recap.clipsWithoutFormat > 0 {
-            out.append(tr("{0} clip senza codec né risoluzione (metadata non letti): compaiono come formato {1}.", recap.clipsWithoutFormat, ClipColumns.notAvailable))
+        if recap.videoWithoutFormat > 0 {
+            out.append(tr("{0} clip senza codec né risoluzione (metadata non letti): compaiono come formato {1}.", recap.videoWithoutFormat, na))
         }
         if recap.audioWithoutFormat > 0 {
-            out.append(tr("{0} clip audio senza codec né frequenza (metadata non letti): compaiono come formato {1}.", recap.audioWithoutFormat, ClipColumns.notAvailable))
+            out.append(tr("{0} clip audio senza codec né frequenza (metadata non letti): compaiono come formato {1}.", recap.audioWithoutFormat, na))
         }
-        if recap.notVerifiedFiles > 0 {
-            out.append(tr("{0} file non verificati OK non sono contati nello spazio scaricato.", recap.notVerifiedFiles))
+        if recap.problemFiles > 0 {
+            out.append(tr("{0} file non verificati OK (MISMATCH, errore o offload annullato): compaiono nella riga «0» dei backup.", recap.problemFiles))
+        }
+        if recap.importedFiles > 0 {
+            out.append(tr("{0} file importati senza copia: non sono verificati (riga «0» dei backup).", recap.importedFiles))
         }
         if recap.incompleteOffloads > 0 {
             out.append(tr("{0} offload annullati o interrotti non sono contati come schede scaricate.", recap.incompleteOffloads))

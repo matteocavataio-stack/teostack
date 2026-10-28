@@ -32,6 +32,7 @@
   in `LocStrings.swift`: il test `LocalizationTests` cerca nei sorgenti tutti i `tr("…")`/`LocText("…")` e fallisce se manca una lingua o un segnaposto.
 - UI: `tr()` ovunque; `LanguageSettings` + `LanguageMenu` (in basso a sinistra nella barra laterale); `.id(lingua)` sul contenuto di `ContentView` (non sul livello che possiede `AppModel`).
 - I report PDF restano in inglese e con «N/D» (`ClipColumns.reportNotAvailable`); la cronologia salva chiave+parametri (`LocText`, colonna `event.i18n`) così segue la lingua.
+- Importa media (`ProjectStore.importFiles`, stato clip `imported`, `ClipRecord.hasLocalFile`), pallino bin (`TreeNode.verification`), riepilogo a tabelle (`ProjectRecap`, `RecapPanel`).
 - Altre funzioni: percorsi di destinazione salvati (`SavedPathsStore`, menu «Percorsi salvati»), riepilogo cartella (`ProjectRecap`, `RecapPanel`).
 
 ## Stato

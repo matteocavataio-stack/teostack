@@ -108,6 +108,18 @@ Quello che manca resta N/D. ExifTool non si usa per questi formati: sui file MPE
 - I dati già registrati vengono riclassificati da soli al primo avvio della nuova versione (nessun file o clip perso).
 - **Non verificato:** file reali di camere DJI (LRF) e di registratori audio: i test usano file generati con ffmpeg e un MPG vero. Con file originali si può verificare quali campi (camera, GPS, ecc.) contengono.
 
+## Riepilogo, importazione e verifica dei bin
+
+- **Riepilogo della cartella** (schermata Offload, sotto «Il bin verrà creato in»): stesse tabelle del Shooting Day Report — *Panoramica clip* (clip video, audio, altri file, totale: clip, durata,
+  file, dimensione), *Backup (verificati)* (clip con 3+/2/1/0 copie verificate), *Formati video* (codec, tipo file, risoluzione, FPS, clip), *Somme per camera* (bobine, frame, clip, durata, file, dimensione),
+  *Formati audio*. Sopra, «Schede scaricate» e «Spazio verificato». Durata parziale = «≥ …», nessun dato → N/D; i file con problemi o importati senza copia sono dichiarati e finiscono nella riga «0» dei backup.
+- **Importa media** (barra in alto): sceglie cartelle o file già su disco e li aggiunge al progetto **senza copiarli né toccarli**, per leggere i metadata ed esportare i report. Ogni cartella diventa un bin
+  (col nome della cartella) dentro la cartella selezionata; i file singoli vanno nel bin della loro cartella. I clip risultano «Importato» (mai «OK»: nessuna copia è stata verificata), nessun hash inventato.
+  Metadata e anteprime si leggono da dove stanno i file; reimportare la stessa cartella aggiunge solo i file nuovi.
+- **Pallino accanto a ogni bin:** verde = tutti i file riletti dal disco con XXH64 identico (su tutte le destinazioni); rosso = non verificato (file con problemi, offload annullato, file importati senza copia);
+  arancione = offload in corso. Un vecchio offload annullato, poi rifatto e riuscito, non tiene il bin rosso. Nessun pallino sui bin ancora vuoti.
+- **Barra in alto** con icone sopra il testo: Nuovo progetto, Rinomina, Elimina progetto, Importa media, Esporta report.
+
 ## Anteprima del primo fotogramma
 
 - Nel tab **Clip** la colonna **Anteprima** mostra il primo fotogramma di ogni clip; cliccando una riga si apre a destra il pannello con il fotogramma grande

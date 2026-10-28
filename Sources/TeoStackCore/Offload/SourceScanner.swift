@@ -1,7 +1,52 @@
 import Foundation
 
+/// File da importare che stanno nella stessa cartella di base (una cartella scelta, o la cartella che contiene i file scelti).
+public struct ImportGroup {
+    public let root: URL
+    public var files: [SourceFile]
+    public var skipped: [SkippedItem]
+}
+
 /// Scansione di SOLA LETTURA della sorgente (nessuna scrittura, nessuna modifica).
 public enum SourceScanner {
+    /// Cartelle e file scelti dall'utente per «Importa media» → gruppi per cartella di base. Sola lettura: nulla viene copiato né modificato.
+    /// Una cartella si scansiona per intero; i file singoli si raggruppano per la cartella che li contiene.
+    public static func importGroups(for urls: [URL]) throws -> [ImportGroup] {
+        var groups: [ImportGroup] = []
+        var indexByRoot: [String: Int] = [:]
+        var seenFiles = Set<String>()
+        func group(_ root: URL) -> Int {
+            let key = root.standardizedFileURL.path
+            if let i = indexByRoot[key] { return i }
+            groups.append(ImportGroup(root: root.standardizedFileURL, files: [], skipped: []))
+            indexByRoot[key] = groups.count - 1
+            return groups.count - 1
+        }
+        for url in urls {
+            let path = url.standardizedFileURL.path
+            let info = try DiskIO.lstatInfo(path: path)
+            if info.isDirectory {
+                let scan = try scan(root: url)
+                let i = group(url)
+                for f in scan.files where seenFiles.insert(path + "/" + f.relativePath).inserted { groups[i].files.append(f) }
+                groups[i].skipped += scan.skipped
+            } else {
+                let parent = url.deletingLastPathComponent()
+                let i = group(parent)
+                let name = url.lastPathComponent
+                if info.isRegular {
+                    if seenFiles.insert(path).inserted {
+                        groups[i].files.append(SourceFile(relativePath: name, size: info.size, modificationDate: info.times.modification,
+                                                          creationDate: info.times.creation))
+                    }
+                } else {
+                    groups[i].skipped.append(SkippedItem(relativePath: name, reason: info.isSymlink ? tr("collegamento simbolico (non copiato)") : tr("tipo di file speciale (non copiato)")))
+                }
+            }
+        }
+        return groups.filter { !$0.files.isEmpty || !$0.skipped.isEmpty }
+    }
+
     /// Voci create dal sistema operativo sui volumi: non fanno parte del girato e non vengono copiate.
     public static let systemEntries: Set<String> = [
         ".Spotlight-V100", ".fseventsd", ".Trashes", ".TemporaryItems", ".DocumentRevisions-V100",

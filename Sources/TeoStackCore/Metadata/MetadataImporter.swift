@@ -44,16 +44,16 @@ public enum MetadataImporter {
                 lock.lock(); done += 1; let n = done; lock.unlock()
                 progress?(n, clips.count)
             }
-            guard clip.isMedia || clip.isAudio, clip.status == "ok" else { return }
+            guard clip.isMedia || clip.isAudio, clip.hasLocalFile else { return }
             lock.lock(); let cachedRoots = rootsCache[clip.offloadID]; lock.unlock()
             let roots: [String]
             if let cachedRoots { roots = cachedRoots } else {
                 roots = try store.destinationRoots(offloadID: clip.offloadID)
                 lock.lock(); rootsCache[clip.offloadID] = roots; lock.unlock()
             }
-            // prima copia verificata OK che esiste ancora su disco
+            // prima copia verificata OK (o file importato) che esiste ancora su disco
             var file: String?
-            for (d, root) in roots.enumerated() where d < clip.destinationStatuses.count && clip.destinationStatuses[d] == "ok" {
+            for (d, root) in roots.enumerated() where clip.fileAvailable(onDestination: d) {
                 let candidate = (root as NSString).appendingPathComponent(clip.relativePath)
                 if FileManager.default.fileExists(atPath: candidate) { file = candidate; break }
             }

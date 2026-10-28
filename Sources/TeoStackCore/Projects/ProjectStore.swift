@@ -204,7 +204,7 @@ public final class ProjectStore {
                 try Row.fetchAll(db, sql: """
                     SELECT p.id, p.name, p.createdAt,
                       (SELECT COUNT(*) FROM clip c JOIN node n ON n.id = c.binID
-                        WHERE n.projectID = p.id AND c.isMedia = 1 AND c.status = 'ok') AS clips
+                        WHERE n.projectID = p.id AND c.isMedia = 1 AND c.status IN ('ok', 'imported')) AS clips
                     FROM project p ORDER BY p.createdAt DESC, p.id DESC
                     """).map {
                     ProjectSummary(id: $0["id"], name: $0["name"], createdAt: ProjectStore.date($0["createdAt"]), clipCount: $0["clips"])
@@ -222,10 +222,31 @@ public final class ProjectStore {
                 let rows = try Row.fetchAll(db, sql: "SELECT id, parentID, kind, name FROM node WHERE projectID = ? ORDER BY name COLLATE NOCASE", arguments: [projectID])
                 let counts = try Row.fetchAll(db, sql: """
                     SELECT c.binID AS binID, COUNT(*) AS n FROM clip c JOIN node b ON b.id = c.binID
-                    WHERE b.projectID = ? AND c.isMedia = 1 AND c.status = 'ok' GROUP BY c.binID
+                    WHERE b.projectID = ? AND c.isMedia = 1 AND c.status IN ('ok', 'imported') GROUP BY c.binID
                     """, arguments: [projectID])
                 var countByBin: [Int64: Int] = [:]
                 for r in counts { countByBin[r["binID"]] = r["n"] }
+                // Verifica per bin: ogni file (per percorso) deve avere una copia verificata OK e nessun offload deve essere in corso.
+                // Un vecchio offload annullato, poi rifatto da capo e riuscito, non tiene il bin rosso.
+                var verificationByBin: [Int64: BinVerification] = [:]
+                let offloadStates = try Row.fetchAll(db, sql: """
+                    SELECT o.binID AS binID, COUNT(*) AS offloads, SUM(o.outcome = 'running') AS running
+                    FROM offload o JOIN node b ON b.id = o.binID WHERE b.projectID = ? GROUP BY o.binID
+                    """, arguments: [projectID])
+                let pathStates = try Row.fetchAll(db, sql: """
+                    SELECT binID, COUNT(*) AS paths, SUM(okCount > 0) AS okPaths FROM (
+                      SELECT c.binID AS binID, c.relativePath AS relativePath, SUM(c.status = 'ok') AS okCount
+                      FROM clip c JOIN node b ON b.id = c.binID WHERE b.projectID = ? GROUP BY c.binID, c.relativePath
+                    ) GROUP BY binID
+                    """, arguments: [projectID])
+                var pathsByBin: [Int64: (paths: Int, ok: Int)] = [:]
+                for r in pathStates { pathsByBin[r["binID"]] = (r["paths"], r["okPaths"] ?? 0) }
+                for r in offloadStates {
+                    let binID: Int64 = r["binID"]
+                    if (r["running"] as Int? ?? 0) > 0 { verificationByBin[binID] = .inProgress; continue }
+                    let p = pathsByBin[binID] ?? (0, 0)
+                    verificationByBin[binID] = p.paths > 0 && p.ok == p.paths ? .verified : .notVerified
+                }
                 struct Raw { let id: Int64; let parent: Int64?; let kind: NodeKind; let name: String }
                 let raws: [Raw] = rows.map { Raw(id: $0["id"], parent: $0["parentID"], kind: NodeKind(rawValue: $0["kind"]) ?? .bin, name: $0["name"]) }
                 guard let lib = raws.first(where: { $0.kind == .library }) else {
@@ -235,7 +256,8 @@ public final class ProjectStore {
                     let kids = raws.filter { $0.parent == r.id }.map(build)
                     let count = r.kind == .bin ? (countByBin[r.id] ?? 0) : kids.reduce(0) { $0 + $1.clipCount }
                     return TreeNode(id: r.id, projectID: projectID, parentID: r.parent, kind: r.kind, name: r.name,
-                                    clipCount: count, children: r.kind == .bin ? nil : kids)
+                                    clipCount: count, children: r.kind == .bin ? nil : kids,
+                                    verification: r.kind == .bin ? verificationByBin[r.id] : nil)
                 }
                 return build(lib)
             }
@@ -272,7 +294,7 @@ public final class ProjectStore {
         let existing: TreeNode? = try wrap {
             try db.read { db in
                 try Row.fetchOne(db, sql: """
-                    SELECT n.id, n.projectID, n.name, (SELECT COUNT(*) FROM clip c WHERE c.binID = n.id AND c.isMedia = 1 AND c.status = 'ok') AS n_clips
+                    SELECT n.id, n.projectID, n.name, (SELECT COUNT(*) FROM clip c WHERE c.binID = n.id AND c.isMedia = 1 AND c.status IN ('ok', 'imported')) AS n_clips
                     FROM node n WHERE n.parentID = ? AND n.kind = 'bin' AND n.name = ? COLLATE NOCASE
                     """, arguments: [parentID, name]).map {
                     TreeNode(id: $0["id"], projectID: $0["projectID"], parentID: parentID, kind: .bin, name: $0["name"],
@@ -669,6 +691,61 @@ public final class ProjectStore {
     public func clips(forJobID jobID: UUID) throws -> [ClipRecord] {
         guard let record = try offloadRecord(jobID: jobID) else { return [] }
         return try clips(underNode: record.binID, mediaOnly: true).filter { $0.offloadID == record.id }
+    }
+
+    /// Importa file già presenti su disco in un bin, SENZA copiarli né toccarli: servono per leggere i metadata ed esportare i report.
+    /// I clip nascono con stato «importato» (mai «OK»: nessuna copia è stata verificata) e sono leggibili da dove si trovano.
+    /// Importare di nuovo la stessa cartella nello stesso bin aggiunge solo i file nuovi.
+    @discardableResult
+    public func importFiles(binID: Int64, rootPath: String, files: [SourceFile]) throws -> ImportResult {
+        try wrap {
+            try db.write { db in
+                guard let kind = try String.fetchOne(db, sql: "SELECT kind FROM node WHERE id = ?", arguments: [binID]) else {
+                    throw ProjectStoreError.notFound(tr("Elemento non trovato."))
+                }
+                guard NodeKind(rawValue: kind) == .bin else {
+                    throw ProjectStoreError.invalidOperation(tr("I file si importano dentro un bin."))
+                }
+                let now = Date().timeIntervalSince1970
+                let existing = try Row.fetchOne(db, sql: "SELECT id, jobID FROM offload WHERE binID = ? AND outcome = 'imported' AND sourcePath = ?",
+                                                arguments: [binID, rootPath])
+                let offloadID: Int64, jobID: UUID
+                if let existing {
+                    offloadID = existing["id"]
+                    jobID = UUID(uuidString: existing["jobID"]) ?? UUID()
+                } else {
+                    jobID = UUID()
+                    try db.execute(sql: """
+                        INSERT INTO offload(jobID, binID, sourcePath, destinationsJSON, startedAt, finishedAt, outcome, allOK, totalBytes)
+                        VALUES (?, ?, ?, ?, ?, ?, 'imported', 0, 0)
+                        """, arguments: [jobID.uuidString, binID, rootPath, ProjectStore.json([rootPath]), now, now])
+                    offloadID = db.lastInsertedRowID
+                }
+                var added = 0, already = 0
+                for f in files {
+                    let known = try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM clip WHERE offloadID = ? AND relativePath = ?", arguments: [offloadID, f.relativePath]) ?? 0
+                    if known > 0 { already += 1 } else { added += 1 }
+                    try db.execute(sql: """
+                        INSERT INTO clip(offloadID, binID, relativePath, name, size, sourceHash, status, destStatusJSON, isMedia, modifiedAt, isAudio)
+                        VALUES (?, ?, ?, ?, ?, NULL, 'imported', ?, ?, ?, ?)
+                        ON CONFLICT(offloadID, relativePath) DO UPDATE SET size = excluded.size, modifiedAt = excluded.modifiedAt
+                        """, arguments: [offloadID, binID, f.relativePath, (f.relativePath as NSString).lastPathComponent, f.size,
+                                         ProjectStore.json([ClipRecord.importedStatus]),
+                                         MediaClassifier.isMedia(relativePath: f.relativePath) ? 1 : 0,
+                                         f.modificationDate.timeIntervalSince1970,
+                                         MediaClassifier.isAudio(relativePath: f.relativePath) ? 1 : 0])
+                }
+                try db.execute(sql: "UPDATE offload SET totalBytes = (SELECT COALESCE(SUM(size), 0) FROM clip WHERE offloadID = ?), finishedAt = ? WHERE id = ?",
+                               arguments: [offloadID, now, offloadID])
+                return ImportResult(jobID: jobID, added: added, alreadyPresent: already)
+            }
+        }
+    }
+
+    public struct ImportResult: Equatable {
+        public let jobID: UUID
+        public let added: Int
+        public let alreadyPresent: Int
     }
 
     /// Riepilogo di quanto è stato scaricato sotto il nodo (giorno, cartella, Library o bin).
