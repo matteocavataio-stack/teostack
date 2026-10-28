@@ -193,7 +193,7 @@ final class CameraFamilyReaderTests: XCTestCase {
         let listing = String(decoding: data, as: UTF8.self)
         let names = ExifMapper.makeKeys + ExifMapper.modelKeys + ExifMapper.serialKeys + ExifMapper.firmwareKeys + ExifMapper.reelKeys
             + ExifMapper.lensKeys + ExifMapper.isoKeys + ExifMapper.focusKeys + ExifMapper.dateKeys + ExifMapper.otherKeys
-        for n in names where n != "ImageSize" {
+        for n in names where n != "ImageSize" && !ExifMapper.dynamicKeys.contains(n) {   // (i nomi «dinamici» li crea ExifTool al volo dai dati del file)
             XCTAssertTrue(listing.contains("name='\(n)'"), "ExifTool non ha un tag «\(n)»")
         }
     }

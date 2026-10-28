@@ -216,6 +216,7 @@ public extension ReaderRegistry {
             ARRIReader(),
             REDReader(),
             PhantomReader(),
+            CameraFamilyReader(family: "DJI", extensions: ["mov", "mp4", "dng", "lrf", "mxf"], enrich: DJIMapper.enrich),
             CameraFamilyReader(family: "Sony", extensions: ["mxf", "mp4", "mts", "m2ts", "mov", "arw", "sr2", "srf", "arq"],
                                exclusiveExtensions: ["arw", "sr2", "srf", "arq"]),
             CameraFamilyReader(family: "Canon", extensions: ["mxf", "mp4", "mts", "m2ts", "mov", "crm", "cr3", "cr2", "crw", "rmf"],

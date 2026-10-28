@@ -29,6 +29,8 @@ public final class ClipFile {
     private var exifResult: Result<[String: Any], MetadataError>?
     private var ffprobeResult: Result<[String: Any], MetadataError>?
     private var artResult: Result<[String: Any], MetadataError>?
+    private var embeddedResult: Result<[String: Any], MetadataError>?
+    private let embeddedOverride: (() throws -> [String: Any])?
     private let exifOverride: (() throws -> [String: Any])?
     private let ffprobeOverride: (() throws -> [String: Any])?
     private let artOverride: (() throws -> [String: Any])?
@@ -36,13 +38,15 @@ public final class ClipFile {
     public init(url: URL, tools: ReaderTools, probe: FileProbe? = nil,
                 exifOverride: (() throws -> [String: Any])? = nil,
                 ffprobeOverride: (() throws -> [String: Any])? = nil,
-                artOverride: (() throws -> [String: Any])? = nil) {
+                artOverride: (() throws -> [String: Any])? = nil,
+                embeddedOverride: (() throws -> [String: Any])? = nil) {
         self.url = url
         self.tools = tools
         self.probe = probe ?? FileProbe(url: url)
         self.exifOverride = exifOverride
         self.ffprobeOverride = ffprobeOverride
         self.artOverride = artOverride
+        self.embeddedOverride = embeddedOverride
     }
 
     public var path: String { url.path }
@@ -59,6 +63,21 @@ public final class ClipFile {
         }
         return try exifResult!.get()
     }
+
+    /// Tag di ExifTool con i dati registrati DENTRO il flusso (`-ee`: per esempio il flusso «djmd» dei DJI). Lento sui file enormi:
+    /// si chiede solo quando serve e con un tempo massimo.
+    public func exifEmbeddedTags() throws -> [String: Any] {
+        if embeddedResult == nil {
+            embeddedResult = capture {
+                if let embeddedOverride { return try embeddedOverride() }
+                guard let exiftool = tools.exiftool else { throw MetadataError.toolMissing(tr("ExifTool non è installato.")) }
+                return try exiftool.read(file: path, embedded: true)
+            }
+        }
+        return try embeddedResult!.get()
+    }
+
+    public var hasEmbeddedReader: Bool { embeddedOverride != nil || tools.exiftool != nil }
 
     public func ffprobeJSON() throws -> [String: Any] {
         if ffprobeResult == nil {

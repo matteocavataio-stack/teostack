@@ -54,7 +54,7 @@ final class REDReaderTests: XCTestCase {
         guard let exif = ExifToolRunner.locate() else { throw XCTSkip("ExifTool non installato") }
         for name in ["red2_synthetic.R3D", "red1_synthetic.R3D"] {
             let url = synthetic.appendingPathComponent(name)
-            let live = try exif.read(file: url.path).filter { $0.key.hasPrefix("Red:") }
+            let live = try exif.read(file: url.path).filter { $0.key.hasPrefix("Red:") && !$0.key.hasPrefix("Red:Red_0x") }   // (i tag senza nome li legge solo ExifTool con -u)
             let native = try XCTUnwrap(R3DParser.parse(url: url))
             XCTAssertEqual(Set(native.keys), Set(live.keys), name)
             for (k, v) in live { XCTAssertEqual(text(native[k]), text(v), "\(name) \(k)") }
@@ -70,7 +70,8 @@ final class REDReaderTests: XCTestCase {
         XCTAssertEqual(m.cameraSerial, "710-0123456")
         XCTAssertEqual(m.firmware, "7.0.1")
         XCTAssertEqual(m.reel, "A012")
-        XCTAssertEqual(m.clipName, "A012_C003_1028AB_001.R3D")
+        XCTAssertNil(m.clipName, "OriginalFileName non è il nome di questo file (visto su un file vero): resta solo in rawFields")
+        XCTAssertEqual(m.rawFields["Red:OriginalFileName"], "A012_C003_1028AB_001.R3D")
         XCTAssertEqual(m.width, 4096); XCTAssertEqual(m.height, 2160)
         XCTAssertEqual(m.fps, 24)
         XCTAssertEqual(m.extraColumns["sensorFPS"], "23.976")

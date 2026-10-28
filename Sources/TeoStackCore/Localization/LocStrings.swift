@@ -33,6 +33,7 @@ enum LocStrings {
         ("art-cmd non ha risposto entro {0} secondi.", "art-cmd did not respond within {0} seconds.", "art-cmd no respondió en {0} segundos.", "art-cmd no ha respost en {0} segons."),
         ("ExifTool non trovato in «{0}».", "ExifTool not found in “{0}”.", "ExifTool no encontrado en «{0}».", "ExifTool no trobat a «{0}»."),
         ("Impossibile avviare ExifTool: {0}", "Unable to start ExifTool: {0}", "No se puede iniciar ExifTool: {0}", "No es pot iniciar ExifTool: {0}"),
+        ("ExifTool non ha risposto entro {0} secondi.", "ExifTool did not respond within {0} seconds.", "ExifTool no respondió en {0} segundos.", "ExifTool no ha respost en {0} segons."),
         ("L'output di ExifTool non è un JSON valido.", "The ExifTool output is not valid JSON.", "La salida de ExifTool no es un JSON válido.", "La sortida d'ExifTool no és un JSON vàlid."),
         ("legge i metadata dei clip ARRI e Sony (necessario)", "reads the metadata of ARRI and Sony clips (required)", "lee los metadatos de los clips ARRI y Sony (necesario)", "llegeix les metadades dels clips ARRI i Sony (necessari)"),
         ("legge i dati tecnici di MPG, WAV/BWF, LRF, MP4, ProRes e degli altri formati senza lettore dedicato (consigliato)", "reads the technical data of MPG, WAV/BWF, LRF, MP4, ProRes and the other formats without a dedicated reader (recommended)", "lee los datos técnicos de MPG, WAV/BWF, LRF, MP4, ProRes y del resto de formatos sin lector dedicado (recomendado)", "llegeix les dades tècniques de MPG, WAV/BWF, LRF, MP4, ProRes i dels altres formats sense lector dedicat (recomanat)"),
@@ -63,10 +64,10 @@ enum LocStrings {
         ("{0} righe, {1} abbinate a un clip, {2} campi scritti", "{0} rows, {1} matched to a clip, {2} fields written", "{0} filas, {1} asociadas a un clip, {2} campos escritos", "{0} files, {1} associades a un clip, {2} camps escrits"),
         ("{0} campi già presenti lasciati invariati", "{0} fields already present left unchanged", "{0} campos ya presentes sin cambios", "{0} camps ja presents sense canvis"),
         ("{0} righe ambigue (più clip possibili) ignorate", "{0} ambiguous rows (several possible clips) ignored", "{0} filas ambiguas (varios clips posibles) ignoradas", "{0} files ambigües (diversos clips possibles) ignorades"),
-        ("{0} righe senza clip corrispondente", "{0} rows with no matching clip", "{0} filas sin clip correspondiente", "{0} files sense clip corresponent"),
     ]
 
     private static let part1: [Entry] = [
+        ("{0} righe senza clip corrispondente", "{0} rows with no matching clip", "{0} filas sin clip correspondiente", "{0} files sense clip corresponent"),
         ("Servono da 1 a {0} destinazioni (selezionate: {1}).", "Between 1 and {0} destinations are required (selected: {1}).", "Se necesitan entre 1 y {0} destinos (seleccionados: {1}).", "Calen entre 1 i {0} destinacions (seleccionades: {1})."),
         ("Destinazione {0}", "Destination {0}", "Destino {0}", "Destinació {0}"),
         ("{0}: la stessa cartella è selezionata più volte.", "{0}: the same folder is selected more than once.", "{0}: la misma carpeta está seleccionada más de una vez.", "{0}: la mateixa carpeta està seleccionada més d'una vegada."),
@@ -126,10 +127,10 @@ enum LocStrings {
         ("Cartella di destinazione non trovata.", "Destination folder not found.", "Carpeta de destino no encontrada.", "Carpeta de destinació no trobada."),
         ("La Library non si può spostare.", "The Library cannot be moved.", "La Library no se puede mover.", "La Library no es pot moure."),
         ("Non si può spostare un elemento in un altro progetto.", "An item cannot be moved to another project.", "No se puede mover un elemento a otro proyecto.", "No es pot moure un element a un altre projecte."),
-        ("Dentro un bin non si può spostare nulla.", "Nothing can be moved inside a bin.", "No se puede mover nada dentro de un bin.", "No es pot moure res dins d'un bin."),
     ]
 
     private static let part2: [Entry] = [
+        ("Dentro un bin non si può spostare nulla.", "Nothing can be moved inside a bin.", "No se puede mover nada dentro de un bin.", "No es pot moure res dins d'un bin."),
         ("Le cartelle giorno stanno solo nella Library.", "Day folders can only be in the Library.", "Las carpetas de día solo pueden estar en la Library.", "Les carpetes de dia només poden ser a la Library."),
         ("Non si può spostare una cartella dentro se stessa.", "A folder cannot be moved into itself.", "No se puede mover una carpeta dentro de sí misma.", "No es pot moure una carpeta dins d'ella mateixa."),
         ("In «{0}» esiste già «{1}».", "“{1}” already exists in “{0}”.", "En «{0}» ya existe «{1}».", "A «{0}» ja existeix «{1}»."),
@@ -189,10 +190,10 @@ enum LocStrings {
         ("Clip", "Clips", "Clips", "Clips"),
         ("Nascondi cronologia", "Hide history", "Ocultar historial", "Amaga l'historial"),
         ("Mostra cronologia", "Show history", "Mostrar historial", "Mostra l'historial"),
-        ("Errore", "Error", "Error", "Error"),
     ]
 
     private static let part3: [Entry] = [
+        ("Errore", "Error", "Error", "Error"),
         ("OK", "OK", "OK", "OK"),
         ("Il bin verrà creato in:", "The bin will be created in:", "El bin se creará en:", "El bin es crearà a:"),
         ("— il bin «{0}» esiste già ({1} offload): l'offload verrà aggiunto", "— the bin “{0}” already exists ({1} offloads): the offload will be added", "— el bin «{0}» ya existe ({1} offloads): el offload se añadirá", "— el bin «{0}» ja existeix ({1} offloads): l'offload s'hi afegirà"),
@@ -252,10 +253,10 @@ enum LocStrings {
         ("{0} (non disponibile)", "{0} (not available)", "{0} (no disponible)", "{0} (no disponible)"),
         ("Usa tutti i percorsi salvati", "Use all saved paths", "Usar todas las rutas guardadas", "Usa totes les rutes desades"),
         ("Rimuovi dai salvati", "Remove from saved", "Quitar de las guardadas", "Treu de les desades"),
-        ("Salva i percorsi di destinazione che usi di solito, per non sceglierli ogni volta", "Save the destination paths you usually use, so you do not have to choose them every time", "Guarda las rutas de destino que usas habitualmente para no elegirlas cada vez", "Desa les rutes de destinació que fas servir habitualment per no triar-les cada vegada"),
     ]
 
     private static let part4: [Entry] = [
+        ("Salva i percorsi di destinazione che usi di solito, per non sceglierli ogni volta", "Save the destination paths you usually use, so you do not have to choose them every time", "Guarda las rutas de destino que usas habitualmente para no elegirlas cada vez", "Desa les rutes de destinació que fas servir habitualment per no triar-les cada vegada"),
         ("Aggiungi destinazione", "Add destination", "Añadir destino", "Afegeix una destinació"),
         ("nessuna cartella selezionata", "no folder selected", "ninguna carpeta seleccionada", "cap carpeta seleccionada"),
         ("Scegli…", "Choose…", "Elegir…", "Tria…"),
@@ -315,10 +316,10 @@ enum LocStrings {
         ("Nessun progetto: creane uno per iniziare", "No project: create one to get started", "Ningún proyecto: crea uno para empezar", "Cap projecte: crea'n un per començar"),
         ("{0}  ·  {1}  ·  {2} clip", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips"),
         ("Creato il {0} · {1} clip", "Created on {0} · {1} clips", "Creado el {0} · {1} clips", "Creat el {0} · {1} clips"),
-        ("Elimina progetto", "Delete project", "Eliminar proyecto", "Elimina el projecte"),
     ]
 
     private static let part5: [Entry] = [
+        ("Elimina progetto", "Delete project", "Eliminar proyecto", "Elimina el projecte"),
         ("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "Deletes the WHOLE project. To delete only a day or a bin use “Delete selection” in the sidebar.", "Elimina el proyecto ENTERO. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "Elimina el projecte SENCER. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
         ("Schermata di scarico: sorgente, destinazioni e avanzamento.", "Offload screen: source, destinations and progress.", "Pantalla de volcado: origen, destinos y progreso.", "Pantalla de descàrrega: origen, destinacions i progrés."),
         ("Elenco dei clip del progetto con metadata, anteprime e riepilogo.", "List of the project clips with metadata, thumbnails and summary.", "Lista de los clips del proyecto con metadatos, miniaturas y resumen.", "Llista dels clips del projecte amb metadades, miniatures i resum."),
@@ -378,10 +379,10 @@ enum LocStrings {
         ("Ricontrolla", "Check again", "Volver a comprobar", "Torna a comprovar"),
         ("Si incolla nel Terminale, una riga alla volta. Poi premi «Ricontrolla».", "Paste it into Terminal, one line at a time. Then press “Check again”.", "Se pega en el Terminal, una línea cada vez. Después pulsa «Volver a comprobar».", "S'enganxa al Terminal, una línia cada vegada. Després prem «Torna a comprovar»."),
         ("Esporta report (PDF)", "Export report (PDF)", "Exportar informe (PDF)", "Exporta l'informe (PDF)"),
-        ("Ambito: {0}", "Scope: {0}", "Ámbito: {0}", "Àmbit: {0}"),
     ]
 
     private static let part6: [Entry] = [
+        ("Ambito: {0}", "Scope: {0}", "Ámbito: {0}", "Àmbit: {0}"),
         ("Ambito: {0} (tutti i bin contenuti)", "Scope: {0} (all the bins it contains)", "Ámbito: {0} (todos los bins contenidos)", "Àmbit: {0} (tots els bins continguts)"),
         ("Nome progetto", "Project name", "Nombre del proyecto", "Nom del projecte"),
         ("Operatore", "Operator", "Operador", "Operador"),

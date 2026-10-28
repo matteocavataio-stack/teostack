@@ -18,6 +18,9 @@ public enum FFprobeMetadataParser {
             if let label = videoCodecLabel(video) { out["codec"] = label }
             if let w = number(video["width"]), let h = number(video["height"]), w > 0, h > 0 { out["resolution"] = "\(Int(w))x\(Int(h))" }
             if let fps = frameRate(video) { out["frameRate"] = trimmed(fps, decimals: 3) }
+            if let n = number(video["nb_frames"]), n > 0 { out["frameCount"] = String(Int(n)) }
+            if let c = colorPrimariesName(string(video["color_primaries"])) { out["colorSpace"] = c }
+            if let t = transferName(string(video["color_transfer"])) { out["gamma"] = t }
         }
 
         if let d = number(format["duration"]) ?? number(video?["duration"]) ?? number(audio.first?["duration"]), d > 0 {
@@ -38,8 +41,10 @@ public enum FFprobeMetadataParser {
 
         // dati scritti dalla camera/registratore, solo se presenti
         let allTags = [formatTags] + streams.map { tags($0) }
-        if let v = firstTag(allTags, ["com.apple.quicktime.make", "make"]) { out["manufacturer"] = v }
-        if let v = firstTag(allTags, ["com.apple.quicktime.model", "model"]) { out["camera"] = v }
+        if let v = firstTag(allTags, ["com.apple.quicktime.make", "com.apple.proapps.manufacturer", "make"]) { out["manufacturer"] = v }
+        if let v = firstTag(allTags, ["com.apple.quicktime.model", "com.apple.proapps.modelname", "model"]) { out["camera"] = v }
+        // nome del nastro/reel scritto nel flusso del timecode (es. da Resolve o dalla camera)
+        if let v = firstTag(streams.map { tags($0) }, ["reel_name"]) { out["reel"] = v }
 
         if let created = createDate(formatTags: formatTags, streamTags: streams.map { tags($0) }) { out["createDate"] = created }
 
@@ -67,13 +72,47 @@ public enum FFprobeMetadataParser {
     /// FourCC di codec che ffprobe non decodifica (nessun `codec_name`) ma che il file dichiara: si usa il nome del formato, non una stima.
     static let fourCCNames: [String: String] = ["aprn": "Apple ProRes RAW", "aprh": "Apple ProRes RAW HQ", "braw": "Blackmagic RAW"]
 
+    /// Nomi dei primari/della curva dichiarati dal file (nomi ffmpeg → nomi correnti). Un valore non noto si riporta com'è.
+    static func colorPrimariesName(_ raw: String?) -> String? {
+        guard let raw, raw != "unknown", raw != "unspecified" else { return nil }
+        let names = ["bt709": "Rec.709", "bt470bg": "BT.470 BG", "smpte170m": "SMPTE 170M", "bt2020": "Rec.2020", "smpte432": "DCI-P3 (D65)", "smpte431": "DCI-P3"]
+        return names[raw] ?? raw
+    }
+
+    static func transferName(_ raw: String?) -> String? {
+        guard let raw, raw != "unknown", raw != "unspecified" else { return nil }
+        let names = ["bt709": "BT.709", "linear": "Linear", "smpte2084": "PQ (SMPTE 2084)", "arib-std-b67": "HLG", "iec61966-2-1": "sRGB",
+                     "smpte170m": "SMPTE 170M", "bt2020-10": "BT.2020 (10 bit)", "bt2020-12": "BT.2020 (12 bit)", "gamma22": "Gamma 2.2", "gamma28": "Gamma 2.8"]
+        return names[raw] ?? raw
+    }
+
+    /// Tutti gli altri dati dichiarati dal file (tag del contenitore e dei flussi, proprietà dei flussi): chiavi «ffprobe:…».
+    public static func rawFields(_ json: [String: Any], limit: Int = 160) -> [String: String] {
+        var out: [String: String] = [:]
+        func put(_ key: String, _ value: Any?) {
+            guard out.count < limit, let t = string(value), t.count <= 400 else { return }
+            out["ffprobe:" + key] = t
+        }
+        if let format = json["format"] as? [String: Any] {
+            for k in ["format_name", "duration", "bit_rate", "size", "start_time"] { put("format.\(k)", format[k]) }
+            for (k, v) in tags(format).sorted(by: { $0.key < $1.key }) { put("format.tags.\(k)", v) }
+        }
+        let skip: Set<String> = ["disposition", "extradata", "tags", "index"]
+        for (i, stream) in ((json["streams"] as? [[String: Any]]) ?? []).enumerated() {
+            let prefix = "stream\(i)"
+            for (k, v) in stream.sorted(by: { $0.key < $1.key }) where !skip.contains(k) { put("\(prefix).\(k)", v) }
+            for (k, v) in tags(stream).sorted(by: { $0.key < $1.key }) { put("\(prefix).tags.\(k)", v) }
+        }
+        return out
+    }
+
     static func videoCodecLabel(_ stream: [String: Any]) -> String? {
         guard let name = string(stream["codec_name"]), name.lowercased() != "unknown" else {
             if let tag = string(stream["codec_tag_string"])?.lowercased(), let known = fourCCNames[tag] { return known }
             return nil
         }
         let base = videoNames[name] ?? string(stream["codec_long_name"]) ?? name
-        if let profile = string(stream["profile"]), profile.lowercased() != "unknown" { return "\(base) \(profile)" }
+        if let profile = string(stream["profile"]), profile.lowercased() != "unknown", !base.lowercased().hasSuffix(profile.lowercased()) { return "\(base) \(profile)" }
         return base
     }
 
