@@ -9,13 +9,17 @@ on:
         description: "Se compilato (es. v1.0.0) pubblica anche una Release con dmg e pkg"
         required: false
         default: ""
+      runner:
+        description: "Tipo di Mac di GitHub (macos-15 di serie; macos-14 se la coda di macos-15 è lunga)"
+        required: false
+        default: "macos-15"
 
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: ${{ inputs.runner || 'macos-15' }}
     steps:
       - uses: actions/checkout@v4
       - name: Versione Swift
