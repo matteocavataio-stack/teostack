@@ -1,0 +1,1 @@
+Metti qui i campioni sony (JSON di ExifTool/ffprobe, ritagli .head/.tail, file piccoli).
