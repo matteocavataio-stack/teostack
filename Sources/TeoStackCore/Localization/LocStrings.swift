@@ -460,6 +460,12 @@ enum LocStrings {
         ("Angolo shutter", "Shutter angle", "Ángulo de obturación", "Angle d'obturació"),
         ("Registratore", "Recorder", "Grabador", "Gravador"),
         ("Nomi tracce", "Track names", "Nombres de pistas", "Noms de pistes"),
+        ("Predefinito del sistema", "System default", "Predeterminado del sistema", "Predeterminat del sistema"),
+        ("Chiaro", "Light", "Claro", "Clar"),
+        ("Scuro", "Dark", "Oscuro", "Fosc"),
+        ("Contrasto alto", "High contrast", "Alto contraste", "Alt contrast"),
+        ("Seppia", "Sepia", "Sepia", "Sèpia"),
+        ("Notte (rosso, per il set al buio)", "Night (red, for a dark set)", "Noche (rojo, para un set a oscuras)", "Nit (vermell, per al set a les fosques)"),
     ]
 
     static let all: [Entry] = part0 + part1 + part2 + part3 + part4 + part5 + part6 + part7

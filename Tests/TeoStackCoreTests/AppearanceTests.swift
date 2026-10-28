@@ -52,6 +52,14 @@ final class AppearanceTests: XCTestCase {
         XCTAssertTrue(AppearancePreferences.load(from: defaults).isStandard)
     }
 
+    func testEveryPresetNameIsTranslatedInEveryLanguage() {
+        for preset in AppearancePreferences.presets {
+            for language in AppLanguage.allCases where language != .italian {
+                XCTAssertNotNil(Loc.translation(preset.name, in: language), "\(preset.name) manca in \(language)")
+            }
+        }
+    }
+
     func testPresetsAreReadable() {
         XCTAssertEqual(AppearancePreferences.presets.first?.preferences, .standard)
         for preset in AppearancePreferences.presets {
