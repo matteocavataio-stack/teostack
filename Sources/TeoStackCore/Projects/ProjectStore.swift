@@ -111,6 +111,15 @@ public final class ProjectStore {
                                arguments: [MediaClassifier.isMedia(relativePath: path) ? 1 : 0, MediaClassifier.isAudio(relativePath: path) ? 1 : 0, row["id"] as Int64])
             }
         }
+        m.registerMigration("v7-more-camera-formats") { db in
+            // Nuovi formati clip (R3D, BRAW, CRM, MTS…): si riclassificano i file già registrati.
+            for row in try Row.fetchAll(db, sql: "SELECT id, relativePath FROM clip WHERE isMedia = 0") {
+                let path: String = row["relativePath"]
+                if MediaClassifier.isMedia(relativePath: path) {
+                    try db.execute(sql: "UPDATE clip SET isMedia = 1 WHERE id = ?", arguments: [row["id"] as Int64])
+                }
+            }
+        }
         return m
     }
 

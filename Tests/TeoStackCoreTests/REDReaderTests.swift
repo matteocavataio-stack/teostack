@@ -144,3 +144,45 @@ final class REDReaderTests: XCTestCase {
         print("R3D reale:", r.columns.filter { !$0.key.hasPrefix("raw.") })
     }
 }
+
+final class NewFormatsInProjectTests: XCTestCase {
+    func testR3DIsAClipAndItsMetadataLandInTheDatabaseWithoutExternalTools() throws {
+        let dir = try TestSupport.makeTempDir("r3d-import")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let synthetic = Fixtures.directory.appendingPathComponent("synthetic/red2_synthetic.R3D")
+        let file = dir.appendingPathComponent("A012_C003_1028AB_001.R3D")
+        try FileManager.default.copyItem(at: synthetic, to: file)
+        try TestSupport.writeRandomFile(dir.appendingPathComponent("frame.jpg"), size: 500, seed: 3)   // una foto: si legge ma non è un clip
+
+        let store = try ProjectStore(path: nil)
+        let p = try store.createProject(name: "Film")
+        let bin = try store.createBin(parentID: try store.tree(projectID: p.id).id, name: "A012_C003_1028AB_001.R3D")
+        let bins = try SourceScanner.importBins(for: [file, dir.appendingPathComponent("frame.jpg")])
+        XCTAssertEqual(bins.map(\.name), ["A012_C003_1028AB_001.R3D", "frame.jpg"])
+        _ = try store.importFiles(binID: bin.id, rootPath: dir.path, files: bins[0].files + bins[1].files)
+
+        let clips = try store.clips(underNode: bin.id, mediaOnly: false)
+        XCTAssertEqual(clips.filter(\.isMedia).map(\.name), ["A012_C003_1028AB_001.R3D"])
+        XCTAssertEqual(try store.projects().first?.clipCount, 1, "la foto non conta come clip")
+
+        XCTAssertTrue(clips.contains { $0.name == "frame.jpg" && MediaClassifier.isMetadataReadable(relativePath: $0.relativePath) })
+        let summary = try MetadataImporter.importMetadata(for: clips.filter(\.isMedia), store: store, runner: ExifToolRunner(executable: "/nonexistent/exiftool"))
+        XCTAssertEqual(summary.read, 1, "R3D si legge in modo nativo, anche se ExifTool non c'è")
+        XCTAssertEqual(summary.unsupported, 0)
+        let r3d = try XCTUnwrap(try store.clips(underNode: bin.id, mediaOnly: false).first { $0.name.hasSuffix(".R3D") })
+        XCTAssertEqual(r3d.metadata["camera"], "RED EPIC-W")
+        XCTAssertEqual(r3d.metadata["resolution"], "4096x2160")
+        XCTAssertEqual(r3d.metadata["raw.Red:Sensor"], "GEMINI 5K S35")
+        XCTAssertEqual(ClipColumns.value(ClipColumns.all.first { $0.id == "camera" }!, of: r3d), "RED EPIC-W")
+    }
+
+    func testClassifier() {
+        for f in ["a.R3D", "x/b.braw", "c.CRM", "d.mts", "e.cine", "f.krw", "g.rmf", "h.m2ts"] { XCTAssertTrue(MediaClassifier.isMedia(relativePath: f), f) }
+        for f in ["a.dng", "b.JPG", "c.dpx", "d.tiff", "e.arw"] {
+            XCTAssertFalse(MediaClassifier.isMedia(relativePath: f), f)
+            XCTAssertTrue(MediaClassifier.isMetadataReadable(relativePath: f), f)
+        }
+        XCTAssertFalse(MediaClassifier.isMetadataReadable(relativePath: "._a.R3D"))
+        XCTAssertFalse(MediaClassifier.isMetadataReadable(relativePath: "notes.txt"))
+    }
+}

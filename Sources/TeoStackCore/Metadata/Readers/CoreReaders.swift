@@ -204,8 +204,18 @@ public extension ReaderRegistry {
         ReaderRegistry(readers: [
             ARRIReader(),
             REDReader(),
+            CameraFamilyReader(family: "Sony", extensions: ["mxf", "mp4", "mts", "m2ts", "mov", "arw", "sr2", "srf", "arq"],
+                               exclusiveExtensions: ["arw", "sr2", "srf", "arq"]),
+            CameraFamilyReader(family: "Canon", extensions: ["mxf", "mp4", "mts", "m2ts", "mov", "crm", "cr3", "cr2", "crw", "rmf"],
+                               exclusiveExtensions: ["crm", "cr3", "cr2", "crw", "rmf"]),
+            CameraFamilyReader(family: "Panasonic", extensions: ["mxf", "mp4", "mov", "mts", "m2ts", "rw2", "rwl", "dng"],
+                               exclusiveExtensions: ["rw2", "rwl"]),
+            CameraFamilyReader(family: "Blackmagic", extensions: ["braw", "mov", "dng", "mxf"], exclusiveExtensions: ["braw"],
+                               identity: ("BRAW", "Blackmagic RAW")),
+            CameraFamilyReader(family: "Kinefinity", extensions: ["krw", "mov", "mxf", "dng"], exclusiveExtensions: ["krw"]),
             BWFReader(),
             ARRIArtCmdFallbackReader(),
+            GenericMediaReader(),
             FFprobeGenericReader(),
         ])
     }

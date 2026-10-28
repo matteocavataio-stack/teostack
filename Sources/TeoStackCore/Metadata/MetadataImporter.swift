@@ -45,7 +45,7 @@ public enum MetadataImporter {
                 lock.lock(); done += 1; let n = done; lock.unlock()
                 progress?(n, clips.count)
             }
-            guard clip.isMedia || clip.isAudio, clip.hasLocalFile else { return }
+            guard clip.isMedia || clip.isAudio || MediaClassifier.isMetadataReadable(relativePath: clip.relativePath), clip.hasLocalFile else { return }
             lock.lock(); let cachedRoots = rootsCache[clip.offloadID]; lock.unlock()
             let roots: [String]
             if let cachedRoots { roots = cachedRoots } else {

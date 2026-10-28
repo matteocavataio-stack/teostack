@@ -186,7 +186,11 @@ public enum NameValidator {
 /// Elenco modificabile: è un valore predefinito, da confermare con la struttura reale delle schede.
 public enum MediaClassifier {
     /// Clip video: ARRI (ari, arx), MOV/MXF/MP4, MPEG (mpg, mpeg) e i proxy a bassa risoluzione DJI (lrf).
-    public static var mediaExtensions: Set<String> = ["ari", "arx", "mov", "mxf", "mp4", "mpg", "mpeg", "lrf"]
+    public static var mediaExtensions: Set<String> = ["ari", "arx", "mov", "mxf", "mp4", "mpg", "mpeg", "lrf",
+                                                      "r3d", "braw", "crm", "rmf", "mts", "m2ts", "cine", "krw"]
+    /// Foto e frame RAW/sequenze (JPG, TIFF, DPX, DNG…): se ne leggono i metadata ma non contano come clip (una sequenza sono migliaia di file).
+    public static var stillExtensions: Set<String> = ["jpg", "jpeg", "tif", "tiff", "dpx", "dng", "exr", "arw", "sr2", "srf", "arq", "cr2", "cr3", "crw",
+                                                      "nef", "rw2", "rwl", "orf", "raf", "heic", "png"]
     /// Clip audio (nei report compaiono come «Audio Clips»).
     public static var audioExtensions: Set<String> = ["wav", "bwf", "aif", "aiff", "mp3", "m4a", "aac", "flac"]
 
@@ -200,6 +204,12 @@ public enum MediaClassifier {
 
     public static func isMedia(relativePath: String) -> Bool {
         !isAppleDouble(relativePath: relativePath) && mediaExtensions.contains(ext(relativePath))
+    }
+
+    /// Si possono leggere i metadata del file (clip video, audio o foto/frame).
+    public static func isMetadataReadable(relativePath: String) -> Bool {
+        isMedia(relativePath: relativePath) || isAudio(relativePath: relativePath)
+            || (!isAppleDouble(relativePath: relativePath) && stillExtensions.contains(ext(relativePath)))
     }
 
     public static func isAudio(relativePath: String) -> Bool {

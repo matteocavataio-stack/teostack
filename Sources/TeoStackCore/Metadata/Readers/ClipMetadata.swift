@@ -76,8 +76,9 @@ public struct ClipMetadata: Equatable {
 
     public var isUnsupported: Bool { status == .unsupported }
 
-    /// Almeno un campo (tipizzato o no) è valorizzato.
-    public var hasValues: Bool { !columns.isEmpty }
+    /// Almeno un campo riconosciuto (tipizzato o con chiave del database) è valorizzato. I soli `rawFields` non bastano: un file di cui
+    /// non si capisce nulla resta «non supportato».
+    public var hasValues: Bool { columns.keys.contains { !$0.hasPrefix(Self.rawPrefix) } }
 
     // MARK: Chiavi del database
 

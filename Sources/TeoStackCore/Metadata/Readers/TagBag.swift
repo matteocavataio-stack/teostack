@@ -61,7 +61,8 @@ struct TagBag {
         let parts = s.split(separator: " ", maxSplits: 1).map(String.init)
         guard parts.count >= 1 else { return nil }
         let d = parts[0].replacingOccurrences(of: ":", with: "-")
-        guard d.count == 10, d.first?.isNumber == true else { return nil }
+        // «0000-00-00»: data non impostata dalla camera
+        guard d.count == 10, d.first?.isNumber == true, !d.hasPrefix("0000") else { return nil }
         guard parts.count == 2 else { return d }
         var t = parts[1]
         while t.hasSuffix(":") { t.removeLast() }
