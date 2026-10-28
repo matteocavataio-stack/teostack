@@ -148,6 +148,9 @@ enum ExifMapper {
         return s
     }
 
+    /// «HH:MM:SS:FF» (anche con «;») oppure nil.
+    static func timecode(_ s: String?) -> String? { timecodePattern(s) }
+
     private static func timecodePattern(_ s: String?) -> String? {
         guard let s, s.range(of: #"^\d{2}[:;]\d{2}[:;]\d{2}[:;]\d{2}$"#, options: .regularExpression) != nil else { return nil }
         return s

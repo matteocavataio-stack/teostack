@@ -3,7 +3,7 @@ import Foundation
 /// RED: REDCODE RAW (.r3d). I tag si leggono con ExifTool (se c'è: è la versione più completa, verificata su un file vero V-RAPTOR [X] 8K);
 /// senza ExifTool l'intestazione si legge in modo nativo (`R3DParser`, verificato solo contro ExifTool su file sintetici).
 /// NON letti (non stanno in modo leggibile nell'intestazione): durata, numero di fotogrammi, gamma/color space, shutter, look, e il significato dei tag
-/// che ExifTool chiama «Red_0x…» (restano in `rawFields`: tra questi due timecode, vedi `REDMetadataMapper`). Per il resto servono R3DSDK/REDline di RED
+/// che ExifTool chiama «Red_0x…» (restano in `rawFields`; l'unico interpretato è il timecode iniziale, vedi `REDMetadataMapper`). Per il resto servono R3DSDK/REDline di RED
 /// (SDK non incluso: la licenza RED richiede registrazione e accettazione del contratto, non scaricabile in automatico).
 public struct REDReader: MetadataReader {
     public let family = "RED"
@@ -40,8 +40,8 @@ public enum REDMetadataMapper {
     /// Significato dei tag dimostrato da un file vero (V-RAPTOR [X] 8K VV): `CameraType` = lettera della camera («A»), NON il modello;
     /// il modello è `Brain`; `ReelNumber` «008» + lettera = «A008» (come nel nome del file A008_B009_…); `Take` = numero del clip («009»);
     /// `LensModel` «unknown» = lente non comunicata; `OriginalFileName` non è il nome di questo file (nei file a segmenti indica il primo).
-    /// I due timecode del file («Red_0x10ad», «Red_0x10ae») NON sono interpretati: quale sia il timecode iniziale lo deve dire una conferma
-    /// (Silverstack o RED); restano in `rawFields`.
+    /// Dei due timecode senza nome del file («Red_0x10ad» 01:05:29:06, «Red_0x10ae» 12:23:34:16) il timecode iniziale è «Red_0x10ae»
+    /// (confermato dall'utente guardando Silverstack); «Red_0x10ad» resta in `rawFields`. Nei RED più vecchi vale `StartTimecode`.
     public static func map(_ tags: [String: Any]) -> ClipMetadata {
         let t = TagBag(tags: tags)
         var m = ClipMetadata()
@@ -62,7 +62,7 @@ public enum REDMetadataMapper {
         m.firmware = ExifMapper.real(t.string("Red:FirmwareVersion"))
         if let w = t.int("Red:ImageWidth"), let h = t.int("Red:ImageHeight"), w > 0, h > 0 { m.width = w; m.height = h }
         if let fps = t.double("Red:FrameRate"), fps > 0 { m.fps = (fps * 1000).rounded() / 1000 }
-        m.timecodeStart = ExifMapper.real(t.string("Red:StartTimecode"))
+        m.timecodeStart = ExifMapper.timecode(t.string("Red:StartTimecode")) ?? ExifMapper.timecode(t.string("Red:Red_0x10ae"))
         m.creationDate = TagBag.date(t.string("Red:DateTimeOriginal"))
             ?? TagBag.date([t.string("Red:DateCreated"), t.string("Red:TimeCreated")].compactMap { $0 }.joined(separator: " "))
         if let k = t.double("Red:ColorTemperature"), k > 0 { m.whiteBalance = "\(Int(k.rounded())) K" }

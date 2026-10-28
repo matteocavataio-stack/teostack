@@ -90,7 +90,7 @@ public enum R3DParser {
         0x1030: "StorageFormatDate", 0x1031: "StorageFormatTime", 0x1032: "StorageSerialNumber", 0x1033: "StorageModel",
         0x1036: "AspectRatio", 0x1042: "Revision", 0x1056: "OriginalFileName", 0x106e: "LensMake", 0x106f: "LensNumber",
         0x1070: "LensModel", 0x1071: "Model", 0x107c: "CameraOperator", 0x1086: "VideoFormat", 0x1096: "Filter",
-        0x10a0: "Brain", 0x10a1: "Sensor", 0x200d: "ColorTemperature", 0x2066: "OriginalFrameRate", 0x4037: "CropArea",
+        0x10a0: "Brain", 0x10a1: "Sensor", 0x10ad: "Red_0x10ad", 0x10ae: "Red_0x10ae", 0x10be: "Quality", 0x200d: "ColorTemperature", 0x2066: "OriginalFrameRate", 0x4037: "CropArea",
         0x403b: "ISO", 0x406a: "FNumber", 0x406b: "FocalLength", 0x606c: "FocusDistance",
     ]
 

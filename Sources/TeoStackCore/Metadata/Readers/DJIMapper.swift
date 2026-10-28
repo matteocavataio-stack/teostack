@@ -8,7 +8,7 @@ import Foundation
 /// - `1-3-1` «A» = indice camera; `1-3-2` «A005_4U1Q» = reel; `1-3-4` nome del clip;
 /// - `2-2-2-1-4` modello della lente; `2-2-2-2-1` seriale della lente;
 /// - `2-2-3-1` seriale della camera (stessa forma del `CameraSerialNumber` dei DNG); `2-2-4-2` firmware della camera (stessa forma del «Software» dei DNG);
-/// - `2-2-11-1` gamma («D-Log»).
+/// - `2-2-11-1` modalità di registrazione («D-Log»): va nella colonna «Look Info» (`lookInfo`); la gamma resta quella dichiarata dal contenitore.
 /// Altri protocolli DJI (altri modelli) non vengono interpretati: i loro tag restano in `rawFields`. Valori del PRIMO campione del flusso.
 enum DJIMapper {
     static let protocolMarker = "Dvtm_fc4280_"
@@ -30,7 +30,7 @@ enum DJIMapper {
         if m.extraColumns["lensSerial"] == nil, let s = v("2-2-2-2-1") { m.extraColumns["lensSerial"] = s }
         if m.cameraSerial == nil { m.cameraSerial = v("2-2-3-1") }
         if m.firmware == nil { m.firmware = v("2-2-4-2") }
-        if m.gamma == nil { m.gamma = v("2-2-11-1") }
+        if m.extraColumns["lookInfo"] == nil, let look = v("2-2-11-1") { m.extraColumns["lookInfo"] = look }
         // tutti i tag del flusso, in aggiunta agli altri (senza sovrascrivere)
         m.rawFields.merge(RawTags.fields(from: tags)) { a, _ in a }
         m.status = .read
