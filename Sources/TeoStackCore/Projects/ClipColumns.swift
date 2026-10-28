@@ -59,6 +59,8 @@ public enum ClipColumns {
         ClipColumn(id: "audioChannels", title: "Audio tracce", isMetadata: true, width: 90),
         ClipColumn(id: "audioSampleRate", title: "Audio sample rate", isMetadata: true, width: 110),
         ClipColumn(id: "audioBitDepth", title: "Audio bit", isMetadata: true, width: 80),
+        ClipColumn(id: "recorder", title: "Registratore", isMetadata: true, width: 130),
+        ClipColumn(id: "trackNames", title: "Nomi tracce", isMetadata: true, width: 170),
     ]
 
     public static let defaultVisibleIDs: [String] = ["preview", "name", "day", "bin", "size", "hash", "status", "camera", "resolution", "duration", "timecode"]

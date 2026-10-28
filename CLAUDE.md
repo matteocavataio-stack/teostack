@@ -22,6 +22,7 @@
 - Progetti (`Projects/`): Progetto → Library → [giorno] → [sottocartelle] → bin. Bin creato in automatico all'avvio dell'offload col nome della sorgente (modificabile; se esiste lo riusa).
   Sposta nodi (trascinamento o «Sposta in»), elimina solo il selezionato, cronologia per progetto (solo «Offload completato … tutti OK», cancellabile). Destinazione su disco = `<cartella scelta>/<nome bin>`.
 - Metadata: ExifTool + art-cmd (ARRI, cartella `~/ARRI`); **ffprobe** per tutto il resto (MPG, WAV/BWF, LRF, MP4, ProRes: `FFprobeRunner` + `FFprobeMetadataParser`, solo ciò che il file dichiara; ExifTool sbaglia sui MPEG);
+  WAV/BWF: `BroadcastWaveReader` (bext + iXML, senza ExifTool: ExifTool in JSON perde i nomi delle tracce duplicati); LRF/MP4 DJI: il `moov` sta in fondo al file (un ritaglio dell'inizio non basta, serve la coda);
   audio = `ClipRecord.isAudio` (colonna `clip.isAudio`, migrazione v6), file «._» di macOS mai clip (`MediaClassifier.isAppleDouble`); Sony Venice ancora in attesa di file di esempio (XML sidecar + output ExifTool). Metadata/anteprime in parallelo (`ParallelRunner`).
 - Report (`Reports/`): 5 PDF separati nel formato Silverstack «Classic» (Shooting Day, Clips, Volume, Thumbnail, Contact Print), scritti da un PDF writer proprio con font DejaVu Sans Mono incorporato;
   nome file `<Report_Name>-<bin>-<aaaa-mm-gg-HHmm>.pdf`; report di una cartella = tutti i bin contenuti; Clips e Thumbnail stampano solo le colonne scelte dall'utente («Name» sempre). Campi sconosciuti vuoti.

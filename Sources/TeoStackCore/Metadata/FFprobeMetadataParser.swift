@@ -105,10 +105,11 @@ public enum FFprobeMetadataParser {
         for candidate in [formatTags["creation_time"]] + streamTags.map({ $0["creation_time"] }) {
             if let c = candidate, let formatted = formatISODate(c) { return formatted }
         }
+        // alcuni registratori scrivono l'ora con i trattini («13-05-03»)
         if let date = formatTags["date"], let time = formatTags["creation_time"],
            date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil,
-           time.range(of: #"^\d{2}:\d{2}:\d{2}$"#, options: .regularExpression) != nil {
-            return "\(date) \(time)"
+           time.range(of: #"^\d{2}[:-]\d{2}[:-]\d{2}$"#, options: .regularExpression) != nil {
+            return "\(date) \(time.replacingOccurrences(of: "-", with: ":"))"
         }
         return nil
     }

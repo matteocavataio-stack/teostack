@@ -100,6 +100,10 @@ public enum MetadataImporter {
                     if exifError == nil { exifError = "\(clip.name): \(e)" }
                 }
             }
+            // WAV broadcast: scena, take, nastro, tracce, timecode, registratore dall'intestazione del file (bext + iXML); prevalgono su ffprobe
+            if clip.isAudio, let bwf = BroadcastWaveReader.read(path: file) {
+                values.merge(BroadcastWaveMetadataParser.parse(bwf)) { _, new in new }
+            }
             if values.isEmpty {
                 lock.lock()
                 if let exifError { summary.failed.append(exifError) } else { summary.unsupported += 1 }

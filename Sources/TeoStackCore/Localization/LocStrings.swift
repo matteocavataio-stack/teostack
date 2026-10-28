@@ -397,6 +397,8 @@ enum LocStrings {
         ("Audio tracce", "Audio tracks", "Pistas de audio", "Pistes d'àudio"),
         ("Audio sample rate", "Audio sample rate", "Frecuencia de muestreo del audio", "Freqüència de mostreig de l'àudio"),
         ("Audio bit", "Audio bits", "Bits de audio", "Bits d'àudio"),
+        ("Registratore", "Recorder", "Grabador", "Gravador"),
+        ("Nomi tracce", "Track names", "Nombres de pistas", "Noms de pistes"),
     ]
 
     static let all: [Entry] = part0 + part1 + part2 + part3 + part4 + part5 + part6

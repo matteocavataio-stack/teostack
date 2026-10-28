@@ -102,6 +102,10 @@ incluso; data con «UTC» o lo scarto orario se il file lo dichiara, altrimenti 
 Quello che manca resta N/D. ExifTool non si usa per questi formati: sui file MPEG sbaglia (nel file di prova dava l'audio come MPEG layer 3 a 0 Hz, mentre è AC-3 a 48 kHz).
 
 - **Video riconosciuti come clip:** ari, arx, mov, mxf, mp4, **mpg, mpeg, lrf** (elenco in `MediaClassifier.mediaExtensions`, aggiungere un formato = una parola).
+- **WAV broadcast (BWF) di un registratore** (verificato su un file Zaxcom Deva24, iXML 1.27): l'app legge da sola le intestazioni del file (senza ExifTool e senza leggere l'audio): registratore
+  (originator), scena, take, nastro (compare nella colonna «Reel»), nomi di tutte le tracce, data/ora di registrazione e timecode di inizio. Il timecode è `time_reference` ÷ frequenza di
+  campionamento: con il frame rate **intero** dichiarato nell'iXML (es. 25) diventa HH:MM:SS:FF; senza frame rate, con drop-frame o con frame rate frazionari (29,97…) resta l'ora del giorno
+  con i millisecondi, senza inventare frame. Nuove colonne «Registratore» e «Nomi tracce» (solo nella tabella Clip).
 - **Audio** (wav, bwf, aif, aiff, mp3, m4a, aac, flac): compaiono nella tabella Clip con i loro metadata; non hanno anteprima, non sono contati nei clip video né sommati alla durata
   (nel riepilogo hanno il loro numero «Audio» e i loro formati, in fondo all'elenco).
 - **File «._nome»** (le «risorse» che macOS crea sui dischi exFAT/FAT): si copiano e si verificano come ogni altro file, ma non sono clip né audio e non compaiono nei conteggi.
