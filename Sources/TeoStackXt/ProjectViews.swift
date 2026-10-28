@@ -61,15 +61,15 @@ struct NameSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(request.title).font(.headline)
+            Text(request.title).appFont(.headline)
             TextField(tr("Nome"), text: $text)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { submit() }
             if let hint = request.hint {
-                Text(hint).font(.caption).foregroundStyle(.secondary)
+                Text(hint).appFont(.caption).foregroundStyle(.secondary)
             }
             if let error {
-                Text(error).font(.caption).foregroundStyle(.red)
+                Text(error).appFont(.caption).foregroundStyle(.red)
             }
             HStack {
                 Spacer()
@@ -105,7 +105,7 @@ struct ToolbarButton: View {
         Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: symbol).font(.system(size: 20)).frame(height: 24)
-                Text(title).font(.caption).lineLimit(1)
+                Text(title).appFont(.caption).lineLimit(1)
             }
             .frame(minWidth: 82)
             .padding(.vertical, 4)
@@ -123,6 +123,7 @@ struct ProjectBar: View {
     @ObservedObject var projects: ProjectsViewModel
     @Binding var request: NameRequest?
     @Binding var showReport: Bool
+    @Binding var showSettings: Bool
     @Binding var tab: MainTab
     @State private var confirmDelete = false
 
@@ -135,7 +136,7 @@ struct ProjectBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(tr("Progetto")).font(.headline)
+            Text(tr("Progetto")).appFont(.headline)
             if projects.projects.isEmpty {
                 Text(tr("Nessun progetto: creane uno per iniziare")).foregroundStyle(.secondary)
             } else {
@@ -150,7 +151,7 @@ struct ProjectBar: View {
                 if let p = projects.selectedProject {
                     Text(tr("Creato il {0} · {1} clip", Self.formattedDate(p.createdAt), p.clipCount))
                         .foregroundStyle(.secondary)
-                        .font(.callout)
+                        .appFont(.callout)
                 }
             }
             Spacer()
@@ -173,6 +174,9 @@ struct ProjectBar: View {
                 .help(tr("Aggiunge clip al progetto senza scaricarli: i file restano dove sono (non vengono copiati né modificati). Servono a leggere i metadata e a esportare i report."))
             ToolbarButton(title: tr("Esporta report"), symbol: "doc.text") { showReport = true }
                 .disabled(projects.selectedProject == nil)
+            Divider().frame(height: 36)
+            ToolbarButton(title: tr("Impostazioni"), symbol: "gearshape") { showSettings = true }
+                .help(tr("Cambia i colori dello sfondo e delle scritte, il carattere e la dimensione."))
         }
         .padding(10)
         .alert(tr("Eliminare il progetto «{0}»?", projects.selectedProject?.name ?? ""), isPresented: $confirmDelete) {
@@ -397,9 +401,9 @@ struct ClipPreviewPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(clip.name).font(.headline).lineLimit(2)
+            Text(clip.name).appFont(.headline).lineLimit(2)
             if clip.isAudio {
-                Text(tr("Clip audio: nessuna anteprima.")).font(.callout).foregroundStyle(.secondary)
+                Text(tr("Clip audio: nessuna anteprima.")).appFont(.callout).foregroundStyle(.secondary)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 6).fill(Color.secondary.opacity(0.1)))
@@ -407,11 +411,11 @@ struct ClipPreviewPanel: View {
                 Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity)
                     .background(Color.black)
-                Text(tr("Primo fotogramma")).font(.caption).foregroundStyle(.secondary)
+                Text(tr("Primo fotogramma")).appFont(.caption).foregroundStyle(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(projects.thumbnails.failureReason(clipID: clip.id) ?? tr("Anteprima non ancora creata."))
-                        .font(.callout).foregroundStyle(projects.thumbnails.failureReason(clipID: clip.id) == nil ? Color.secondary : Color.red)
+                        .appFont(.callout).foregroundStyle(projects.thumbnails.failureReason(clipID: clip.id) == nil ? Color.secondary : Color.red)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
                     Button(tr("Crea anteprime")) { projects.generateThumbnailsForSelection(regenerate: false) }
@@ -425,8 +429,8 @@ struct ClipPreviewPanel: View {
             ForEach(["camera", "lens", "iso", "whiteBalance", "ndFilter", "sensorFPS", "shutter", "resolution", "codec", "timecode", "duration", "audioCodec", "audioChannels", "audioSampleRate", "audioBitDepth", "container", "gamma", "aperture", "tStop", "shutterAngle", "frameCount"], id: \.self) { id in
                 if let col = ClipColumns.column(id: id) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(col.localizedTitle).font(.caption).foregroundStyle(.secondary).frame(width: 84, alignment: .leading)
-                        Text(ClipColumns.value(col, of: clip)).font(.callout).textSelection(.enabled)
+                        Text(col.localizedTitle).appFont(.caption).foregroundStyle(.secondary).frame(width: 84, alignment: .leading)
+                        Text(ClipColumns.value(col, of: clip)).appFont(.callout).textSelection(.enabled)
                     }
                 }
             }
@@ -437,7 +441,7 @@ struct ClipPreviewPanel: View {
                         VStack(alignment: .leading, spacing: 3) {
                             ForEach(raw.keys.sorted(), id: \.self) { key in
                                 Text("\(key.dropFirst(ClipMetadata.rawPrefix.count)): \(raw[key] ?? "")")
-                                    .font(.caption.monospaced())
+                                    .appFont(.caption, monospaced: true)
                                     .textSelection(.enabled)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
@@ -445,7 +449,7 @@ struct ClipPreviewPanel: View {
                     }
                     .frame(maxHeight: 220)
                 }
-                .font(.callout)
+                .appFont(.callout)
             }
             Spacer(minLength: 0)
         }
@@ -507,7 +511,7 @@ struct ClipTableView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("\(projects.clips.count) \(projects.showAllFiles ? tr("file") : tr("clip"))")
-                    .font(.callout)
+                    .appFont(.callout)
                 Toggle(tr("Mostra anche i file non video (XML, sidecar…)"),
                        isOn: Binding(get: { projects.showAllFiles }, set: { projects.setShowAllFiles($0) }))
                     .toggleStyle(.checkbox)
@@ -544,13 +548,13 @@ struct ClipTableView: View {
                 .fixedSize()
             }
             if let status = projects.metadataStatus {
-                Text(status).font(.caption).foregroundStyle(.secondary)
+                Text(status).appFont(.caption).foregroundStyle(.secondary)
             }
             if let status = projects.thumbnailStatus {
-                Text(status).font(.caption).foregroundStyle(.secondary)
+                Text(status).appFont(.caption).foregroundStyle(.secondary)
             }
             Text(tr("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D."))
-                .font(.caption2)
+                .appFont(.caption2)
                 .foregroundStyle(.secondary)
             if projects.clips.isEmpty {
                 Text(tr("Nessuna clip: esegui un offload in un bin di questo progetto."))
@@ -589,7 +593,7 @@ struct ClipTableView: View {
                 } label: {
                     HStack(spacing: 2) {
                         Text(col.localizedTitle).bold()
-                        if sortColumnID == col.id { Image(systemName: ascending ? "chevron.up" : "chevron.down").font(.caption2) }
+                        if sortColumnID == col.id { Image(systemName: ascending ? "chevron.up" : "chevron.down").appFont(.caption2) }
                         Spacer(minLength: 0)
                     }
                     .frame(width: col.width, alignment: .leading)
@@ -638,7 +642,7 @@ struct HistoryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text(tr("Cronologia")).font(.headline)
+                Text(tr("Cronologia")).appFont(.headline)
                 Spacer()
                 if let p = projects.selectedProject {
                     Text(p.name).foregroundStyle(.secondary).lineLimit(1)
@@ -690,15 +694,15 @@ struct HistoryRow: View {
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
                 Text(Self.formattedDate(event.date))
-                    .font(.caption2.monospacedDigit())
+                    .appFont(.caption2, monospacedDigit: true)
                     .foregroundStyle(.secondary)
                 Text(event.title)
-                    .font(.callout)
+                    .appFont(.callout)
                     .foregroundStyle(event.severity == .error ? Color.red : Color.primary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let detail = event.detail {
                     Text(detail)
-                        .font(.caption)
+                        .appFont(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
@@ -749,7 +753,7 @@ struct DependencyBanner: View {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     Text(tr("Programmi esterni mancanti: {0}. I metadata che dipendono da essi resteranno {1}.",
                             tools.missing.map { $0.tool.displayName }.joined(separator: ", "), ClipColumns.notAvailable))
-                        .font(.callout.bold())
+                        .appFont(.callout, bold: true)
                     Spacer()
                     Button(expanded ? tr("Nascondi istruzioni") : tr("Come installarli")) { expanded.toggle() }
                     if tools.missing.contains(where: { $0.tool == .artCmd }) {
@@ -760,7 +764,7 @@ struct DependencyBanner: View {
                 if expanded {
                     ForEach(tools.missing) { status in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(status.tool.displayName): \(status.tool.purpose)").font(.caption.bold())
+                            Text("\(status.tool.displayName): \(status.tool.purpose)").appFont(.caption, bold: true)
                             Text(status.tool.installInstructions)
                                 .font(.system(.caption, design: .monospaced))
                                 .textSelection(.enabled)
@@ -770,7 +774,7 @@ struct DependencyBanner: View {
                         }
                     }
                     Text(tr("Si incolla nel Terminale, una riga alla volta. Poi premi «Ricontrolla»."))
-                        .font(.caption).foregroundStyle(.secondary)
+                        .appFont(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(10)

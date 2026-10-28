@@ -49,8 +49,8 @@ struct ReportSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(tr("Esporta report (PDF)")).font(.title3.bold())
-            Text(scopeIsBin ? tr("Ambito: {0}", scopeText) : tr("Ambito: {0} (tutti i bin contenuti)", scopeText)).font(.callout).foregroundStyle(.secondary)
+            Text(tr("Esporta report (PDF)")).appFont(.title3, bold: true)
+            Text(scopeIsBin ? tr("Ambito: {0}", scopeText) : tr("Ambito: {0} (tutti i bin contenuti)", scopeText)).appFont(.callout).foregroundStyle(.secondary)
 
             HStack {
                 TextField(tr("Nome progetto"), text: $projectName).textFieldStyle(.roundedBorder)
@@ -79,11 +79,11 @@ struct ReportSheet: View {
                 .frame(height: 140)
             }
             Text(tr("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip)."))
-                .font(.caption).foregroundStyle(.secondary)
+                .appFont(.caption).foregroundStyle(.secondary)
 
             if let message {
                 HStack {
-                    Text(message).font(.callout).foregroundStyle(messageIsError ? Color.red : Color.green)
+                    Text(message).appFont(.callout).foregroundStyle(messageIsError ? Color.red : Color.green)
                         .fixedSize(horizontal: false, vertical: true)
                     if !revealURLs.isEmpty {
                         Button(tr("Mostra nel Finder")) { NSWorkspace.shared.activateFileViewerSelecting(revealURLs) }

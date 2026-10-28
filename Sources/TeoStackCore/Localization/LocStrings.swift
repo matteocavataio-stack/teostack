@@ -186,13 +186,29 @@ enum LocStrings {
         ("Anteprime: {0}", "Thumbnails: {0}", "Miniaturas: {0}", "Miniatures: {0}"),
         ("Anteprime non create: {0}", "Thumbnails not created: {0}", "Miniaturas sin crear: {0}", "Miniatures sense crear: {0}"),
         ("Database dei progetti non disponibile.", "Projects database not available.", "Base de datos de proyectos no disponible.", "Base de dades de projectes no disponible."),
+        ("Impostazioni", "Settings", "Ajustes", "Configuració"),
+        ("Aspetto", "Appearance", "Apariencia", "Aparença"),
+        ("Modelli pronti", "Ready-made themes", "Temas predefinidos", "Temes predefinits"),
+        ("Scegli…", "Choose…", "Elegir…", "Tria…"),
+    ]
+
+    private static let part3: [Entry] = [
+        ("Colore dello sfondo", "Background colour", "Color de fondo", "Color de fons"),
+        ("Predefinito", "Default", "Predeterminado", "Predeterminat"),
+        ("Colore delle scritte", "Text colour", "Color del texto", "Color del text"),
+        ("Carattere", "Font", "Tipo de letra", "Tipus de lletra"),
+        ("Di sistema", "System", "Del sistema", "Del sistema"),
+        ("Dimensione delle scritte", "Text size", "Tamaño del texto", "Mida del text"),
+        ("Attenzione: sfondo e scritte hanno colori troppo simili, si legge male.", "Warning: background and text colours are too similar, it is hard to read.", "Atención: el fondo y el texto tienen colores demasiado parecidos, se lee mal.", "Atenció: el fons i el text tenen colors massa semblants, es llegeix malament."),
+        ("Anteprima", "Preview", "Vista previa", "Previsualització"),
+        ("Offload completato: tutti i file OK", "Offload completed: all files OK", "Volcado completado: todos los archivos OK", "Descàrrega completada: tots els fitxers OK"),
+        ("Esempio di testo piccolo", "Small text example", "Ejemplo de texto pequeño", "Exemple de text petit"),
+        ("Ripristina predefiniti", "Restore defaults", "Restablecer valores predeterminados", "Restableix els valors predeterminats"),
+        ("Chiudi", "Close", "Cerrar", "Tanca"),
         ("Offload", "Offload", "Offload", "Offload"),
         ("Clip", "Clips", "Clips", "Clips"),
         ("Nascondi cronologia", "Hide history", "Ocultar historial", "Amaga l'historial"),
         ("Mostra cronologia", "Show history", "Mostrar historial", "Mostra l'historial"),
-    ]
-
-    private static let part3: [Entry] = [
         ("Errore", "Error", "Error", "Error"),
         ("OK", "OK", "OK", "OK"),
         ("Il bin verrà creato in:", "The bin will be created in:", "El bin se creará en:", "El bin es crearà a:"),
@@ -237,6 +253,9 @@ enum LocStrings {
         ("Nessuna scheda o disco esterno collegato", "No card or external disk connected", "Ninguna tarjeta o disco externo conectado", "Cap targeta o disc extern connectat"),
         ("Scegli sorgente…", "Choose source…", "Elegir origen…", "Tria l'origen…"),
         ("Nome bin:", "Bin name:", "Nombre del bin:", "Nom del bin:"),
+    ]
+
+    private static let part4: [Entry] = [
         ("Nome del bin", "Bin name", "Nombre del bin", "Nom del bin"),
         ("proposto dalla sorgente: puoi cambiarlo prima di avviare", "suggested from the source: you can change it before starting", "propuesto a partir del origen: puedes cambiarlo antes de iniciar", "proposat a partir de l'origen: el pots canviar abans d'iniciar"),
         ("Trascina qui la scheda (o la cartella sorgente)", "Drag the card (or the source folder) here", "Arrastra aquí la tarjeta (o la carpeta de origen)", "Arrossega aquí la targeta (o la carpeta d'origen)"),
@@ -253,13 +272,9 @@ enum LocStrings {
         ("{0} (non disponibile)", "{0} (not available)", "{0} (no disponible)", "{0} (no disponible)"),
         ("Usa tutti i percorsi salvati", "Use all saved paths", "Usar todas las rutas guardadas", "Usa totes les rutes desades"),
         ("Rimuovi dai salvati", "Remove from saved", "Quitar de las guardadas", "Treu de les desades"),
-    ]
-
-    private static let part4: [Entry] = [
         ("Salva i percorsi di destinazione che usi di solito, per non sceglierli ogni volta", "Save the destination paths you usually use, so you do not have to choose them every time", "Guarda las rutas de destino que usas habitualmente para no elegirlas cada vez", "Desa les rutes de destinació que fas servir habitualment per no triar-les cada vegada"),
         ("Aggiungi destinazione", "Add destination", "Añadir destino", "Afegeix una destinació"),
         ("nessuna cartella selezionata", "no folder selected", "ninguna carpeta seleccionada", "cap carpeta seleccionada"),
-        ("Scegli…", "Choose…", "Elegir…", "Tria…"),
         ("Usa un percorso salvato per questa destinazione", "Use a saved path for this destination", "Usar una ruta guardada para este destino", "Usa una ruta desada per a aquesta destinació"),
         ("Rimuovi", "Remove", "Quitar", "Treu"),
         ("Copia {0}%  {1}", "Copy {0}%  {1}", "Copia {0}%  {1}", "Còpia {0}%  {1}"),
@@ -301,6 +316,9 @@ enum LocStrings {
         ("La sorgente «{0}» non è montata: inserire la scheda e riprovare.", "The source “{0}” is not mounted: insert the card and try again.", "El origen «{0}» no está montado: inserta la tarjeta e inténtalo de nuevo.", "L'origen «{0}» no està muntat: insereix la targeta i torna-ho a provar."),
         ("Il bin di questo offload è stato eliminato dal progetto: non posso riprenderlo registrandolo. Crea un nuovo bin e rilancia l'offload (i file già copiati e identici vengono solo verificati, mai riscritti).", "The bin of this offload has been deleted from the project: I cannot resume it and record it. Create a new bin and start the offload again (files already copied and identical are only verified, never rewritten).", "El bin de este offload se ha eliminado del proyecto: no puedo reanudarlo registrándolo. Crea un bin nuevo y lanza el offload otra vez (los archivos ya copiados e idénticos solo se verifican, nunca se reescriben).", "El bin d'aquest offload s'ha eliminat del projecte: no el puc reprendre registrant-lo. Crea un bin nou i torna a llançar l'offload (els fitxers ja copiats i idèntics només es verifiquen, mai es reescriuen)."),
         ("Database dei progetti non disponibile: offload non avviato.", "Projects database not available: offload not started.", "Base de datos de proyectos no disponible: offload no iniciado.", "Base de dades de projectes no disponible: offload no iniciat."),
+    ]
+
+    private static let part5: [Entry] = [
         ("Impossibile registrare l'offload nel progetto: {0}", "Unable to record the offload in the project: {0}", "No se puede registrar el offload en el proyecto: {0}", "No es pot registrar l'offload al projecte: {0}"),
         ("Offload in corso", "Offload in progress", "Offload en curso", "Offload en curs"),
         ("L'offload è terminato ma non sono riuscito a registrarlo nel progetto: {0}", "The offload has finished but I could not record it in the project: {0}", "El offload ha terminado pero no he conseguido registrarlo en el proyecto: {0}", "L'offload ha acabat però no he pogut registrar-lo al projecte: {0}"),
@@ -316,9 +334,6 @@ enum LocStrings {
         ("Nessun progetto: creane uno per iniziare", "No project: create one to get started", "Ningún proyecto: crea uno para empezar", "Cap projecte: crea'n un per començar"),
         ("{0}  ·  {1}  ·  {2} clip", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips", "{0}  ·  {1}  ·  {2} clips"),
         ("Creato il {0} · {1} clip", "Created on {0} · {1} clips", "Creado el {0} · {1} clips", "Creat el {0} · {1} clips"),
-    ]
-
-    private static let part5: [Entry] = [
         ("Elimina progetto", "Delete project", "Eliminar proyecto", "Elimina el projecte"),
         ("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "Deletes the WHOLE project. To delete only a day or a bin use “Delete selection” in the sidebar.", "Elimina el proyecto ENTERO. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "Elimina el projecte SENCER. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
         ("Schermata di scarico: sorgente, destinazioni e avanzamento.", "Offload screen: source, destinations and progress.", "Pantalla de volcado: origen, destinos y progreso.", "Pantalla de descàrrega: origen, destinacions i progrés."),
@@ -326,6 +341,7 @@ enum LocStrings {
         ("Importa media", "Import media", "Importar medios", "Importa mitjans"),
         ("Aggiunge clip al progetto senza scaricarli: i file restano dove sono (non vengono copiati né modificati). Servono a leggere i metadata e a esportare i report.", "Adds clips to the project without offloading them: the files stay where they are (they are not copied or modified). They are used to read the metadata and to export the reports.", "Añade clips al proyecto sin descargarlos: los archivos se quedan donde están (no se copian ni se modifican). Sirven para leer los metadatos y exportar los informes.", "Afegeix clips al projecte sense descarregar-los: els fitxers es queden on són (no es copien ni es modifiquen). Serveixen per llegir les metadades i exportar els informes."),
         ("Esporta report", "Export report", "Exportar informe", "Exporta l'informe"),
+        ("Cambia i colori dello sfondo e delle scritte, il carattere e la dimensione.", "Change the background and text colours, the font and the size.", "Cambia los colores del fondo y del texto, el tipo de letra y el tamaño.", "Canvia els colors del fons i del text, el tipus de lletra i la mida."),
         ("Eliminare il progetto «{0}»?", "Delete the project “{0}”?", "¿Eliminar el proyecto «{0}»?", "Vols eliminar el projecte «{0}»?"),
         ("Elimina", "Delete", "Eliminar", "Elimina"),
         ("Verrà eliminato l'INTERO progetto dal programma ({0} bin, {1} offload, {2} file registrati). I file già copiati sui dischi NON vengono toccati. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale.", "The WHOLE project will be deleted from the program ({0} bins, {1} offloads, {2} recorded files). Files already copied to the disks are NOT touched. To delete only a day or a bin use “Delete selection” in the sidebar.", "Se eliminará el proyecto ENTERO del programa ({0} bins, {1} offloads, {2} archivos registrados). Los archivos ya copiados en los discos NO se tocan. Para eliminar solo un día o un bin usa «Eliminar selección» en la barra lateral.", "S'eliminarà el projecte SENCER del programa ({0} bins, {1} offloads, {2} fitxers registrats). Els fitxers ja copiats als discos NO es toquen. Per eliminar només un dia o un bin usa «Elimina la selecció» a la barra lateral."),
@@ -363,6 +379,9 @@ enum LocStrings {
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
         ("Metadata camera (N/D se non letti)", "Camera metadata (N/A if not read)", "Metadatos de la cámara (N/D si no se leen)", "Metadades de la càmera (N/D si no es llegeixen)"),
         ("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.", "ExifTool provides camera, firmware, resolution, duration, file FPS, timecode and shooting date of ARRI clips. art-cmd (ARRI Reference Tool) provides ISO, WB, lens, ND, look, sensor FPS, scene/take/reel, serial: these are the values of the first frame of the clip. For MPG, WAV/BWF, LRF, MP4, ProRes and the other formats ffprobe reads codec, resolution, FPS, duration, audio, and timecode/date/camera only if written in the file. The thumbnail is the first frame (ARRI: art-cmd with embedded look; other videos: ffmpeg). If a value cannot be read it shows N/A.", "ExifTool da cámara, firmware, resolución, duración, FPS del archivo, timecode y fecha de rodaje de los clips ARRI. art-cmd (ARRI Reference Tool) da ISO, WB, objetivo, ND, look, sensor FPS, escena/toma/reel y serial: son los valores del primer fotograma del clip. Para MPG, WAV/BWF, LRF, MP4, ProRes y el resto de formatos lee ffprobe: códec, resolución, FPS, duración, audio, y timecode/fecha/cámara solo si están escritos en el archivo. La miniatura es el primer fotograma (ARRI: art-cmd con el look incorporado; otros vídeos: ffmpeg). Si un valor no se puede leer muestra N/D.", "ExifTool dona càmera, firmware, resolució, durada, FPS del fitxer, timecode i data de rodatge dels clips ARRI. art-cmd (ARRI Reference Tool) dona ISO, WB, objectiu, ND, look, sensor FPS, escena/presa/reel i serial: són els valors del primer fotograma del clip. Per a MPG, WAV/BWF, LRF, MP4, ProRes i la resta de formats llegeix ffprobe: còdec, resolució, FPS, durada, àudio, i timecode/data/càmera només si estan escrits al fitxer. La miniatura és el primer fotograma (ARRI: art-cmd amb el look incorporat; altres vídeos: ffmpeg). Si un valor no es pot llegir mostra N/D."),
+    ]
+
+    private static let part6: [Entry] = [
         ("Nessuna clip: esegui un offload in un bin di questo progetto.", "No clips: run an offload into a bin of this project.", "Ningún clip: haz un offload en un bin de este proyecto.", "Cap clip: fes un offload en un bin d'aquest projecte."),
         ("Cronologia", "History", "Historial", "Historial"),
         ("Cancella…", "Clear…", "Borrar…", "Esborra…"),
@@ -379,9 +398,6 @@ enum LocStrings {
         ("Ricontrolla", "Check again", "Volver a comprobar", "Torna a comprovar"),
         ("Si incolla nel Terminale, una riga alla volta. Poi premi «Ricontrolla».", "Paste it into Terminal, one line at a time. Then press “Check again”.", "Se pega en el Terminal, una línea cada vez. Después pulsa «Volver a comprobar».", "S'enganxa al Terminal, una línia cada vegada. Després prem «Torna a comprovar»."),
         ("Esporta report (PDF)", "Export report (PDF)", "Exportar informe (PDF)", "Exporta l'informe (PDF)"),
-    ]
-
-    private static let part6: [Entry] = [
         ("Ambito: {0}", "Scope: {0}", "Ámbito: {0}", "Àmbit: {0}"),
         ("Ambito: {0} (tutti i bin contenuti)", "Scope: {0} (all the bins it contains)", "Ámbito: {0} (todos los bins contenidos)", "Àmbit: {0} (tots els bins continguts)"),
         ("Nome progetto", "Project name", "Nombre del proyecto", "Nom del projecte"),
@@ -390,16 +406,15 @@ enum LocStrings {
         ("Colonne dei report Clips e Thumbnail (stesse del tab Clip)", "Columns of the Clips and Thumbnail reports (same as the Clips tab)", "Columnas de los informes Clips y Thumbnail (las mismas de la pestaña Clips)", "Columnes dels informes Clips i Thumbnail (les mateixes de la pestanya Clips)"),
         ("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip).", "“Name” is always present. Shooting Day, Volume and Contact Print have a fixed format. Thumbnails appear if they have already been generated (Clips tab).", "«Name» siempre está presente. Shooting Day, Volume y Contact Print tienen un formato fijo. Las miniaturas aparecen si ya se han generado (pestaña Clips).", "«Name» sempre hi és. Shooting Day, Volume i Contact Print tenen un format fix. Les miniatures apareixen si ja s'han generat (pestanya Clips)."),
         ("Mostra nel Finder", "Show in Finder", "Mostrar en el Finder", "Mostra al Finder"),
-        ("Chiudi", "Close", "Cerrar", "Tanca"),
         ("Esporta PDF…", "Export PDF…", "Exportar PDF…", "Exporta el PDF…"),
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),
         ("Salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
         ("Errori: {0}", "Errors: {0}", "Errores: {0}", "Errors: {0}"),
         ("salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
+        ("Impostazioni…", "Settings…", "Ajustes…", "Configuració…"),
         ("Report", "Report", "Informe", "Informe"),
         ("Esporta report…", "Export report…", "Exportar informe…", "Exporta l'informe…"),
-        ("Anteprima", "Thumbnail", "Miniatura", "Miniatura"),
         ("Giorno", "Day", "Día", "Dia"),
         ("Bin", "Bin", "Bin", "Bin"),
         ("XXH64", "XXH64", "XXH64", "XXH64"),
@@ -427,6 +442,9 @@ enum LocStrings {
         ("Indice camera", "Camera index", "Índice de cámara", "Índex de càmera"),
         ("Serial lente", "Lens serial", "Serie del objetivo", "Sèrie de l'objectiu"),
         ("Distanza fuoco", "Focus distance", "Distancia de enfoque", "Distància de enfocament"),
+    ]
+
+    private static let part7: [Entry] = [
         ("Tint", "Tint", "Tinte", "Tint"),
         ("Tilt", "Tilt", "Tilt", "Tilt"),
         ("Roll", "Roll", "Roll", "Roll"),
@@ -444,5 +462,5 @@ enum LocStrings {
         ("Nomi tracce", "Track names", "Nombres de pistas", "Noms de pistes"),
     ]
 
-    static let all: [Entry] = part0 + part1 + part2 + part3 + part4 + part5 + part6
+    static let all: [Entry] = part0 + part1 + part2 + part3 + part4 + part5 + part6 + part7
 }

@@ -25,10 +25,11 @@ struct ContentView: View {
     @State private var tab: MainTab = .offload
     @AppStorage("showHistory") private var showHistory = true
     @State private var showReport = false
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
-            ProjectBar(projects: app.projects, request: $request, showReport: $showReport, tab: $tab)
+            ProjectBar(projects: app.projects, request: $request, showReport: $showReport, showSettings: $showSettings, tab: $tab)
                 .sheet(isPresented: $showReport) {
                     ReportSheet(projects: app.projects) { showReport = false }
                 }
@@ -56,7 +57,12 @@ struct ContentView: View {
             }
         }
         .id(languageSettings.language)
+        .appAppearance()
         .frame(minWidth: 1280, minHeight: 760)
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet { showSettings = false }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openSettings)) { _ in showSettings = true }
         .onReceive(app.projects.$placement) { app.offload.placement = $0 }
         .onReceive(NotificationCenter.default.publisher(for: .exportReport)) { _ in
             if app.projects.selectedProject != nil { showReport = true }
@@ -110,13 +116,13 @@ struct TargetBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(tr("Il bin verrà creato in:")).font(.headline)
+            Text(tr("Il bin verrà creato in:")).appFont(.headline)
             if let p = vm.placement {
                 Text(p.displayPath).bold()
                 if vm.sourceURL != nil, vm.binNameError == nil, let existing = projects.existingBin(named: vm.binName) {
                     let n = projects.offloadCount(binID: existing.id)
                     Text(tr("— il bin «{0}» esiste già ({1} offload): l'offload verrà aggiunto", existing.name, n))
-                        .foregroundStyle(.orange).font(.callout)
+                        .foregroundStyle(.orange).appFont(.callout)
                 }
             } else {
                 Text(tr("crea o seleziona un progetto (la cartella selezionata nella barra laterale ospiterà il bin)"))
@@ -147,12 +153,12 @@ struct RecapPanel: View {
                         Image(systemName: expanded ? "chevron.down" : "chevron.right").frame(width: 12)
                     }
                     .buttonStyle(.plain)
-                    Text(tr("Riepilogo di «{0}»", node.name)).font(.headline).lineLimit(1)
-                    if !recap.isEmpty { Text(summaryLine(recap)).font(.callout).foregroundStyle(.secondary).lineLimit(1) }
+                    Text(tr("Riepilogo di «{0}»", node.name)).appFont(.headline).lineLimit(1)
+                    if !recap.isEmpty { Text(summaryLine(recap)).appFont(.callout).foregroundStyle(.secondary).lineLimit(1) }
                     Spacer()
                 }
                 if let status = projects.importStatus {
-                    Text(status).font(.caption).foregroundStyle(.secondary)
+                    Text(status).appFont(.caption).foregroundStyle(.secondary)
                 }
                 if expanded {
                     ScrollView {
@@ -175,7 +181,7 @@ struct RecapPanel: View {
     @ViewBuilder
     private func details(_ recap: ProjectRecap) -> some View {
         if recap.isEmpty {
-            Text(tr("Ancora nessun offload né file importato in questa cartella.")).font(.callout).foregroundStyle(.secondary)
+            Text(tr("Ancora nessun offload né file importato in questa cartella.")).appFont(.callout).foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 18) {
                 table(tr("Panoramica clip"), columns: [tr("Clip"), tr("File"), tr("Dimensione")], rows: [
@@ -207,7 +213,7 @@ struct RecapPanel: View {
                           rows: recap.audioCodecs.map { [$0.codec ?? na, String($0.group.clips), durationText($0.group)] })
                 }
                 ForEach(notes(recap), id: \.self) { note in
-                    Text(note).font(.caption).foregroundStyle(.orange)
+                    Text(note).appFont(.caption).foregroundStyle(.orange)
                 }
             }
         }
@@ -232,9 +238,9 @@ struct RecapPanel: View {
     private func table(_ title: String, columns: [String], rows: [[String]]) -> some View {
         Grid(alignment: .trailing, horizontalSpacing: 22, verticalSpacing: 4) {
             GridRow {
-                Text(title).font(.title3.bold()).frame(maxWidth: .infinity, alignment: .leading)
+                Text(title).appFont(.title3, bold: true).frame(maxWidth: .infinity, alignment: .leading)
                 ForEach(Array(columns.enumerated()), id: \.offset) { _, name in
-                    Text(name).font(.caption).foregroundStyle(.secondary)
+                    Text(name).appFont(.caption).foregroundStyle(.secondary)
                 }
             }
             Divider()
@@ -242,7 +248,7 @@ struct RecapPanel: View {
                 GridRow {
                     ForEach(Array(cells.enumerated()), id: \.offset) { index, cell in
                         Text(cell)
-                            .font(.callout.monospacedDigit())
+                            .appFont(.callout, monospacedDigit: true)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .frame(maxWidth: index == 0 ? .infinity : nil, alignment: index == 0 ? .leading : .trailing)
@@ -288,7 +294,7 @@ struct SourcePanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(tr("Sorgente")).font(.headline)
+                Text(tr("Sorgente")).appFont(.headline)
                 if let url = vm.sourceURL {
                     Text(url.path).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                 }
@@ -315,9 +321,9 @@ struct SourcePanel: View {
                         .frame(maxWidth: 360)
                         .disabled(vm.isRunning)
                     if let error = vm.binNameError {
-                        Text(error).foregroundStyle(.red).font(.callout)
+                        Text(error).foregroundStyle(.red).appFont(.callout)
                     } else {
-                        Text(tr("proposto dalla sorgente: puoi cambiarlo prima di avviare")).foregroundStyle(.secondary).font(.callout)
+                        Text(tr("proposto dalla sorgente: puoi cambiarlo prima di avviare")).foregroundStyle(.secondary).appFont(.callout)
                     }
                 }
             }
@@ -345,7 +351,7 @@ struct SourcePanel: View {
                         }
                     }
                 }
-                .font(.callout)
+                .appFont(.callout)
                 Table(vm.rows) {
                     TableColumn(tr("Nome")) { row in Text(row.file.name) }
                     TableColumn(tr("Cartella")) { row in Text(row.file.folder).foregroundStyle(.secondary) }
@@ -375,7 +381,7 @@ struct StatusBadge: View {
     var body: some View {
         if let status {
             Text(status.label)
-                .font(.caption.bold())
+                .appFont(.caption, bold: true)
                 .foregroundStyle(color(status))
         } else {
             Text("")
@@ -400,7 +406,7 @@ struct DestinationsPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(tr("Destinazioni (verrà creata la cartella del bin dentro quella scelta)")).font(.headline)
+                Text(tr("Destinazioni (verrà creata la cartella del bin dentro quella scelta)")).appFont(.headline)
                 Spacer()
                 Menu(tr("Percorsi salvati")) {
                     Button(tr("Salva i percorsi scelti")) { vm.saveChosenDestinations() }
@@ -486,9 +492,9 @@ struct DestinationRow: View {
                     Text(tr("MISMATCH {0}", p.mismatchCount)).foregroundStyle(p.mismatchCount > 0 ? Color.red : Color.secondary)
                     Text(tr("ERRORE {0}", p.errorCount)).foregroundStyle(p.errorCount > 0 ? Color.red : Color.secondary)
                 }
-                .font(.caption.monospacedDigit())
+                .appFont(.caption, monospacedDigit: true)
                 if let fatal = p.fatalError {
-                    Text(tr("Destinazione interrotta: {0}", fatal)).font(.caption).foregroundStyle(.red)
+                    Text(tr("Destinazione interrotta: {0}", fatal)).appFont(.caption).foregroundStyle(.red)
                 }
             } else {
                 ProgressView(value: 0)
@@ -527,7 +533,7 @@ struct ControlBar: View {
                     .keyboardShortcut(.defaultAction)
                     .disabled(!vm.canStart)
             }
-            .font(.callout.monospacedDigit())
+            .appFont(.callout, monospacedDigit: true)
             HStack(spacing: 18) {
                 Toggle(tr("Verifica durante la copia"), isOn: $overlapVerification)
                     .toggleStyle(.checkbox)
@@ -547,7 +553,7 @@ struct ControlBar: View {
                 }
                 Spacer()
             }
-            .font(.callout)
+            .appFont(.callout)
             if let result = vm.result { ResultBanner(result: result) }
         }
         .padding(12)
@@ -589,17 +595,17 @@ struct ResultBanner: View {
         }
         if written > 0 {
             Text(tr("Certificato ASC MHL scritto su {0} destinazione/i (cartella «ascmhl»).", written))
-                .font(.callout).foregroundStyle(.secondary)
+                .appFont(.callout).foregroundStyle(.secondary)
         }
         if !problems.isEmpty {
             Text(tr("Certificato ASC MHL NON creato su {0} destinazione/i: {1}", problems.count, Array(Set(problems)).sorted().joined(separator: "; ")))
-                .font(.callout).foregroundStyle(.orange)
+                .appFont(.callout).foregroundStyle(.orange)
         }
     }
 
     private func banner(_ text: String, _ color: Color) -> some View {
         Text(text)
-            .font(.callout.bold())
+            .appFont(.callout, bold: true)
             .foregroundStyle(.white)
             .padding(8)
             .frame(maxWidth: .infinity, alignment: .leading)
