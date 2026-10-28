@@ -1,6 +1,7 @@
 #if canImport(SwiftUI)
 import SwiftUI
 import AppKit
+import TeoStackCore
 
 @main
 struct TeoStackXtApp: App {
