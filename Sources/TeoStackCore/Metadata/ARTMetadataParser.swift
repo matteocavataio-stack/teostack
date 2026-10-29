@@ -91,6 +91,11 @@ public enum ARTMetadataParser {
                 if let tilt = number(o["tilt"]) { out["tilt"] = trimmed(tilt, decimals: 1) }
                 if let roll = number(o["roll"]) { out["roll"] = trimmed(roll, decimals: 1) }
             }
+            // diaframma: «lensIris» è il valore lineare dell'iride (schema ARRI lens_state v1-0-0): millesimi di stop con T1 = 1000;
+            // ogni 1000 = uno stop di luce, cioè un fattore √2 sul T-stop → T = 2^((valore − 1000) / 2000). -1 = non disponibile, -2/-3 = chiuso
+            if let l = sets["Lens State"] as? [String: Any], let iris = number(l["lensIris"]), iris >= 1000 {
+                out["tStop"] = trimmed(pow(2, (iris - 1000) / 2000), decimals: 1)
+            }
             if let l = sets["Lens State"] as? [String: Any], let um = number(l["lensFocalLength"]), um > 0 {
                 out["focalLength"] = String(format: "%.0f mm", um / 1000)
             }

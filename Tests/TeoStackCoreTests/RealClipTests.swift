@@ -168,3 +168,53 @@ final class RealClipTests: XCTestCase {
         XCTAssertEqual(ExifMapper.real(" RF35mm "), "RF35mm")
     }
 }
+
+/// Clip ARRI ALEXA Mini LF VERI (ExifTool 13.59 e art-cmd 1.0.0 sul Mac dell'utente).
+final class RealARRIMiniLFTests: XCTestCase {
+    private func read(_ name: String) -> ClipMetadata {
+        let url = URL(fileURLWithPath: "/Volumes/CARD/" + name)
+        let exif = RealClip.json(name + ".exiftool.json")!
+        let art = RealClip.json(name + ".art.json")!
+        let file = ClipFile(url: url, tools: ReaderTools(artCmd: ARTCmdRunner(executable: "/x")),
+                            probe: FileProbe(url: url, head: Data(FileProbe.mxfKey + [0, 0]), size: 1_000_000),
+                            exifOverride: { exif }, artOverride: { art })
+        return ReaderRegistry.standard().read(file)
+    }
+
+    func testARRIRAWHDEClip() {
+        let m = read("arri_minilf_arriraw_hde.mxf")
+        XCTAssertEqual(m.family, "ARRI")
+        XCTAssertEqual(m.cameraModel, "ARRI ALEXA Mini LF"); XCTAssertEqual(m.cameraSerial, "30711"); XCTAssertEqual(m.firmware, "7.03.02")
+        XCTAssertEqual(m.codec, "ARRIRAW HDE")
+        XCTAssertEqual(m.width, 4448); XCTAssertEqual(m.height, 3096)
+        XCTAssertEqual(m.fps, 25); XCTAssertEqual(m.duration, 11.28); XCTAssertEqual(m.frameCount, 282, "11,28 s × 25 fps")
+        XCTAssertEqual(m.iso, "800"); XCTAssertEqual(m.whiteBalance, "5600 K")
+        XCTAssertEqual(m.shutter, "1/50"); XCTAssertEqual(m.shutterAngle, "180°", "1/50 s a 25 fps")
+        XCTAssertEqual(m.extraColumns["tint"], "0", "tint 0 è un valore, non «N/D»")
+        XCTAssertEqual(m.extraColumns["ndFilter"], "ND 0")
+        XCTAssertEqual(m.lensModel, "Optimo 15-40mm 1592038"); XCTAssertEqual(m.focalLength, "40 mm"); XCTAssertEqual(m.focusDistance, "1.07 m")
+        XCTAssertEqual(m.tStop, "8.3", "lensIris 7110 → T = 2^((7110−1000)/2000)")
+        XCTAssertEqual(m.audioChannels, 5); XCTAssertEqual(m.audioSampleRate, 48000); XCTAssertEqual(m.extraColumns["audioCodec"], "AES3")
+        XCTAssertEqual(m.reel, "A903RNP3"); XCTAssertEqual(m.extraColumns["cameraIndex"], "A")
+        XCTAssertEqual(m.timecodeStart, "11:25:11:19")
+        XCTAssertEqual(m.extraColumns["lookInfo"], "ARRI 709")
+        XCTAssertNil(m.cameraTilt, "la Mini LF non scrive orientamento (Positional vuoto): tilt e roll restano vuoti")
+        XCTAssertNil(m.cameraRoll)
+        XCTAssertNil(m.gamma)
+    }
+
+    func testProRes4444XQClipWithHighSpeedShutter() {
+        let m = read("arri_minilf_prores4444xq.mxf")
+        XCTAssertEqual(m.codec, "Apple ProRes 4444 XQ")
+        XCTAssertEqual(m.width, 3200); XCTAssertEqual(m.height, 1800)
+        XCTAssertEqual(m.shutter, "1/150", "exposureTime 3333/500000 s (prima compariva come frazione grezza)")
+        XCTAssertEqual(m.shutterAngle, "180°", "a 75 fps del sensore")
+        XCTAssertEqual(m.extraColumns["sensorFPS"], "75")
+        XCTAssertEqual(m.fps, 25); XCTAssertEqual(m.frameCount, 355)
+        XCTAssertEqual(m.lensModel, "ARRI SZ45-135 T2.8"); XCTAssertEqual(m.tStop, "5.6")
+        XCTAssertNil(m.audioChannels, "questo clip non ha audio")
+        XCTAssertNil(m.gamma, "il valore del file è un identificatore SMPTE grezzo, non un nome")
+        XCTAssertEqual(m.extraColumns["lookInfo"], "LL-1111-Black-and-White-High")
+        XCTAssertEqual(m.rawFields["Track2:CaptureGammaEquation"], "060e2b34.0401.010d.0e170401.03010201")
+    }
+}

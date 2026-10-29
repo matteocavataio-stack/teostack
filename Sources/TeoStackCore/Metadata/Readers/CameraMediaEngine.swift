@@ -104,6 +104,13 @@ enum ExifMapper {
             if p.count == 2, p[0] > 0, p[1] > 0 { m.width = p[0]; m.height = p[1] }
         }
         if let r = number(tags, ["FrameRate"]), r >= 0.001, r < 1000 { m.fps = (r * 1000).rounded() / 1000 }   // (valori minuscoli = byte non impostati)
+        // MXF: numero di fotogrammi = durata × frame rate (solo se torna un intero)
+        if let duration = (tags["MXF:Duration"] as? NSNumber)?.doubleValue, duration > 0,
+           let rate = (tags["MXF:SampleRate"] as? NSNumber)?.doubleValue ?? tags.keys.sorted().first(where: { $0.hasSuffix(":EditRate") }).flatMap({ (tags[$0] as? NSNumber)?.doubleValue }),
+           rate > 0 {
+            let frames = duration * rate
+            if abs(frames - frames.rounded()) < 0.05, frames.rounded() >= 1 { m.frameCount = Int(frames.rounded()) }
+        }
         m.rawFields = RawTags.fields(from: tags)
         return m
     }
@@ -143,8 +150,10 @@ enum ExifMapper {
         return "\(TagBag.format(seconds, decimals: 4)) s"
     }
 
+    /// Testo (non numero) e non un identificatore SMPTE UL grezzo come «060e2b34.0401.010d…»: quello non è un nome leggibile (resta in rawFields).
     private static func nonNumeric(_ s: String?) -> String? {
         guard let s, Double(s) == nil else { return nil }
+        if s.range(of: #"^(?:[0-9a-fA-F]{2,8}[.\-]){2,}[0-9a-fA-F]{2,8}$"#, options: .regularExpression) != nil { return nil }
         return s
     }
 

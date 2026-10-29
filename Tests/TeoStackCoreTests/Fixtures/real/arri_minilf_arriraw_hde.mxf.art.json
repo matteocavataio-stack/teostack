@@ -1,0 +1,476 @@
+{
+    "arriJsonHeader": {
+        "fileCreationDate": "2026-10-29T11:12:10+0100",
+        "jsonSchemaUri": "https://www.arri.com/schema/json/metadata_output/v2-1-0",
+        "mxfFileName": "/Volumes/CARD/arri_minilf_arriraw_hde.mxf",
+        "osVersion": "iOS",
+        "software": "ART CMD (using ART Library version 0.5.8)",
+        "softwareVersion": "1.0.0"
+    },
+    "clipBasedMetadataSets": [
+        {
+            "metadataSetName": "Sensor Device",
+            "metadataSetPayload": {
+                "colorFilterArrayLayout": "gbrg",
+                "sensorDimensions": {
+                    "height": 25.540000915527344,
+                    "width": 36.70000076293945
+                },
+                "sensorName": "ALEV III A2X",
+                "sensorPixelPitch": 8.25
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/sensor_device/v1-0-0"
+        },
+        {
+            "metadataSetName": "Sensor State",
+            "metadataSetPayload": {
+                "acquisitionRect": {
+                    "height": 3096,
+                    "left": 16,
+                    "top": 5,
+                    "width": 4448
+                },
+                "burstDenoise": false,
+                "exposureIndex": 800,
+                "imageReversal": {
+                    "horizontal": 0,
+                    "vertical": 0
+                }
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/sensor_state_static/v1-0-0"
+        },
+        {
+            "metadataSetName": "Clip Info",
+            "metadataSetPayload": {
+                "arriRawPictureEssenceCoding": "ARRIRAW Picture Coding 12bit reverse HDE",
+                "clipCreationTime": "2026-10-28T12:25:23.000Z",
+                "clipDuration": 1,
+                "clipStartFrameNumber": 1027794,
+                "clipUMID": "060a2b34.01010105.01010d31.13f38a8d.41353838.34304532.2d443243.412d3131",
+                "videoCodec": "ARRIRAW HDE"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/clip_info/v1-1-0"
+        },
+        {
+            "metadataSetName": "Image Size",
+            "metadataSetPayload": {
+                "displayRect": {
+                    "aspectRatio": "556/387",
+                    "height": 3096,
+                    "left": 0,
+                    "top": 0,
+                    "width": 4448
+                },
+                "frameLayout": "full frame",
+                "sampledRect": {
+                    "height": 3096,
+                    "left": 0,
+                    "top": 0,
+                    "width": 4448
+                },
+                "storedSize": {
+                    "height": 3096,
+                    "width": 4448
+                }
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/image_size/v1-1-0"
+        },
+        {
+            "metadataSetName": "Project Rate",
+            "metadataSetPayload": {
+                "dropframe": false,
+                "timebase": "25/1"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/project_rate/v1-0-0"
+        },
+        {
+            "metadataSetName": "Checksum Static",
+            "metadataSetPayload": {
+                "checksumType": "CRC32C"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/recording_checksum_static/v1-0-0"
+        },
+        {
+            "metadataSetName": "Color",
+            "metadataSetPayload": {
+                "cdl": {
+                    "cdlOffset": {
+                        "b": 0.0,
+                        "g": 0.0,
+                        "r": 0.0
+                    },
+                    "cdlPower": {
+                        "b": 1.0,
+                        "g": 1.0,
+                        "r": 1.0
+                    },
+                    "cdlSaturation": 1.0,
+                    "cdlSlope": {
+                        "b": 1.0,
+                        "g": 1.0,
+                        "r": 1.0
+                    }
+                },
+                "lookApplied": false,
+                "lookInfo": {
+                    "lookFilename": "ARRI 709",
+                    "lookModified": false
+                },
+                "lut3D": [
+                    {
+                        "lut3DData": "AAAA[...]////",
+                        "lut3DID": "arrimxf_llk_3d_lut_rec709",
+                        "lut3DMeshPoints": 33,
+                        "lut3DNormalization": {
+                            "gain": 1.0033576488494873,
+                            "offset": -5.4039061069488525e-05
+                        },
+                        "lut3DScalingFactor": 65535,
+                        "lut3DSourceColorSpace": {
+                            "primaries": "AWG3",
+                            "transferCurve": "LogC3",
+                            "whitePoint": "D65"
+                        },
+                        "lut3DTargetColorSpace": {
+                            "primaries": "Rec.709",
+                            "transferCurve": "BT.1886",
+                            "whitePoint": "D65"
+                        }
+                    },
+                    {
+                        "lut3DData": "AAAA[...]////",
+                        "lut3DID": "arrimxf_llk_3d_lut_with_cdl_rec709",
+                        "lut3DMeshPoints": 33,
+                        "lut3DNormalization": {
+                            "gain": 1.0033576488494873,
+                            "offset": -5.4039061069488525e-05
+                        },
+                        "lut3DScalingFactor": 65535,
+                        "lut3DSourceColorSpace": {
+                            "primaries": "AWG3",
+                            "transferCurve": "LogC3",
+                            "whitePoint": "D65"
+                        },
+                        "lut3DTargetColorSpace": {
+                            "primaries": "Rec.709",
+                            "transferCurve": "BT.1886",
+                            "whitePoint": "D65"
+                        }
+                    }
+                ],
+                "sceneColorEncoding": {
+                    "sceneColorEncodingPrimaries": "AWG3",
+                    "sceneColorEncodingTransferCurve": "LogC3",
+                    "sceneColorEncodingWhitePoint": "D65"
+                }
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/processing/color/v1-0-1"
+        },
+        {
+            "metadataSetName": "Processing",
+            "metadataSetPayload": {
+                "imageProcessingModel": "ImageProcessingGen2"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/processing/v1-2-0"
+        },
+        {
+            "metadataSetName": "Texture",
+            "metadataSetPayload": {
+                "temporalProcessingApplied": false,
+                "textureApplied": false,
+                "textureGen1": {
+                    "textureGen1NoiseReduction": {
+                        "noiseReductionMode": "off",
+                        "noiseReductionStrength": 2.5
+                    },
+                    "textureGen1Sharpening": {
+                        "textureGen1Detail": 0.0,
+                        "textureGen1Sharpness": 0.0
+                    }
+                }
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/processing/texture/v1-0-0"
+        },
+        {
+            "metadataSetName": "White Balance",
+            "metadataSetPayload": {
+                "colorimetricDataSetIdentifier": "A2X-FSND",
+                "whiteBalanceApplied": false
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/processing/white_balance_static/v1-1-1"
+        },
+        {
+            "metadataSetName": "Audio",
+            "metadataSetPayload": {
+                "audioBitDepth": 24,
+                "audioChannels": 5,
+                "audioCodec": "AES3",
+                "audioSampleRate": 48000
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/audio/v1-0-0"
+        },
+        {
+            "metadataSetName": "MXF Generic Data",
+            "metadataSetPayload": {
+                "nativeIdentificationList": [
+                    {
+                        "applicationVersion": "7.6.2.0.1",
+                        "companyName": "X2X Limited",
+                        "modificationDate": "2026-10-28T12:25:34.000Z",
+                        "productName": "Codex Device Manager",
+                        "productUid": "f131c255.0c0b5415.97944e0c.fd900074",
+                        "thisGenerationUid": "01a18279.0e307fff.a00abaaf.05b99bc2",
+                        "toolkitVersion": "1.6.12.0.1",
+                        "versionString": "7.6.2+06653"
+                    },
+                    {
+                        "companyName": "ARRI",
+                        "modificationDate": "2026-10-28T12:25:34.000Z",
+                        "productName": "ALEXA Mini LF",
+                        "productUid": "414c4558.41204d69.6e69204c.46000000",
+                        "thisGenerationUid": "41353838.3430153a.31312d44.3243412d",
+                        "versionString": "SUP 7.03.02"
+                    }
+                ],
+                "nativeLutThreeDList": [
+                    {
+                        "lut3dDataLayout": "060e2b34.0401010d.0e170102.05010000",
+                        "lutThreeDIdentifier": "arrimxf_llk_3d_lut_rec709"
+                    },
+                    {
+                        "lut3dDataLayout": "060e2b34.0401010d.0e170102.05010000",
+                        "lutThreeDIdentifier": "arrimxf_llk_3d_lut_with_cdl_rec709"
+                    }
+                ],
+                "nativePictureEssenceDescriptor": {
+                    "componentDepth": 12,
+                    "file": {
+                        "descriptorUl": "ARRIRAW Picture Essence Descriptor",
+                        "essenceContainer": "ARRIRAW HDE Picture Essence Container",
+                        "linkedTrackId": 2,
+                        "sampleRate": "25/1"
+                    },
+                    "imageStartOffset": 40,
+                    "type": "arriraw",
+                    "videoLineMap": [
+                        0,
+                        0
+                    ]
+                },
+                "nativePictureEssenceProcessingSubdescriptor": {
+                    "subdescriptorUl": "ARRIRAW Picture Essence Processing SubDescriptor"
+                },
+                "nativeSoundEssenceDescriptorList": [
+                    {
+                        "audioRefLevel": 0,
+                        "averageBytesPerSecond": 144000,
+                        "blockAlign": 3,
+                        "channelStatusMode": 1,
+                        "file": {
+                            "descriptorUl": "AES3 Sound Essence Descriptor",
+                            "essenceContainer": "SMPTE AES Audio Stream (Frame Wrapped) Track",
+                            "linkedTrackId": 0,
+                            "sampleRate": "48000/1"
+                        },
+                        "fixedChannelStatusData": "85 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                        "lockedUnlocked": 1
+                    },
+                    {
+                        "audioRefLevel": 0,
+                        "averageBytesPerSecond": 144000,
+                        "blockAlign": 3,
+                        "channelStatusMode": 1,
+                        "file": {
+                            "descriptorUl": "AES3 Sound Essence Descriptor",
+                            "essenceContainer": "SMPTE AES Audio Stream (Frame Wrapped) Track",
+                            "linkedTrackId": 0,
+                            "sampleRate": "48000/1"
+                        },
+                        "fixedChannelStatusData": "85 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                        "lockedUnlocked": 1
+                    },
+                    {
+                        "audioRefLevel": 0,
+                        "averageBytesPerSecond": 144000,
+                        "blockAlign": 3,
+                        "channelStatusMode": 1,
+                        "file": {
+                            "descriptorUl": "AES3 Sound Essence Descriptor",
+                            "essenceContainer": "SMPTE AES Audio Stream (Frame Wrapped) Track",
+                            "linkedTrackId": 0,
+                            "sampleRate": "48000/1"
+                        },
+                        "fixedChannelStatusData": "85 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                        "lockedUnlocked": 1
+                    },
+                    {
+                        "audioRefLevel": 0,
+                        "averageBytesPerSecond": 144000,
+                        "blockAlign": 3,
+                        "channelStatusMode": 1,
+                        "file": {
+                            "descriptorUl": "AES3 Sound Essence Descriptor",
+                            "essenceContainer": "SMPTE AES Audio Stream (Frame Wrapped) Track",
+                            "linkedTrackId": 0,
+                            "sampleRate": "48000/1"
+                        },
+                        "fixedChannelStatusData": "85 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                        "lockedUnlocked": 1
+                    },
+                    {
+                        "audioRefLevel": 0,
+                        "averageBytesPerSecond": 144000,
+                        "blockAlign": 3,
+                        "channelStatusMode": 1,
+                        "file": {
+                            "descriptorUl": "AES3 Sound Essence Descriptor",
+                            "essenceContainer": "SMPTE AES Audio Stream (Frame Wrapped) Track",
+                            "linkedTrackId": 0,
+                            "sampleRate": "48000/1"
+                        },
+                        "fixedChannelStatusData": "85 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+                        "lockedUnlocked": 1
+                    }
+                ],
+                "nativeTimecodeDescriptor": {
+                    "roundedTimecodeBase": 25
+                }
+            },
+            "metadataSetSchemaUri": ""
+        }
+    ],
+    "descriptiveMetadataSets": [
+        {
+            "metadataSetName": "Camera Device",
+            "metadataSetPayload": {
+                "cameraModel": "ARRI ALEXA Mini LF",
+                "cameraSerialNumber": "30711",
+                "cameraSoftwarePackageName": "7.03.02"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/camera_device/v1-0-0"
+        },
+        {
+            "metadataSetName": "Lens Device",
+            "metadataSetPayload": {
+                "lensLimitsFocusMetric": {
+                    "max": 65535,
+                    "min": 65535
+                },
+                "lensModel": " Optimo 15-40mm 1592038",
+                "lensSerialNumber": "1592038",
+                "lensSqueezeFactor": "1/1"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/lens_device/v1-0-1"
+        },
+        {
+            "metadataSetName": "Recording Medium",
+            "metadataSetPayload": {
+                "mediumManufacturer": "X2X Ltd.",
+                "mediumSerialNumber": "10211140",
+                "mediumType": "Codex Compact Drive"
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/recording_medium/v1-0-0"
+        },
+        {
+            "metadataSetName": "Slate Info",
+            "metadataSetPayload": {
+                "cameraIndex": "A",
+                "circleTake": false,
+                "clipName": "A903C002_261028_RNP3",
+                "clipNumber": 0,
+                "reelName": "A903RNP3",
+                "reelNumber": 0,
+                "shootingDay": 0
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/slate_info/v1-1-0"
+        },
+        {
+            "metadataSetName": "Frame Line",
+            "metadataSetPayload": {
+                "framelineFilename": "None",
+                "framelineRect": []
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/monitoring/frameline/v1-0-0"
+        },
+        {
+            "metadataSetName": "ARRI Video Parameters Gen2",
+            "metadataSetPayload": {
+                "blackGamma": 0.5,
+                "gamma": 1.0,
+                "knee": 0.5,
+                "saturation": 1.0,
+                "saturationByHue": {
+                    "blue": 1.0,
+                    "cyan": 1.0,
+                    "green": 1.0,
+                    "magenta": 1.0,
+                    "red": 1.0,
+                    "yellow": 1.0
+                },
+                "videoGamma": {
+                    "b": 1.0,
+                    "g": 1.0,
+                    "r": 1.0
+                },
+                "videoPedestal": {
+                    "b": 0.0,
+                    "g": 0.0,
+                    "r": 0.0
+                },
+                "videoSlope": {
+                    "b": 1.0,
+                    "g": 1.0,
+                    "r": 1.0
+                }
+            },
+            "metadataSetSchemaUri": "https://www.arri.com/schema/json/camera/processing/arri2_video_params/v1-0-0"
+        }
+    ],
+    "frameBasedMetadata": {
+        "frames": [
+            {
+                "frameBasedMetadataSets": {
+                    "Checksum Dynamic": {
+                        "checksumValue": "9QTr9g==",
+                        "secondaryChecksumValue": "hTustQ=="
+                    },
+                    "Filter": {
+                        "ndFilterDensity": 0.0,
+                        "ndFilterIndex": 0
+                    },
+                    "Lens State": {
+                        "lensEffectiveFocalLength": -1,
+                        "lensEntrancePupilOffset": -1,
+                        "lensFocalLength": 40000,
+                        "lensFocusDistanceMetric": 1072,
+                        "lensIris": 7110,
+                        "lensScaleRawEncoderValueFL": 0,
+                        "lensScaleRawEncoderValueFocus": 0,
+                        "lensScaleRawEncoderValueIris": 0
+                    },
+                    "Positional": {},
+                    "Sensor State": {
+                        "averagedFrames": 0,
+                        "exposureIndex": 800,
+                        "exposureTime": "1/50",
+                        "sensorSampleRate": "25/1"
+                    },
+                    "White Balance": {
+                        "colorTemperature": 5600,
+                        "whiteBalanceTint": 0.0
+                    }
+                },
+                "frameNo": 0,
+                "timecode": "11:25:11:19"
+            }
+        ],
+        "schemaUris": {
+            "Checksum Dynamic": "https://www.arri.com/schema/json/camera/recording_checksum_dynamic/v1-0-0",
+            "Filter": "https://www.arri.com/schema/json/camera/filter/v1-2-0",
+            "Lens State": "https://www.arri.com/schema/json/camera/lens_state/v1-0-1",
+            "Positional": "https://www.arri.com/schema/json/camera/positional/v1-0-0",
+            "Sensor State": "https://www.arri.com/schema/json/camera/sensor_state_dynamic/v1-0-0",
+            "White Balance": "https://www.arri.com/schema/json/camera/processing/white_balance_dynamic/v1-1-1"
+        }
+    }
+}
