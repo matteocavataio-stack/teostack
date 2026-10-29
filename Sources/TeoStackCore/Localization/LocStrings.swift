@@ -310,15 +310,21 @@ enum LocStrings {
         ("ATTENZIONE: {0} MISMATCH, {1} ERRORI, {2} destinazioni interrotte. I file non OK non vanno considerati copiati.", "WARNING: {0} MISMATCH, {1} ERRORS, {2} destinations interrupted. Files that are not OK must not be considered copied.", "ATENCIÓN: {0} MISMATCH, {1} ERRORES, {2} destinos interrumpidos. Los archivos que no estén OK no deben considerarse copiados.", "ATENCIÓ: {0} MISMATCH, {1} ERRORS, {2} destinacions interrompudes. Els fitxers que no estiguin OK no s'han de considerar copiats."),
         ("Certificato ASC MHL scritto su {0} destinazione/i (cartella «ascmhl»).", "ASC MHL certificate written on {0} destination(s) («ascmhl» folder).", "Certificado ASC MHL escrito en {0} destino(s) (carpeta «ascmhl»).", "Certificat ASC MHL escrit a {0} destinació/ons (carpeta «ascmhl»)."),
         ("Certificato ASC MHL NON creato su {0} destinazione/i: {1}", "ASC MHL certificate NOT created on {0} destination(s): {1}", "Certificado ASC MHL NO creado en {0} destino(s): {1}", "Certificat ASC MHL NO creat a {0} destinació/ons: {1}"),
+        ("Salva il manuale utente (PDF, in italiano).", "Save the user manual (PDF, in Italian).", "Guardar el manual de usuario (PDF, en italiano).", "Desa el manual d'usuari (PDF, en italià)."),
+        ("Impossibile creare il manuale: {0}", "Cannot create the manual: {0}", "No se puede crear el manual: {0}", "No es pot crear el manual: {0}"),
+        ("Apri il manuale (PDF)", "Open the manual (PDF)", "Abrir el manual (PDF)", "Obre el manual (PDF)"),
+        ("Salva il manuale come…", "Save the manual as…", "Guardar el manual como…", "Desa el manual com a…"),
+        ("Aiuto", "Help", "Ayuda", "Ajuda"),
+        ("Apre il manuale utente in PDF (in italiano).", "Opens the user manual as a PDF (in Italian).", "Abre el manual de usuario en PDF (en italiano).", "Obre el manual d'usuari en PDF (en italià)."),
+    ]
+
+    private static let part5: [Entry] = [
         ("Lingua dell'interfaccia", "Interface language", "Idioma de la interfaz", "Idioma de la interfície"),
         ("Seleziona la scheda (sorgente)", "Select the card (source)", "Selecciona la tarjeta (origen)", "Selecciona la targeta (origen)"),
         ("Impossibile leggere la sorgente: {0}", "Unable to read the source: {0}", "No se puede leer el origen: {0}", "No es pot llegir l'origen: {0}"),
         ("Seleziona la cartella di destinazione", "Select the destination folder", "Selecciona la carpeta de destino", "Selecciona la carpeta de destinació"),
         ("Ci sono già {0} destinazioni (il massimo): rimuovine una prima.", "There are already {0} destinations (the maximum): remove one first.", "Ya hay {0} destinos (el máximo): quita uno antes.", "Ja hi ha {0} destinacions (el màxim): treu-ne una abans."),
         ("Bin non trovato dopo la creazione.", "Bin not found after creation.", "Bin no encontrado tras la creación.", "Bin no trobat després de la creació."),
-    ]
-
-    private static let part5: [Entry] = [
         ("Impossibile creare il bin «{0}»: {1}", "Unable to create bin “{0}”: {1}", "No se puede crear el bin «{0}»: {1}", "No es pot crear el bin «{0}»: {1}"),
         ("La sorgente «{0}» non è montata: inserire la scheda e riprovare.", "The source “{0}” is not mounted: insert the card and try again.", "El origen «{0}» no está montado: inserta la tarjeta e inténtalo de nuevo.", "L'origen «{0}» no està muntat: insereix la targeta i torna-ho a provar."),
         ("Il bin di questo offload è stato eliminato dal progetto: non posso riprenderlo registrandolo. Crea un nuovo bin e rilancia l'offload (i file già copiati e identici vengono solo verificati, mai riscritti).", "The bin of this offload has been deleted from the project: I cannot resume it and record it. Create a new bin and start the offload again (files already copied and identical are only verified, never rewritten).", "El bin de este offload se ha eliminado del proyecto: no puedo reanudarlo registrándolo. Crea un bin nuevo y lanza el offload otra vez (los archivos ya copiados e idénticos solo se verifican, nunca se reescriben).", "El bin d'aquest offload s'ha eliminat del projecte: no el puc reprendre registrant-lo. Crea un bin nou i torna a llançar l'offload (els fitxers ja copiats i idèntics només es verifiquen, mai es reescriuen)."),
@@ -373,15 +379,15 @@ enum LocStrings {
         ("clip", "clips", "clips", "clips"),
         ("Mostra anche i file non video (XML, sidecar…)", "Also show non-video files (XML, sidecars…)", "Mostrar también los archivos que no son vídeo (XML, sidecars…)", "Mostra també els fitxers que no són vídeo (XML, sidecars…)"),
         ("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).", "Creates the first-frame thumbnail of the clips that do not have one (from the verified copy on the destination disk).", "Crea la miniatura del primer fotograma de los clips que no la tienen (a partir de la copia verificada en el disco de destino).", "Crea la miniatura del primer fotograma dels clips que no en tenen (a partir de la còpia verificada al disc de destinació)."),
+    ]
+
+    private static let part6: [Entry] = [
         ("Leggi metadata", "Read metadata", "Leer metadatos", "Llegeix metadades"),
         ("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).", "Re-reads the metadata of the clips shown with ExifTool and art-cmd (from the verified copy on the destination disk).", "Vuelve a leer los metadatos de los clips mostrados con ExifTool y art-cmd (a partir de la copia verificada en el disco de destino).", "Torna a llegir les metadades dels clips mostrats amb ExifTool i art-cmd (a partir de la còpia verificada al disc de destinació)."),
         ("Importa log…", "Import log…", "Importar registro…", "Importa registre…"),
         ("Importa un log esterno (ALE, CSV, XML) con scena, take, tape e note, e lo abbina ai clip mostrati.", "Imports an external log (ALE, CSV, XML) with scene, take, tape and notes, and matches it to the clips shown.", "Importa un registro externo (ALE, CSV, XML) con escena, toma, cinta y notas, y lo asocia a los clips mostrados.", "Importa un registre extern (ALE, CSV, XML) amb escena, presa, cinta i notes, i l'associa als clips mostrats."),
         ("Esporta metadata", "Export metadata", "Exportar metadatos", "Exporta metadades"),
         ("Salva i metadata dei clip mostrati in JSON, CSV o ALE (Avid). Ogni riga include l'XXH64 del file.", "Saves the metadata of the clips shown as JSON, CSV or ALE (Avid). Every row includes the file XXH64.", "Guarda los metadatos de los clips mostrados en JSON, CSV o ALE (Avid). Cada fila incluye el XXH64 del archivo.", "Desa les metadades dels clips mostrats en JSON, CSV o ALE (Avid). Cada fila inclou l'XXH64 del fitxer."),
-    ]
-
-    private static let part6: [Entry] = [
         ("Colonne", "Columns", "Columnas", "Columnes"),
         ("Ripristina ordine e larghezze", "Restore order and widths", "Restablecer orden y anchuras", "Restableix l'ordre i les amplades"),
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
@@ -436,18 +442,19 @@ enum LocStrings {
         ("Profilo «{0}» salvato.", "Profile “{0}” saved.", "Perfil «{0}» guardado.", "Perfil «{0}» desat."),
         ("Profilo «{0}» aggiornato.", "Profile “{0}” updated.", "Perfil «{0}» actualizado.", "Perfil «{0}» actualitzat."),
         ("Salva i profili in un file, per usarli su un altro Mac.", "Save the profiles to a file, to use them on another Mac.", "Guarda los perfiles en un archivo para usarlos en otro Mac.", "Desa els perfils en un fitxer, per fer-los servir en un altre Mac."),
+    ]
+
+    private static let part7: [Entry] = [
         ("Profili salvati in {0}", "Profiles saved to {0}", "Perfiles guardados en {0}", "Perfils desats a {0}"),
         ("Scegli un file di profili esportato da TeoStackPro.", "Choose a profiles file exported by TeoStackPro.", "Elige un archivo de perfiles exportado por TeoStackPro.", "Tria un fitxer de perfils exportat per TeoStackPro."),
         ("Importati {0} profili.", "Imported {0} profiles.", "Importados {0} perfiles.", "Importats {0} perfils."),
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),
         ("Salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
-    ]
-
-    private static let part7: [Entry] = [
         ("Errori: {0}", "Errors: {0}", "Errores: {0}", "Errors: {0}"),
         ("salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
         ("Impostazioni…", "Settings…", "Ajustes…", "Configuració…"),
+        ("Manuale di TeoStackPro", "TeoStackPro manual", "Manual de TeoStackPro", "Manual de TeoStackPro"),
         ("Report", "Report", "Informe", "Informe"),
         ("Esporta report…", "Export report…", "Exportar informe…", "Exporta l'informe…"),
         ("Giorno", "Day", "Día", "Dia"),

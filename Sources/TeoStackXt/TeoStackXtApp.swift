@@ -26,6 +26,11 @@ struct TeoStackXtApp: App {
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }
+            CommandGroup(replacing: .help) {
+                Button(tr("Manuale di TeoStackPro")) { HelpActions.openManual() }
+                    .keyboardShortcut("?", modifiers: .command)
+                Button(tr("Salva il manuale come…")) { HelpActions.saveManual() }
+            }
             CommandMenu(tr("Report")) {
                 Button(tr("Esporta report…")) {
                     NotificationCenter.default.post(name: .exportReport, object: nil)

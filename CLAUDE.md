@@ -44,6 +44,8 @@ Il software si chiama ora **TeoStackPro** (nome visibile: finestra, .app, instal
   Validato contro lo strumento ufficiale `ascmhl` 1.2 (stessi hash, XSD, `verify`). Opzione `Configuration.ascMHL` (casella «Crea certificato ASC MHL», di serie attiva, autore = operatore dei report), fase `OffloadPhase.certifying`, esito `OffloadResult.mhl`.
 - Profili di esportazione report (`Reports/ReportPreset.swift`, `ReportPresetStore` su UserDefaults): nome + report + colonne + operatore, richiamabili dalla finestra «Esporta report» (si riparte dall'ultimo usato; «modificato» se le scelte cambiano; salva come, aggiorna, rinomina, elimina, esporta/importa JSON tra Mac, mai sovrascrive per nome).
   Le colonne dei report sono ora indipendenti da quelle del tab Clip (`reportColumns`; prima volta copiate da `clipColumns`).
+- Aiuto: manuale utente PDF creato dall'app (`Help/ManualPDF.swift` layout A4 con copertina, indice con pagine, titoli, tabelle; `Help/ManualContent.swift` testo italiano). Menu Aiuto > «Manuale di TeoStackPro» (⌘?), pulsante «Aiuto» in basso a sinistra (`HelpActions`).
+  Quando si aggiunge o cambia una funzione, aggiornare `ManualContent` (il test `ManualTests` controlla che i termini chiave siano documentati). Per vederlo: `TEOSTACK_MANUAL_OUT=/percorso.pdf TEOSTACK_MANUAL_VERSION=x.y.z swift test --filter testWriteManualForInspection`.
 - Installer (`packaging/`): app universale Intel+ARM, icona dal logo, ExifTool/ffmpeg/ffprobe inclusi (`fetch-tools.sh`, con cache e ripiego GitHub se evermeet.cx dà 429), `.pkg` (scarica art-cmd da ARRI) e `.dmg`. Firma ad-hoc: al primo avvio clic destro → Apri.
 
 ## Lingue (Italiano / English / Castellano / Català)

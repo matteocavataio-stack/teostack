@@ -250,6 +250,7 @@ struct SidebarView: View {
                     Label(tr("Impostazioni"), systemImage: "gearshape")
                 }
                 .help(tr("Cambia i colori dello sfondo e delle scritte, il carattere e la dimensione."))
+                HelpMenu()
             }
             .padding(8)
         }
