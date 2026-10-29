@@ -40,6 +40,8 @@
 - ASC MHL 2.0 (`MHL/`): a offload riuscito, su ogni destinazione i cui file sono TUTTI verificati OK, `ASCMHLWriter` scrive `<copia>/ascmhl/NNNN_<bin>_<data>Z.mhl` + `ascmhl_chain.xml` (processo «transfer», XXH64, hash di cartelle content/structure, C4 della catena in `C4ID.swift`).
   Usa gli hash già verificati dal motore; i file già presenti nella cartella ma non dell'offload vengono riletti; generazioni successive segnano «verified»/«failed»/«original». Mai su annullamento; mai se un file non è OK.
   Validato contro lo strumento ufficiale `ascmhl` 1.2 (stessi hash, XSD, `verify`). Opzione `Configuration.ascMHL` (casella «Crea certificato ASC MHL», di serie attiva, autore = operatore dei report), fase `OffloadPhase.certifying`, esito `OffloadResult.mhl`.
+- Profili di esportazione report (`Reports/ReportPreset.swift`, `ReportPresetStore` su UserDefaults): nome + report + colonne + operatore, richiamabili dalla finestra «Esporta report» (si riparte dall'ultimo usato; «modificato» se le scelte cambiano; salva come, aggiorna, rinomina, elimina, esporta/importa JSON tra Mac, mai sovrascrive per nome).
+  Le colonne dei report sono ora indipendenti da quelle del tab Clip (`reportColumns`; prima volta copiate da `clipColumns`).
 - Installer (`packaging/`): app universale Intel+ARM, icona dal logo, ExifTool/ffmpeg/ffprobe inclusi (`fetch-tools.sh`, con cache e ripiego GitHub se evermeet.cx dà 429), `.pkg` (scarica art-cmd da ARRI) e `.dmg`. Firma ad-hoc: al primo avvio clic destro → Apri.
 
 ## Lingue (Italiano / English / Castellano / Català)

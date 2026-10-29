@@ -141,6 +141,10 @@ enum LocStrings {
         ("Clip non trovata.", "Clip not found.", "Clip no encontrado.", "Clip no trobat."),
         ("I file si importano dentro un bin.", "Files are imported into a bin.", "Los archivos se importan dentro de un bin.", "Els fitxers s'importen dins d'un bin."),
         ("Elemento del progetto non trovato.", "Project item not found.", "Elemento del proyecto no encontrado.", "Element del projecte no trobat."),
+        ("Il nome del profilo non può essere vuoto né più lungo di {0} caratteri.", "The profile name cannot be empty or longer than {0} characters.", "El nombre del perfil no puede estar vacío ni tener más de {0} caracteres.", "El nom del perfil no pot ser buit ni tenir més de {0} caràcters."),
+        ("Esiste già un profilo chiamato «{0}».", "A profile called “{0}” already exists.", "Ya existe un perfil llamado «{0}».", "Ja existeix un perfil anomenat «{0}»."),
+        ("Profilo non trovato.", "Profile not found.", "Perfil no encontrado.", "Perfil no trobat."),
+        ("Il file non contiene profili validi.", "The file contains no valid profiles.", "El archivo no contiene perfiles válidos.", "El fitxer no conté perfils vàlids."),
         ("ffmpeg non trovato in «{0}».", "ffmpeg not found in “{0}”.", "ffmpeg no encontrado en «{0}».", "ffmpeg no trobat a «{0}»."),
         ("Impossibile avviare ffmpeg: {0}", "Unable to start ffmpeg: {0}", "No se puede iniciar ffmpeg: {0}", "No es pot iniciar ffmpeg: {0}"),
         ("ffmpeg non ha risposto entro {0} secondi.", "ffmpeg did not respond within {0} seconds.", "ffmpeg no respondió en {0} segundos.", "ffmpeg no ha respost en {0} segons."),
@@ -186,13 +190,13 @@ enum LocStrings {
         ("Anteprime: {0}", "Thumbnails: {0}", "Miniaturas: {0}", "Miniatures: {0}"),
         ("Anteprime non create: {0}", "Thumbnails not created: {0}", "Miniaturas sin crear: {0}", "Miniatures sense crear: {0}"),
         ("Database dei progetti non disponibile.", "Projects database not available.", "Base de datos de proyectos no disponible.", "Base de dades de projectes no disponible."),
+    ]
+
+    private static let part3: [Entry] = [
         ("Impostazioni", "Settings", "Ajustes", "Configuració"),
         ("Aspetto", "Appearance", "Apariencia", "Aparença"),
         ("Modelli pronti", "Ready-made themes", "Temas predefinidos", "Temes predefinits"),
         ("Scegli…", "Choose…", "Elegir…", "Tria…"),
-    ]
-
-    private static let part3: [Entry] = [
         ("Colore dello sfondo", "Background colour", "Color de fondo", "Color de fons"),
         ("Predefinito", "Default", "Predeterminado", "Predeterminat"),
         ("Colore delle scritte", "Text colour", "Color del texto", "Color del text"),
@@ -249,13 +253,13 @@ enum LocStrings {
         ("{0} file importati senza copia: non sono verificati (riga «0» dei backup).", "{0} files imported without a copy: they are not verified (“0” row of the backups).", "{0} archivos importados sin copia: no están verificados (fila «0» de las copias).", "{0} fitxers importats sense còpia: no estan verificats (fila «0» de les còpies)."),
         ("{0} offload annullati o interrotti non sono contati come schede scaricate.", "{0} cancelled or interrupted offloads are not counted as cards offloaded.", "{0} offloads cancelados o interrumpidos no se cuentan como tarjetas descargadas.", "{0} offloads cancel·lats o interromputs no es compten com a targetes descarregades."),
         ("Sorgente", "Source", "Origen", "Origen"),
+    ]
+
+    private static let part4: [Entry] = [
         ("Schede collegate", "Connected cards", "Tarjetas conectadas", "Targetes connectades"),
         ("Nessuna scheda o disco esterno collegato", "No card or external disk connected", "Ninguna tarjeta o disco externo conectado", "Cap targeta o disc extern connectat"),
         ("Scegli sorgente…", "Choose source…", "Elegir origen…", "Tria l'origen…"),
         ("Nome bin:", "Bin name:", "Nombre del bin:", "Nom del bin:"),
-    ]
-
-    private static let part4: [Entry] = [
         ("Nome del bin", "Bin name", "Nombre del bin", "Nom del bin"),
         ("proposto dalla sorgente: puoi cambiarlo prima di avviare", "suggested from the source: you can change it before starting", "propuesto a partir del origen: puedes cambiarlo antes de iniciar", "proposat a partir de l'origen: el pots canviar abans d'iniciar"),
         ("Trascina qui la scheda (o la cartella sorgente)", "Drag the card (or the source folder) here", "Arrastra aquí la tarjeta (o la carpeta de origen)", "Arrossega aquí la targeta (o la carpeta d'origen)"),
@@ -312,13 +316,13 @@ enum LocStrings {
         ("Seleziona la cartella di destinazione", "Select the destination folder", "Selecciona la carpeta de destino", "Selecciona la carpeta de destinació"),
         ("Ci sono già {0} destinazioni (il massimo): rimuovine una prima.", "There are already {0} destinations (the maximum): remove one first.", "Ya hay {0} destinos (el máximo): quita uno antes.", "Ja hi ha {0} destinacions (el màxim): treu-ne una abans."),
         ("Bin non trovato dopo la creazione.", "Bin not found after creation.", "Bin no encontrado tras la creación.", "Bin no trobat després de la creació."),
+    ]
+
+    private static let part5: [Entry] = [
         ("Impossibile creare il bin «{0}»: {1}", "Unable to create bin “{0}”: {1}", "No se puede crear el bin «{0}»: {1}", "No es pot crear el bin «{0}»: {1}"),
         ("La sorgente «{0}» non è montata: inserire la scheda e riprovare.", "The source “{0}” is not mounted: insert the card and try again.", "El origen «{0}» no está montado: inserta la tarjeta e inténtalo de nuevo.", "L'origen «{0}» no està muntat: insereix la targeta i torna-ho a provar."),
         ("Il bin di questo offload è stato eliminato dal progetto: non posso riprenderlo registrandolo. Crea un nuovo bin e rilancia l'offload (i file già copiati e identici vengono solo verificati, mai riscritti).", "The bin of this offload has been deleted from the project: I cannot resume it and record it. Create a new bin and start the offload again (files already copied and identical are only verified, never rewritten).", "El bin de este offload se ha eliminado del proyecto: no puedo reanudarlo registrándolo. Crea un bin nuevo y lanza el offload otra vez (los archivos ya copiados e idénticos solo se verifican, nunca se reescriben).", "El bin d'aquest offload s'ha eliminat del projecte: no el puc reprendre registrant-lo. Crea un bin nou i torna a llançar l'offload (els fitxers ja copiats i idèntics només es verifiquen, mai es reescriuen)."),
         ("Database dei progetti non disponibile: offload non avviato.", "Projects database not available: offload not started.", "Base de datos de proyectos no disponible: offload no iniciado.", "Base de dades de projectes no disponible: offload no iniciat."),
-    ]
-
-    private static let part5: [Entry] = [
         ("Impossibile registrare l'offload nel progetto: {0}", "Unable to record the offload in the project: {0}", "No se puede registrar el offload en el proyecto: {0}", "No es pot registrar l'offload al projecte: {0}"),
         ("Offload in corso", "Offload in progress", "Offload en curso", "Offload en curs"),
         ("L'offload è terminato ma non sono riuscito a registrarlo nel progetto: {0}", "The offload has finished but I could not record it in the project: {0}", "El offload ha terminado pero no he conseguido registrarlo en el proyecto: {0}", "L'offload ha acabat però no he pogut registrar-lo al projecte: {0}"),
@@ -375,13 +379,13 @@ enum LocStrings {
         ("Importa un log esterno (ALE, CSV, XML) con scena, take, tape e note, e lo abbina ai clip mostrati.", "Imports an external log (ALE, CSV, XML) with scene, take, tape and notes, and matches it to the clips shown.", "Importa un registro externo (ALE, CSV, XML) con escena, toma, cinta y notas, y lo asocia a los clips mostrados.", "Importa un registre extern (ALE, CSV, XML) amb escena, presa, cinta i notes, i l'associa als clips mostrats."),
         ("Esporta metadata", "Export metadata", "Exportar metadatos", "Exporta metadades"),
         ("Salva i metadata dei clip mostrati in JSON, CSV o ALE (Avid). Ogni riga include l'XXH64 del file.", "Saves the metadata of the clips shown as JSON, CSV or ALE (Avid). Every row includes the file XXH64.", "Guarda los metadatos de los clips mostrados en JSON, CSV o ALE (Avid). Cada fila incluye el XXH64 del archivo.", "Desa les metadades dels clips mostrats en JSON, CSV o ALE (Avid). Cada fila inclou l'XXH64 del fitxer."),
+    ]
+
+    private static let part6: [Entry] = [
         ("Colonne", "Columns", "Columnas", "Columnes"),
         ("Ripristina ordine e larghezze", "Restore order and widths", "Restablecer orden y anchuras", "Restableix l'ordre i les amplades"),
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
         ("Metadata camera (N/D se non letti)", "Camera metadata (N/A if not read)", "Metadatos de la cámara (N/D si no se leen)", "Metadades de la càmera (N/D si no es llegeixen)"),
-    ]
-
-    private static let part6: [Entry] = [
         ("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.", "ExifTool provides camera, firmware, resolution, duration, file FPS, timecode and shooting date of ARRI clips. art-cmd (ARRI Reference Tool) provides ISO, WB, lens, ND, look, sensor FPS, scene/take/reel, serial: these are the values of the first frame of the clip. For MPG, WAV/BWF, LRF, MP4, ProRes and the other formats ffprobe reads codec, resolution, FPS, duration, audio, and timecode/date/camera only if written in the file. The thumbnail is the first frame (ARRI: art-cmd with embedded look; other videos: ffmpeg). If a value cannot be read it shows N/A.", "ExifTool da cámara, firmware, resolución, duración, FPS del archivo, timecode y fecha de rodaje de los clips ARRI. art-cmd (ARRI Reference Tool) da ISO, WB, objetivo, ND, look, sensor FPS, escena/toma/reel y serial: son los valores del primer fotograma del clip. Para MPG, WAV/BWF, LRF, MP4, ProRes y el resto de formatos lee ffprobe: códec, resolución, FPS, duración, audio, y timecode/fecha/cámara solo si están escritos en el archivo. La miniatura es el primer fotograma (ARRI: art-cmd con el look incorporado; otros vídeos: ffmpeg). Si un valor no se puede leer muestra N/D.", "ExifTool dona càmera, firmware, resolució, durada, FPS del fitxer, timecode i data de rodatge dels clips ARRI. art-cmd (ARRI Reference Tool) dona ISO, WB, objectiu, ND, look, sensor FPS, escena/presa/reel i serial: són els valors del primer fotograma del clip. Per a MPG, WAV/BWF, LRF, MP4, ProRes i la resta de formats llegeix ffprobe: còdec, resolució, FPS, durada, àudio, i timecode/data/càmera només si estan escrits al fitxer. La miniatura és el primer fotograma (ARRI: art-cmd amb el look incorporat; altres vídeos: ffmpeg). Si un valor no es pot llegir mostra N/D."),
         ("Nessuna clip: esegui un offload in un bin di questo progetto.", "No clips: run an offload into a bin of this project.", "Ningún clip: haz un offload en un bin de este proyecto.", "Cap clip: fes un offload en un bin d'aquest projecte."),
         ("Sposta a sinistra", "Move left", "Mover a la izquierda", "Mou a l'esquerra"),
@@ -409,13 +413,38 @@ enum LocStrings {
         ("Nome progetto", "Project name", "Nombre del proyecto", "Nom del projecte"),
         ("Operatore", "Operator", "Operador", "Operador"),
         ("Report da creare (un PDF per ciascuno)", "Reports to create (one PDF each)", "Informes que crear (un PDF por cada uno)", "Informes a crear (un PDF per cadascun)"),
-        ("Colonne dei report Clips e Thumbnail (stesse del tab Clip)", "Columns of the Clips and Thumbnail reports (same as the Clips tab)", "Columnas de los informes Clips y Thumbnail (las mismas de la pestaña Clips)", "Columnes dels informes Clips i Thumbnail (les mateixes de la pestanya Clips)"),
+        ("Colonne dei report Clips e Thumbnail", "Columns of the Clips and Thumbnail reports", "Columnas de los informes Clips y Thumbnail", "Columnes dels informes Clips i Thumbnail"),
         ("«Name» è sempre presente. Shooting Day, Volume e Contact Print hanno un formato fisso. Le anteprime compaiono se sono già state generate (tab Clip).", "“Name” is always present. Shooting Day, Volume and Contact Print have a fixed format. Thumbnails appear if they have already been generated (Clips tab).", "«Name» siempre está presente. Shooting Day, Volume y Contact Print tienen un formato fijo. Las miniaturas aparecen si ya se han generado (pestaña Clips).", "«Name» sempre hi és. Shooting Day, Volume i Contact Print tenen un format fix. Les miniatures apareixen si ja s'han generat (pestanya Clips)."),
         ("Mostra nel Finder", "Show in Finder", "Mostrar en el Finder", "Mostra al Finder"),
         ("Esporta PDF…", "Export PDF…", "Exportar PDF…", "Exporta el PDF…"),
+        ("Rinomina profilo", "Rename profile", "Renombrar perfil", "Canvia el nom del perfil"),
+        ("Nome del profilo", "Profile name", "Nombre del perfil", "Nom del perfil"),
+        ("Salva", "Save", "Guardar", "Desa"),
+        ("Eliminare il profilo «{0}»?", "Delete the profile “{0}”?", "¿Eliminar el perfil «{0}»?", "Eliminar el perfil «{0}»?"),
+        ("Profilo", "Profile", "Perfil", "Perfil"),
+        ("Nessuno (scelte attuali)", "None (current choices)", "Ninguno (selección actual)", "Cap (tria actual)"),
+        ("modificato", "modified", "modificado", "modificat"),
+        ("Salva come…", "Save as…", "Guardar como…", "Desa com a…"),
+        ("Salva le scelte attuali (report, colonne, operatore) come nuovo profilo.", "Saves the current choices (reports, columns, operator) as a new profile.", "Guarda la selección actual (informes, columnas, operador) como un perfil nuevo.", "Desa la tria actual (informes, columnes, operador) com a perfil nou."),
+        ("Aggiorna", "Update", "Actualizar", "Actualitza"),
+        ("Sostituisce le scelte del profilo selezionato con quelle attuali.", "Replaces the choices of the selected profile with the current ones.", "Sustituye la selección del perfil elegido por la actual.", "Substitueix la tria del perfil seleccionat per l'actual."),
+        ("Altro", "More", "Más", "Més"),
+        ("Rinomina…", "Rename…", "Renombrar…", "Canvia el nom…"),
+        ("Elimina profilo…", "Delete profile…", "Eliminar perfil…", "Elimina el perfil…"),
+        ("Esporta profili…", "Export profiles…", "Exportar perfiles…", "Exporta perfils…"),
+        ("Importa profili…", "Import profiles…", "Importar perfiles…", "Importa perfils…"),
+        ("Profilo «{0}» salvato.", "Profile “{0}” saved.", "Perfil «{0}» guardado.", "Perfil «{0}» desat."),
+        ("Profilo «{0}» aggiornato.", "Profile “{0}” updated.", "Perfil «{0}» actualizado.", "Perfil «{0}» actualitzat."),
+        ("Salva i profili in un file, per usarli su un altro Mac.", "Save the profiles to a file, to use them on another Mac.", "Guarda los perfiles en un archivo para usarlos en otro Mac.", "Desa els perfils en un fitxer, per fer-los servir en un altre Mac."),
+        ("Profili salvati in {0}", "Profiles saved to {0}", "Perfiles guardados en {0}", "Perfils desats a {0}"),
+        ("Scegli un file di profili esportato da TeoStackXt.", "Choose a profiles file exported by TeoStackXt.", "Elige un archivo de perfiles exportado por TeoStackXt.", "Tria un fitxer de perfils exportat per TeoStackXt."),
+        ("Importati {0} profili.", "Imported {0} profiles.", "Importados {0} perfiles.", "Importats {0} perfils."),
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),
         ("Salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
+    ]
+
+    private static let part7: [Entry] = [
         ("Errori: {0}", "Errors: {0}", "Errores: {0}", "Errors: {0}"),
         ("salvati {0} report in {1}", "{0} reports saved in {1}", "{0} informes guardados en {1}", "{0} informes desats a {1}"),
         ("Impostazioni…", "Settings…", "Ajustes…", "Configuració…"),
@@ -442,9 +471,6 @@ enum LocStrings {
         ("Look Info", "Look Info", "Info del look", "Info del look"),
         ("Lente", "Lens", "Objetivo", "Objectiu"),
         ("ISO", "ISO", "ISO", "ISO"),
-    ]
-
-    private static let part7: [Entry] = [
         ("WB", "WB", "WB", "WB"),
         ("Timecode", "Timecode", "Timecode", "Timecode"),
         ("Costruttore", "Manufacturer", "Fabricante", "Fabricant"),
