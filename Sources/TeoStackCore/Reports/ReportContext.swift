@@ -17,6 +17,17 @@ public enum ReportKind: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Nome del report nella lingua dell'app (per le caselle e i messaggi; nel PDF il titolo resta in inglese).
+    public var uiTitle: String {
+        switch self {
+        case .shootingDay: return tr("Report giornata di riprese (Shooting Day)")
+        case .clips: return tr("Report clip (Clips)")
+        case .volume: return tr("Report volumi (Volume)")
+        case .thumbnail: return tr("Report miniature (Thumbnail)")
+        case .contactPrint: return tr("Foglio provini (Contact Print)")
+        }
+    }
+
     /// Parte iniziale del nome del file: «Clips_Report-<bin>-2026-10-20-1455.pdf».
     public var filePrefix: String { title.replacingOccurrences(of: " ", with: "_") }
 
@@ -195,7 +206,7 @@ enum ReportFormatting {
     static func volumeName(_ path: String) -> String {
         let parts = path.split(separator: "/").map(String.init)
         if parts.count >= 2, parts[0] == "Volumes" { return parts[1] }
-        return "Disco interno"
+        return "Internal disk"
     }
 
     /// «13:23:05:17» → «13:23:05.17» (come i timecode del formato di riferimento)

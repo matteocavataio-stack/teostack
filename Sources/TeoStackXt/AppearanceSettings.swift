@@ -123,6 +123,7 @@ extension Notification.Name {
 
 struct SettingsSheet: View {
     @ObservedObject private var settings = AppearanceSettings.shared
+    @AppStorage("soundOnFinish") private var soundOnFinish = true
     let onClose: () -> Void
 
     private var backgroundBinding: Binding<Color> {
@@ -148,6 +149,11 @@ struct SettingsSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(tr("Impostazioni")).appFont(.title3, bold: true)
+
+            Text(tr("Generale")).appFont(.headline)
+            Toggle(tr("Suono al termine"), isOn: $soundOnFinish)
+                .toggleStyle(.checkbox)
+                .help(tr("Un suono a fine offload (diverso se ci sono problemi) e il Dock rimbalza se l'app non è in primo piano."))
 
             Text(tr("Aspetto")).appFont(.headline)
             VStack(alignment: .leading, spacing: 10) {

@@ -1,7 +1,26 @@
 import Foundation
 
-/// Testo del manuale utente (italiano). Descrive ciò che l'app fa davvero; ciò che non è stato provato su file reali è dichiarato come tale.
+/// Testo del manuale utente (italiano, lingua di origine; le altre lingue sono in `ManualStrings`). Descrive ciò che l'app fa davvero; ciò che non è stato provato su file reali è dichiarato come tale.
 enum ManualContent {
+    /// Il manuale nella lingua richiesta: ogni testo italiano è sostituito dalla sua traduzione (se manca, resta italiano).
+    static func blocks(for language: AppLanguage) -> [ManualBlock] {
+        guard language != .italian, let table = ManualStrings.tables[language] else { return blocks }
+        func t(_ s: String) -> String { table[s] ?? s }
+        return blocks.map { block in
+            switch block {
+            case .h1(let s): return .h1(t(s))
+            case .h2(let s): return .h2(t(s))
+            case .p(let s): return .p(t(s))
+            case .bullets(let a): return .bullets(a.map(t))
+            case .steps(let a): return .steps(a.map(t))
+            case .note(let s): return .note(t(s))
+            case .warning(let s): return .warning(t(s))
+            case .code(let a): return .code(a.map(t))
+            case .table(let header, let rows, let widths): return .table(header: header.map(t), rows: rows.map { $0.map(t) }, widths: widths)
+            }
+        }
+    }
+
     static let blocks: [ManualBlock] = intro + install + interface + projects + offload + importMedia + clipTab + metadata + reports + settings + shortcuts + files + troubleshooting + limits + glossary
 
     // MARK: 1
@@ -69,7 +88,7 @@ enum ManualContent {
             ["Clip", "Mostra l'elenco dei clip con metadata, anteprime e riepilogo."],
             ["Importa media", "Aggiunge clip al progetto senza copiarli."],
             ["Esporta report", "Apre la finestra per creare i report PDF."],
-            ["Impostazioni", "Colori, carattere e dimensione delle scritte."],
+            ["Impostazioni", "Suono al termine, colori, carattere e dimensione delle scritte."],
         ], widths: [1.4, 4]),
         .p("Il selettore a tendina «Progetto» sceglie il progetto su cui lavori."),
         .h2("Barra laterale"),
@@ -114,13 +133,12 @@ enum ManualContent {
             "**Nome del bin**: è proposto dal nome della sorgente e lo puoi cambiare. Se esiste già un bin con quel nome, l'offload viene aggiunto a quello.",
             "**Destinazioni**: da 1 a 8. **Aggiungi destinazione** e poi **Scegli…** per ognuna. Sotto compare il percorso che verrà creato: la cartella scelta più il nome del bin.",
             "**Percorsi salvati**: il menu salva i percorsi che usi di solito («Salva i percorsi scelti»), li richiama per una destinazione, li applica tutti in una volta («Usa tutti i percorsi salvati») o li toglie.",
-            "**Opzioni** (sotto la barra di avanzamento): vedi sotto.",
+            "**Opzioni** (sotto la barra di avanzamento): vedi sotto. Il suono di fine offload si imposta in Impostazioni.",
             "Premi **Avvia**. Con **Annulla** fermi tutto in qualsiasi momento.",
         ]),
         .h2("Le opzioni"),
         .table(header: ["Opzione", "Significato"], rows: [
             ["Verifica durante la copia", "Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con gli SSD. Con dischi lenti (HDD) toglila: la verifica parte a copia finita."],
-            ["Suono al termine", "Un suono a fine offload (diverso se ci sono problemi) e il Dock rimbalza se l'app non è in primo piano."],
             ["Crea certificato ASC MHL", "Scrive la cartella «ascmhl» nella copia (vedi sotto). Attiva di serie."],
             ["Svuota la sorgente a fine offload", "Quando tutti i file sono OK, la parte «Sorgente» dell'app si svuota da sola, pronta per la scheda successiva. NON cancella nulla dalla scheda. Se ci sono problemi l'elenco resta."],
         ], widths: [1.6, 4]),
@@ -272,8 +290,13 @@ enum ManualContent {
 
     static let settings: [ManualBlock] = [
         .h1("10. Impostazioni e lingua"),
+        .h2("Generale"),
+        .p("Il pulsante **Impostazioni** (anche Comando+virgola, o in basso a sinistra) apre la finestra delle impostazioni. In alto c'è la parte generale:"),
+        .bullets([
+            "**Suono al termine**: un suono a fine offload (diverso se ci sono problemi) e il Dock rimbalza se l'app non è in primo piano. Attivo di serie.",
+        ]),
         .h2("Aspetto"),
-        .p("Il pulsante **Impostazioni** (anche Comando+virgola, o in basso a sinistra) apre la finestra dell'aspetto:"),
+        .p("Sotto, l'aspetto dell'app:"),
         .bullets([
             "**Modelli pronti**: Predefinito del sistema, Chiaro, Scuro, Contrasto alto, Seppia e Notte (rosso, per lavorare al buio sul set).",
             "**Colore dello sfondo** e **colore delle scritte**: con il selettore dei colori. «Predefinito» ripristina quello di sistema.",
@@ -282,7 +305,7 @@ enum ManualContent {
         ]),
         .p("Un'anteprima mostra il risultato. Se sfondo e scritte hanno colori troppo simili compare un avviso. **Ripristina predefiniti** riporta tutto com'era. Con uno sfondo scuro l'app passa da sola alla modalità scura. Tabelle di sistema, testi molto piccoli e finestre a parte (come «Esporta report») possono mantenere i colori di sistema."),
         .h2("Lingua"),
-        .p("Il menu della lingua, in basso a sinistra, cambia l'interfaccia tra **Italiano**, **English**, **Castellano** e **Català**. La scelta si ricorda. I report PDF restano in inglese; questo manuale è in italiano."),
+        .p("Il menu della lingua, in basso a sinistra, cambia l'interfaccia tra **Italiano**, **English**, **Castellano** e **Català**. La scelta si ricorda. I report PDF restano in inglese. Questo manuale (menu Aiuto) segue la lingua scelta: se cambi lingua, riaprilo per averlo nella nuova lingua."),
     ]
 
     // MARK: 11

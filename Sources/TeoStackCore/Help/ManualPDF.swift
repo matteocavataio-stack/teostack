@@ -16,15 +16,50 @@ enum ManualBlock {
 /// Costruisce il manuale utente in PDF (A4) con copertina, indice con numeri di pagina, titoli, elenchi, tabelle e numeri di pagina.
 /// Usa lo scrittore PDF dei report: Helvetica per il testo, DejaVu Sans Mono incorporato per comandi e codice.
 public enum ManualPDF {
-    public static let fileName = "TeoStackPro-Manuale.pdf"
+    public static let fileName = fileName(for: .italian)
 
-    public static func render(version: String = AppInfo.version, date: Date = Date()) -> Data {
-        ManualLayout(blocks: ManualContent.blocks, version: version, date: date).render()
+    /// Nome del file nella lingua del manuale.
+    public static func fileName(for language: AppLanguage) -> String {
+        language == .italian ? "TeoStackPro-Manuale.pdf" : "TeoStackPro-Manual.pdf"
+    }
+
+    /// Il manuale nella lingua dell'app (o in quella indicata).
+    public static func render(language: AppLanguage = Loc.language, version: String = AppInfo.version, date: Date = Date()) -> Data {
+        ManualLayout(blocks: ManualContent.blocks(for: language), labels: ManualLabels(language), version: version, date: date).render()
     }
 
     /// Numero di sezioni e sottosezioni (per i test).
-    static var headingCount: Int {
-        ManualContent.blocks.filter { if case .h1 = $0 { return true }; if case .h2 = $0 { return true }; return false }.count
+    static func headingCount(for language: AppLanguage = .italian) -> Int {
+        ManualContent.blocks(for: language).filter { if case .h1 = $0 { return true }; if case .h2 = $0 { return true }; return false }.count
+    }
+}
+
+/// Testi fissi del manuale (copertina, indice, riquadri, piè di pagina) nelle quattro lingue.
+struct ManualLabels {
+    let title, tagline, version, languages, contents, note, warning, footer: String
+    let locale: Locale
+
+    init(_ language: AppLanguage) {
+        switch language {
+        case .italian:
+            title = "Manuale utente"; tagline = "Copia verificata, metadata e report per il DIT"; version = "Versione"
+            languages = "Per macOS · lingue dell'app: Italiano, English, Castellano, Català"
+            contents = "Indice"; note = "Nota"; warning = "Attenzione"
+        case .english:
+            title = "User manual"; tagline = "Verified copies, metadata and reports for the DIT"; version = "Version"
+            languages = "For macOS · app languages: Italiano, English, Castellano, Català"
+            contents = "Contents"; note = "Note"; warning = "Warning"
+        case .spanish:
+            title = "Manual de usuario"; tagline = "Copia verificada, metadatos e informes para el DIT"; version = "Versión"
+            languages = "Para macOS · idiomas de la app: Italiano, English, Castellano, Català"
+            contents = "Índice"; note = "Nota"; warning = "Atención"
+        case .catalan:
+            title = "Manual d'usuari"; tagline = "Còpia verificada, metadades i informes per al DIT"; version = "Versió"
+            languages = "Per a macOS · idiomes de l'app: Italiano, English, Castellano, Català"
+            contents = "Índex"; note = "Nota"; warning = "Atenció"
+        }
+        footer = "TeoStackPro · \(title)"
+        locale = Locale(identifier: ["it": "it_IT", "en": "en_GB", "es": "es_ES", "ca": "ca_ES"][language.rawValue] ?? "it_IT")
     }
 }
 
@@ -32,6 +67,7 @@ private final class ManualLayout {
     typealias Font = PDFWriter.Font
 
     let blocks: [ManualBlock]
+    let labels: ManualLabels
     let version: String
     let date: Date
 
@@ -48,8 +84,9 @@ private final class ManualLayout {
     var toc: [(level: Int, title: String, page: Int)] = []
     var tocPages: [Int] = []                // indici (0-based) delle pagine riservate all'indice
 
-    init(blocks: [ManualBlock], version: String, date: Date) {
+    init(blocks: [ManualBlock], labels: ManualLabels, version: String, date: Date) {
         self.blocks = blocks
+        self.labels = labels
         self.version = version
         self.date = date
     }
@@ -69,7 +106,7 @@ private final class ManualLayout {
         for block in blocks { draw(block) }
         drawTOC(perPage: perPage)
         addFooters()
-        return pdf.data(title: "TeoStackPro - Manuale utente", author: nil)
+        return pdf.data(title: "TeoStackPro - \(labels.title)", author: nil)
     }
 
     func newPage() {
@@ -87,14 +124,15 @@ private final class ManualLayout {
     func drawCover() {
         pdf.fillRect(x: 0, y: 0, width: pageW, height: 18, color: PDFWriter.Color(hex: 0x1D4E89))
         pdf.text("TeoStackPro", x: left, top: 250, size: 44, font: .sansBold, color: PDFWriter.Color(hex: 0x1D4E89))
-        pdf.text("Manuale utente", x: left, top: 306, size: 24, font: .sans)
+        pdf.text(labels.title, x: left, top: 306, size: 24, font: .sans)
         pdf.line(x1: left, y1: 346, x2: left + 150, y2: 346, color: PDFWriter.Color(hex: 0x1D4E89), width: 2)
-        pdf.text("Copia verificata, metadata e report per il DIT", x: left, top: 362, size: 13, font: .sans, color: .gray)
+        pdf.text(labels.tagline, x: left, top: 362, size: 13, font: .sans, color: .gray)
         let f = DateFormatter()
-        f.locale = Locale(identifier: "it_IT")
-        f.dateFormat = "d MMMM yyyy"
-        pdf.text("Versione \(version) · \(f.string(from: date))", x: left, top: 392, size: 11, font: .sans, color: .gray)
-        pdf.text("Per macOS · lingue dell'app: Italiano, English, Castellano, Català", x: left, top: pageH - 70, size: 9.5, font: .sans, color: .gray)
+        f.locale = labels.locale
+        f.dateStyle = .long
+        f.timeStyle = .none
+        pdf.text("\(labels.version) \(version) · \(f.string(from: date))", x: left, top: 392, size: 11, font: .sans, color: .gray)
+        pdf.text(labels.languages, x: left, top: pageH - 70, size: 9.5, font: .sans, color: .gray)
     }
 
     func drawTOC(perPage: Int) {
@@ -103,7 +141,7 @@ private final class ManualLayout {
             pdf.select(page: pageIndex)
             var ty = tocTop
             if n == 0 {
-                pdf.text("Indice", x: left, top: ty, size: 20, font: .sansBold, color: PDFWriter.Color(hex: 0x1D4E89))
+                pdf.text(labels.contents, x: left, top: ty, size: 20, font: .sansBold, color: PDFWriter.Color(hex: 0x1D4E89))
                 ty += 30
             }
             while ty + tocLine < pageH - bottom, index < toc.count {
@@ -124,7 +162,7 @@ private final class ManualLayout {
         for i in 1 ..< pdf.pages.count {
             pdf.select(page: i)
             pdf.line(x1: left, y1: pageH - 46, x2: pageW - right, y2: pageH - 46, color: PDFWriter.Color(hex: 0xBBBBBB), width: 0.5)
-            pdf.text("TeoStackPro · Manuale utente", x: left, top: pageH - 38, size: 8.5, font: .sans, color: .gray)
+            pdf.text(labels.footer, x: left, top: pageH - 38, size: 8.5, font: .sans, color: .gray)
             pdf.text(String(i + 1), x: pageW - right - 40, top: pageH - 38, size: 8.5, font: .sans, color: .gray, align: .right, width: 40)
         }
         pdf.select(page: pdf.pages.count - 1)
@@ -135,7 +173,7 @@ private final class ManualLayout {
     func draw(_ block: ManualBlock) {
         switch block {
         case .h1(let t):
-            ensure(110)
+            ensure(170)   // titolo + primo sottotitolo + qualche riga: mai un titolo solo in fondo alla pagina
             if y > top + 1 { y += 10 }
             toc.append((1, t, pageNumber))
             pdf.text(t, x: left, top: y, size: 17, font: .sansBold, color: PDFWriter.Color(hex: 0x1D4E89))
@@ -157,8 +195,8 @@ private final class ManualLayout {
         case .steps(let items):
             for (i, item) in items.enumerated() { listItem(marker: "\(i + 1).", item) }
             y += 4
-        case .note(let t): callout(t, label: "Nota", color: PDFWriter.Color(hex: 0x1D4E89), fill: PDFWriter.Color(hex: 0xEAF1FA))
-        case .warning(let t): callout(t, label: "Attenzione", color: PDFWriter.Color(hex: 0xB45309), fill: PDFWriter.Color(hex: 0xFFF4E0))
+        case .note(let t): callout(t, label: labels.note, color: PDFWriter.Color(hex: 0x1D4E89), fill: PDFWriter.Color(hex: 0xEAF1FA))
+        case .warning(let t): callout(t, label: labels.warning, color: PDFWriter.Color(hex: 0xB45309), fill: PDFWriter.Color(hex: 0xFFF4E0))
         case .code(let lines): code(lines)
         case .table(let header, let rows, let widths): table(header: header, rows: rows, widths: widths)
         }

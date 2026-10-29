@@ -48,6 +48,7 @@ enum LocStrings {
         ("ffprobe non riconosce il file.", "ffprobe does not recognise the file.", "ffprobe no reconoce el archivo.", "ffprobe no reconeix el fitxer."),
         ("ffprobe non riconosce il file: {0}", "ffprobe does not recognise the file: {0}", "ffprobe no reconoce el archivo: {0}", "ffprobe no reconeix el fitxer: {0}"),
         ("L'output di ffprobe non è un JSON valido.", "The ffprobe output is not valid JSON.", "La salida de ffprobe no es un JSON válido.", "La sortida d'ffprobe no és un JSON vàlid."),
+        ("{0} clip letti", "{0} clips read", "{0} clips leídos", "{0} clips llegits"),
         ("{0} formato non supportato ({1})", "{0} unsupported format ({1})", "{0} formato no admitido ({1})", "{0} format no compatible ({1})"),
         ("{0} file non raggiungibili", "{0} files not reachable", "{0} archivos no accesibles", "{0} fitxers no accessibles"),
         ("art-cmd non ha letto {0} clip ARRI (ISO, lente, ND, WB… {1})", "art-cmd could not read {0} ARRI clips (ISO, lens, ND, WB… {1})", "art-cmd no pudo leer {0} clips ARRI (ISO, objetivo, ND, WB… {1})", "art-cmd no ha pogut llegir {0} clips ARRI (ISO, objectiu, ND, WB… {1})"),
@@ -63,10 +64,10 @@ enum LocStrings {
         ("Il file non contiene righe riconoscibili.", "The file contains no recognisable rows.", "El archivo no contiene filas reconocibles.", "El fitxer no conté files reconeixibles."),
         ("{0} righe, {1} abbinate a un clip, {2} campi scritti", "{0} rows, {1} matched to a clip, {2} fields written", "{0} filas, {1} asociadas a un clip, {2} campos escritos", "{0} files, {1} associades a un clip, {2} camps escrits"),
         ("{0} campi già presenti lasciati invariati", "{0} fields already present left unchanged", "{0} campos ya presentes sin cambios", "{0} camps ja presents sense canvis"),
-        ("{0} righe ambigue (più clip possibili) ignorate", "{0} ambiguous rows (several possible clips) ignored", "{0} filas ambiguas (varios clips posibles) ignoradas", "{0} files ambigües (diversos clips possibles) ignorades"),
     ]
 
     private static let part1: [Entry] = [
+        ("{0} righe ambigue (più clip possibili) ignorate", "{0} ambiguous rows (several possible clips) ignored", "{0} filas ambiguas (varios clips posibles) ignoradas", "{0} files ambigües (diversos clips possibles) ignorades"),
         ("{0} righe senza clip corrispondente", "{0} rows with no matching clip", "{0} filas sin clip correspondiente", "{0} files sense clip corresponent"),
         ("Servono da 1 a {0} destinazioni (selezionate: {1}).", "Between 1 and {0} destinations are required (selected: {1}).", "Se necesitan entre 1 y {0} destinos (seleccionados: {1}).", "Calen entre 1 i {0} destinacions (seleccionades: {1})."),
         ("Destinazione {0}", "Destination {0}", "Destino {0}", "Destinació {0}"),
@@ -126,10 +127,10 @@ enum LocStrings {
         ("La Library non si può rinominare.", "The Library cannot be renamed.", "La Library no se puede renombrar.", "La Library no es pot canviar de nom."),
         ("Cartella di destinazione non trovata.", "Destination folder not found.", "Carpeta de destino no encontrada.", "Carpeta de destinació no trobada."),
         ("La Library non si può spostare.", "The Library cannot be moved.", "La Library no se puede mover.", "La Library no es pot moure."),
-        ("Non si può spostare un elemento in un altro progetto.", "An item cannot be moved to another project.", "No se puede mover un elemento a otro proyecto.", "No es pot moure un element a un altre projecte."),
     ]
 
     private static let part2: [Entry] = [
+        ("Non si può spostare un elemento in un altro progetto.", "An item cannot be moved to another project.", "No se puede mover un elemento a otro proyecto.", "No es pot moure un element a un altre projecte."),
         ("Dentro un bin non si può spostare nulla.", "Nothing can be moved inside a bin.", "No se puede mover nada dentro de un bin.", "No es pot moure res dins d'un bin."),
         ("Le cartelle giorno stanno solo nella Library.", "Day folders can only be in the Library.", "Las carpetas de día solo pueden estar en la Library.", "Les carpetes de dia només poden ser a la Library."),
         ("Non si può spostare una cartella dentro se stessa.", "A folder cannot be moved into itself.", "No se puede mover una carpeta dentro de sí misma.", "No es pot moure una carpeta dins d'ella mateixa."),
@@ -140,6 +141,11 @@ enum LocStrings {
         ("Riletti dal disco con XXH64 identico alla sorgente su {0} destinazione/i. Durata {1}.", "Read back from disk with XXH64 identical to the source on {0} destination(s). Duration {1}.", "Releídos del disco con XXH64 idéntico al del origen en {0} destino(s). Duración {1}.", "Rellegits del disc amb XXH64 idèntic al de l'origen a {0} destinació/ons. Durada {1}."),
         ("Clip non trovata.", "Clip not found.", "Clip no encontrado.", "Clip no trobat."),
         ("I file si importano dentro un bin.", "Files are imported into a bin.", "Los archivos se importan dentro de un bin.", "Els fitxers s'importen dins d'un bin."),
+        ("Report giornata di riprese (Shooting Day)", "Shooting day report (Shooting Day)", "Informe del día de rodaje (Shooting Day)", "Informe del dia de rodatge (Shooting Day)"),
+        ("Report clip (Clips)", "Clips report (Clips)", "Informe de clips (Clips)", "Informe de clips (Clips)"),
+        ("Report volumi (Volume)", "Volumes report (Volume)", "Informe de volúmenes (Volume)", "Informe de volums (Volume)"),
+        ("Report miniature (Thumbnail)", "Thumbnails report (Thumbnail)", "Informe de miniaturas (Thumbnail)", "Informe de miniatures (Thumbnail)"),
+        ("Foglio provini (Contact Print)", "Contact sheet (Contact Print)", "Hoja de contactos (Contact Print)", "Full de contactes (Contact Print)"),
         ("Elemento del progetto non trovato.", "Project item not found.", "Elemento del proyecto no encontrado.", "Element del projecte no trobat."),
         ("Il nome del profilo non può essere vuoto né più lungo di {0} caratteri.", "The profile name cannot be empty or longer than {0} characters.", "El nombre del perfil no puede estar vacío ni tener más de {0} caracteres.", "El nom del perfil no pot ser buit ni tenir més de {0} caràcters."),
         ("Esiste già un profilo chiamato «{0}».", "A profile called “{0}” already exists.", "Ya existe un perfil llamado «{0}».", "Ja existeix un perfil anomenat «{0}»."),
@@ -184,16 +190,19 @@ enum LocStrings {
         ("Lettura metadata… {0}/{1}", "Reading metadata… {0}/{1}", "Leyendo metadatos… {0}/{1}", "Llegint metadades… {0}/{1}"),
         ("Metadata: {0}", "Metadata: {0}", "Metadatos: {0}", "Metadades: {0}"),
         ("Metadata non letti: {0}", "Metadata not read: {0}", "Metadatos sin leer: {0}", "Metadades sense llegir: {0}"),
+    ]
+
+    private static let part3: [Entry] = [
         ("Né ffmpeg né art-cmd sono installati: anteprime non create (vedi l'avviso in alto per installarli).", "Neither ffmpeg nor art-cmd is installed: thumbnails not created (see the notice at the top to install them).", "Ni ffmpeg ni art-cmd están instalados: miniaturas sin crear (mira el aviso de arriba para instalarlos).", "Ni ffmpeg ni art-cmd no estan instal·lats: miniatures sense crear (mira l'avís de dalt per instal·lar-los)."),
         ("Creazione anteprime…", "Creating thumbnails…", "Creando miniaturas…", "Creant miniatures…"),
         ("Creazione anteprime… {0}/{1}", "Creating thumbnails… {0}/{1}", "Creando miniaturas… {0}/{1}", "Creant miniatures… {0}/{1}"),
         ("Anteprime: {0}", "Thumbnails: {0}", "Miniaturas: {0}", "Miniatures: {0}"),
         ("Anteprime non create: {0}", "Thumbnails not created: {0}", "Miniaturas sin crear: {0}", "Miniatures sense crear: {0}"),
         ("Database dei progetti non disponibile.", "Projects database not available.", "Base de datos de proyectos no disponible.", "Base de dades de projectes no disponible."),
-    ]
-
-    private static let part3: [Entry] = [
         ("Impostazioni", "Settings", "Ajustes", "Configuració"),
+        ("Generale", "General", "General", "General"),
+        ("Suono al termine", "Sound when finished", "Sonido al terminar", "So en acabar"),
+        ("Un suono a fine offload (diverso se ci sono problemi) e il Dock rimbalza se l'app non è in primo piano.", "A sound when the offload ends (different if there are problems), and the Dock icon bounces if the app is in the background.", "Un sonido al terminar el offload (distinto si hay problemas) y el icono del Dock rebota si la app no está en primer plano.", "Un so en acabar l'offload (diferent si hi ha problemes) i la icona del Dock rebota si l'app no és en primer pla."),
         ("Aspetto", "Appearance", "Apariencia", "Aparença"),
         ("Modelli pronti", "Ready-made themes", "Temas predefinidos", "Temes predefinits"),
         ("Scegli…", "Choose…", "Elegir…", "Tria…"),
@@ -244,6 +253,9 @@ enum LocStrings {
         ("Frequenza", "Sample rate", "Frecuencia", "Freqüència"),
         ("Bit", "Bits", "Bits", "Bits"),
         ("Canali", "Channels", "Canales", "Canals"),
+    ]
+
+    private static let part4: [Entry] = [
         ("Durata per codec audio", "Duration per audio codec", "Duración por códec de audio", "Durada per còdec d'àudio"),
         ("Durata non disponibile: i metadata non sono ancora stati letti (usa «Leggi metadata» nel tab Clip).", "Duration not available: the metadata has not been read yet (use “Read metadata” in the Clips tab).", "Duración no disponible: los metadatos aún no se han leído (usa «Leer metadatos» en la pestaña Clips).", "Durada no disponible: les metadades encara no s'han llegit (usa «Llegeix metadades» a la pestanya Clips)."),
         ("La durata comprende solo i {0} clip di cui è nota; {1} clip senza durata (usa «Leggi metadata» nel tab Clip).", "The duration only includes the {0} clips whose duration is known; {1} clips without duration (use “Read metadata” in the Clips tab).", "La duración solo incluye los {0} clips cuya duración se conoce; {1} clips sin duración (usa «Leer metadatos» en la pestaña Clips).", "La durada només inclou els {0} clips dels quals es coneix; {1} clips sense durada (usa «Llegeix metadades» a la pestanya Clips)."),
@@ -253,9 +265,6 @@ enum LocStrings {
         ("{0} file importati senza copia: non sono verificati (riga «0» dei backup).", "{0} files imported without a copy: they are not verified (“0” row of the backups).", "{0} archivos importados sin copia: no están verificados (fila «0» de las copias).", "{0} fitxers importats sense còpia: no estan verificats (fila «0» de les còpies)."),
         ("{0} offload annullati o interrotti non sono contati come schede scaricate.", "{0} cancelled or interrupted offloads are not counted as cards offloaded.", "{0} offloads cancelados o interrumpidos no se cuentan como tarjetas descargadas.", "{0} offloads cancel·lats o interromputs no es compten com a targetes descarregades."),
         ("Sorgente", "Source", "Origen", "Origen"),
-    ]
-
-    private static let part4: [Entry] = [
         ("Schede collegate", "Connected cards", "Tarjetas conectadas", "Targetes connectades"),
         ("Nessuna scheda o disco esterno collegato", "No card or external disk connected", "Ninguna tarjeta o disco externo conectado", "Cap targeta o disc extern connectat"),
         ("Scegli sorgente…", "Choose source…", "Elegir origen…", "Tria l'origen…"),
@@ -297,7 +306,6 @@ enum LocStrings {
         ("Avvia", "Start", "Iniciar", "Inicia"),
         ("Verifica durante la copia", "Verify while copying", "Verificar durante la copia", "Verifica durant la còpia"),
         ("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita.", "Each file is read back and compared as soon as it is written, while the copy continues: faster with SSD disks. Turn it off with slow disks (HDD): verification will then start when the copy is finished.", "Cada archivo se relee y se compara en cuanto se escribe, mientras la copia continúa: más rápido con discos SSD. Desactívalo con discos lentos (HDD): la verificación empezará al terminar la copia.", "Cada fitxer es rellegeix i es compara tan bon punt s'escriu, mentre la còpia continua: més ràpid amb discos SSD. Desactiva-ho amb discos lents (HDD): la verificació començarà quan la còpia hagi acabat."),
-        ("Suono al termine", "Sound when finished", "Sonido al terminar", "So en acabar"),
         ("Crea certificato ASC MHL", "Create ASC MHL certificate", "Crear certificado ASC MHL", "Crea certificat ASC MHL"),
         ("A offload riuscito scrive nella cartella della copia la cartella «ascmhl» con il certificato degli hash (formato ASC MHL 2.0, come Silverstack). Non viene creato se qualche file non è verificato OK.", "After a successful offload, writes an «ascmhl» folder with the hash certificate (ASC MHL 2.0 format, like Silverstack) inside the copy folder. It is not created if any file is not verified OK.", "Tras un offload correcto escribe en la carpeta de la copia la carpeta «ascmhl» con el certificado de hashes (formato ASC MHL 2.0, como Silverstack). No se crea si algún archivo no está verificado OK.", "Després d'un offload correcte escriu a la carpeta de la còpia la carpeta «ascmhl» amb el certificat de hashes (format ASC MHL 2.0, com Silverstack). No es crea si algun fitxer no està verificat OK."),
         ("Svuota la sorgente a fine offload", "Clear the source when the offload ends", "Vaciar el origen al terminar el offload", "Buida l'origen en acabar l'offload"),
@@ -308,17 +316,17 @@ enum LocStrings {
         ("ANNULLATO: i file parziali sono stati rimossi. «Riprendi» continua dai file già verificati.", "CANCELLED: partial files were removed. “Resume” continues from the files already verified.", "CANCELADO: se eliminaron los archivos parciales. «Reanudar» continúa desde los archivos ya verificados.", "CANCEL·LAT: s'han eliminat els fitxers parcials. «Reprèn» continua des dels fitxers ja verificats."),
         ("TUTTI I FILE OK: {0} file riletti dal disco con XXH64 identico alla sorgente su {1} destinazione/i.", "ALL FILES OK: {0} files read back from disk with XXH64 identical to the source on {1} destination(s).", "TODOS LOS ARCHIVOS OK: {0} archivos releídos del disco con XXH64 idéntico al del origen en {1} destino(s).", "TOTS ELS FITXERS OK: {0} fitxers rellegits del disc amb XXH64 idèntic al de l'origen a {1} destinació/ons."),
         ("ATTENZIONE: {0} MISMATCH, {1} ERRORI, {2} destinazioni interrotte. I file non OK non vanno considerati copiati.", "WARNING: {0} MISMATCH, {1} ERRORS, {2} destinations interrupted. Files that are not OK must not be considered copied.", "ATENCIÓN: {0} MISMATCH, {1} ERRORES, {2} destinos interrumpidos. Los archivos que no estén OK no deben considerarse copiados.", "ATENCIÓ: {0} MISMATCH, {1} ERRORS, {2} destinacions interrompudes. Els fitxers que no estiguin OK no s'han de considerar copiats."),
+    ]
+
+    private static let part5: [Entry] = [
         ("Certificato ASC MHL scritto su {0} destinazione/i (cartella «ascmhl»).", "ASC MHL certificate written on {0} destination(s) («ascmhl» folder).", "Certificado ASC MHL escrito en {0} destino(s) (carpeta «ascmhl»).", "Certificat ASC MHL escrit a {0} destinació/ons (carpeta «ascmhl»)."),
         ("Certificato ASC MHL NON creato su {0} destinazione/i: {1}", "ASC MHL certificate NOT created on {0} destination(s): {1}", "Certificado ASC MHL NO creado en {0} destino(s): {1}", "Certificat ASC MHL NO creat a {0} destinació/ons: {1}"),
-        ("Salva il manuale utente (PDF, in italiano).", "Save the user manual (PDF, in Italian).", "Guardar el manual de usuario (PDF, en italiano).", "Desa el manual d'usuari (PDF, en italià)."),
+        ("Salva il manuale utente (PDF).", "Save the user manual (PDF).", "Guardar el manual de usuario (PDF).", "Desa el manual d'usuari (PDF)."),
         ("Impossibile creare il manuale: {0}", "Cannot create the manual: {0}", "No se puede crear el manual: {0}", "No es pot crear el manual: {0}"),
         ("Apri il manuale (PDF)", "Open the manual (PDF)", "Abrir el manual (PDF)", "Obre el manual (PDF)"),
         ("Salva il manuale come…", "Save the manual as…", "Guardar el manual como…", "Desa el manual com a…"),
         ("Aiuto", "Help", "Ayuda", "Ajuda"),
-        ("Apre il manuale utente in PDF (in italiano).", "Opens the user manual as a PDF (in Italian).", "Abre el manual de usuario en PDF (en italiano).", "Obre el manual d'usuari en PDF (en italià)."),
-    ]
-
-    private static let part5: [Entry] = [
+        ("Apre il manuale utente in PDF, nella lingua scelta.", "Opens the user manual as a PDF, in the chosen language.", "Abre el manual de usuario en PDF, en el idioma elegido.", "Obre el manual d'usuari en PDF, en l'idioma triat."),
         ("Lingua dell'interfaccia", "Interface language", "Idioma de la interfaz", "Idioma de la interfície"),
         ("Seleziona la scheda (sorgente)", "Select the card (source)", "Selecciona la tarjeta (origen)", "Selecciona la targeta (origen)"),
         ("Impossibile leggere la sorgente: {0}", "Unable to read the source: {0}", "No se puede leer el origen: {0}", "No es pot llegir l'origen: {0}"),
@@ -371,6 +379,9 @@ enum LocStrings {
         ("Non verificato: ci sono file con problemi, un offload annullato o file importati senza copia", "Not verified: there are files with problems, a cancelled offload or files imported without a copy", "No verificado: hay archivos con problemas, un offload cancelado o archivos importados sin copia", "No verificat: hi ha fitxers amb problemes, un offload cancel·lat o fitxers importats sense còpia"),
         ("Clip audio: nessuna anteprima.", "Audio clip: no thumbnail.", "Clip de audio: sin miniatura.", "Clip d'àudio: sense miniatura."),
         ("Anteprima non ancora creata", "Thumbnail not created yet", "Miniatura aún no creada", "Miniatura encara no creada"),
+    ]
+
+    private static let part6: [Entry] = [
         ("Primo fotogramma", "First frame", "Primer fotograma", "Primer fotograma"),
         ("Anteprima non ancora creata.", "Thumbnail not created yet.", "Miniatura aún no creada.", "Miniatura encara no creada."),
         ("Crea anteprime", "Create thumbnails", "Crear miniaturas", "Crea miniatures"),
@@ -379,9 +390,6 @@ enum LocStrings {
         ("clip", "clips", "clips", "clips"),
         ("Mostra anche i file non video (XML, sidecar…)", "Also show non-video files (XML, sidecars…)", "Mostrar también los archivos que no son vídeo (XML, sidecars…)", "Mostra també els fitxers que no són vídeo (XML, sidecars…)"),
         ("Crea l'anteprima del primo fotogramma dei clip che ne sono privi (dalla copia verificata sul disco di destinazione).", "Creates the first-frame thumbnail of the clips that do not have one (from the verified copy on the destination disk).", "Crea la miniatura del primer fotograma de los clips que no la tienen (a partir de la copia verificada en el disco de destino).", "Crea la miniatura del primer fotograma dels clips que no en tenen (a partir de la còpia verificada al disc de destinació)."),
-    ]
-
-    private static let part6: [Entry] = [
         ("Leggi metadata", "Read metadata", "Leer metadatos", "Llegeix metadades"),
         ("Rilegge i metadata dei clip mostrati con ExifTool e art-cmd (dalla copia verificata sul disco di destinazione).", "Re-reads the metadata of the clips shown with ExifTool and art-cmd (from the verified copy on the destination disk).", "Vuelve a leer los metadatos de los clips mostrados con ExifTool y art-cmd (a partir de la copia verificada en el disco de destino).", "Torna a llegir les metadades dels clips mostrats amb ExifTool i art-cmd (a partir de la còpia verificada al disc de destinació)."),
         ("Importa log…", "Import log…", "Importar registro…", "Importa registre…"),
@@ -434,6 +442,9 @@ enum LocStrings {
         ("Salva le scelte attuali (report, colonne, operatore) come nuovo profilo.", "Saves the current choices (reports, columns, operator) as a new profile.", "Guarda la selección actual (informes, columnas, operador) como un perfil nuevo.", "Desa la tria actual (informes, columnes, operador) com a perfil nou."),
         ("Aggiorna", "Update", "Actualizar", "Actualitza"),
         ("Sostituisce le scelte del profilo selezionato con quelle attuali.", "Replaces the choices of the selected profile with the current ones.", "Sustituye la selección del perfil elegido por la actual.", "Substitueix la tria del perfil seleccionat per l'actual."),
+    ]
+
+    private static let part7: [Entry] = [
         ("Altro", "More", "Más", "Més"),
         ("Rinomina…", "Rename…", "Renombrar…", "Canvia el nom…"),
         ("Elimina profilo…", "Delete profile…", "Eliminar perfil…", "Elimina el perfil…"),
@@ -442,9 +453,6 @@ enum LocStrings {
         ("Profilo «{0}» salvato.", "Profile “{0}” saved.", "Perfil «{0}» guardado.", "Perfil «{0}» desat."),
         ("Profilo «{0}» aggiornato.", "Profile “{0}” updated.", "Perfil «{0}» actualizado.", "Perfil «{0}» actualitzat."),
         ("Salva i profili in un file, per usarli su un altro Mac.", "Save the profiles to a file, to use them on another Mac.", "Guarda los perfiles en un archivo para usarlos en otro Mac.", "Desa els perfils en un fitxer, per fer-los servir en un altre Mac."),
-    ]
-
-    private static let part7: [Entry] = [
         ("Profili salvati in {0}", "Profiles saved to {0}", "Perfiles guardados en {0}", "Perfils desats a {0}"),
         ("Scegli un file di profili esportato da TeoStackPro.", "Choose a profiles file exported by TeoStackPro.", "Elige un archivo de perfiles exportado por TeoStackPro.", "Tria un fitxer de perfils exportat per TeoStackPro."),
         ("Importati {0} profili.", "Imported {0} profiles.", "Importados {0} perfiles.", "Importats {0} perfils."),
@@ -497,6 +505,9 @@ enum LocStrings {
         ("Diaframma", "Aperture", "Diafragma", "Diafragma"),
         ("T-stop", "T-stop", "T-stop", "T-stop"),
         ("Angolo shutter", "Shutter angle", "Ángulo de obturación", "Angle d'obturació"),
+    ]
+
+    private static let part8: [Entry] = [
         ("Registratore", "Recorder", "Grabador", "Gravador"),
         ("Nomi tracce", "Track names", "Nombres de pistas", "Noms de pistes"),
         ("Predefinito del sistema", "System default", "Predeterminado del sistema", "Predeterminat del sistema"),
@@ -507,5 +518,5 @@ enum LocStrings {
         ("Notte (rosso, per il set al buio)", "Night (red, for a dark set)", "Noche (rojo, para un set a oscuras)", "Nit (vermell, per al set a les fosques)"),
     ]
 
-    static let all: [Entry] = part0 + part1 + part2 + part3 + part4 + part5 + part6 + part7
+    static let all: [Entry] = part0 + part1 + part2 + part3 + part4 + part5 + part6 + part7 + part8
 }

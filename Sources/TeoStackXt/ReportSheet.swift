@@ -69,7 +69,7 @@ struct ReportSheet: View {
             GroupBox(tr("Report da creare (un PDF per ciascuno)")) {
                 VStack(alignment: .leading) {
                     ForEach(ReportKind.allCases) { kind in
-                        Toggle(kind.title, isOn: Binding(
+                        Toggle(kind.uiTitle, isOn: Binding(
                             get: { kinds.contains(kind) },
                             set: { on in if on { kinds.insert(kind) } else { kinds.remove(kind) } }))
                             .toggleStyle(.checkbox)
@@ -280,7 +280,7 @@ struct ReportSheet: View {
                     try output.data.write(to: url, options: .atomic)
                     saved.append(url)
                 } catch {
-                    failures.append("\(kind.title): \(error)")
+                    failures.append("\(kind.uiTitle): \(error)")
                 }
             }
             DispatchQueue.main.async {

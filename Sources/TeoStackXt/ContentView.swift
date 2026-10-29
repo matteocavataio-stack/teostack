@@ -510,7 +510,6 @@ struct DestinationRow: View {
 struct ControlBar: View {
     @ObservedObject var vm: OffloadViewModel
     @AppStorage("overlapVerification") private var overlapVerification = true
-    @AppStorage("soundOnFinish") private var soundOnFinish = true
     @AppStorage("clearSourceWhenDone") private var clearSourceWhenDone = true
     @AppStorage("ascMHL") private var ascMHL = true
 
@@ -539,7 +538,6 @@ struct ControlBar: View {
                     .toggleStyle(.checkbox)
                     .disabled(vm.isRunning)
                     .help(tr("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita."))
-                Toggle(tr("Suono al termine"), isOn: $soundOnFinish).toggleStyle(.checkbox)
                 Toggle(tr("Crea certificato ASC MHL"), isOn: $ascMHL)
                     .toggleStyle(.checkbox)
                     .disabled(vm.isRunning)

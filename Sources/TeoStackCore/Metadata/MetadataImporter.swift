@@ -8,7 +8,7 @@ public struct MetadataSummary: Equatable {
     public var artFailed: [String] = []   // clip ARRI per cui art-cmd ha fallito: restano solo i dati di ExifTool
 
     public var text: String {
-        var parts = ["\(read) clip letti"]
+        var parts = [tr("{0} clip letti", read)]
         if unsupported > 0 { parts.append(tr("{0} formato non supportato ({1})", unsupported, ClipColumns.notAvailable)) }
         if missingFile > 0 { parts.append(tr("{0} file non raggiungibili", missingFile)) }
         if !artFailed.isEmpty { parts.append(tr("art-cmd non ha letto {0} clip ARRI (ISO, lente, ND, WB… {1})", artFailed.count, ClipColumns.notAvailable)) }
