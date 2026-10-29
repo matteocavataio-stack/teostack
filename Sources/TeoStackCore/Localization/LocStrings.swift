@@ -376,13 +376,19 @@ enum LocStrings {
         ("Esporta metadata", "Export metadata", "Exportar metadatos", "Exporta metadades"),
         ("Salva i metadata dei clip mostrati in JSON, CSV o ALE (Avid). Ogni riga include l'XXH64 del file.", "Saves the metadata of the clips shown as JSON, CSV or ALE (Avid). Every row includes the file XXH64.", "Guarda los metadatos de los clips mostrados en JSON, CSV o ALE (Avid). Cada fila incluye el XXH64 del archivo.", "Desa les metadades dels clips mostrats en JSON, CSV o ALE (Avid). Cada fila inclou l'XXH64 del fitxer."),
         ("Colonne", "Columns", "Columnas", "Columnes"),
+        ("Ripristina ordine e larghezze", "Restore order and widths", "Restablecer orden y anchuras", "Restableix l'ordre i les amplades"),
         ("Dati dell'offload", "Offload data", "Datos del offload", "Dades de l'offload"),
         ("Metadata camera (N/D se non letti)", "Camera metadata (N/A if not read)", "Metadatos de la cámara (N/D si no se leen)", "Metadades de la càmera (N/D si no es llegeixen)"),
-        ("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.", "ExifTool provides camera, firmware, resolution, duration, file FPS, timecode and shooting date of ARRI clips. art-cmd (ARRI Reference Tool) provides ISO, WB, lens, ND, look, sensor FPS, scene/take/reel, serial: these are the values of the first frame of the clip. For MPG, WAV/BWF, LRF, MP4, ProRes and the other formats ffprobe reads codec, resolution, FPS, duration, audio, and timecode/date/camera only if written in the file. The thumbnail is the first frame (ARRI: art-cmd with embedded look; other videos: ffmpeg). If a value cannot be read it shows N/A.", "ExifTool da cámara, firmware, resolución, duración, FPS del archivo, timecode y fecha de rodaje de los clips ARRI. art-cmd (ARRI Reference Tool) da ISO, WB, objetivo, ND, look, sensor FPS, escena/toma/reel y serial: son los valores del primer fotograma del clip. Para MPG, WAV/BWF, LRF, MP4, ProRes y el resto de formatos lee ffprobe: códec, resolución, FPS, duración, audio, y timecode/fecha/cámara solo si están escritos en el archivo. La miniatura es el primer fotograma (ARRI: art-cmd con el look incorporado; otros vídeos: ffmpeg). Si un valor no se puede leer muestra N/D.", "ExifTool dona càmera, firmware, resolució, durada, FPS del fitxer, timecode i data de rodatge dels clips ARRI. art-cmd (ARRI Reference Tool) dona ISO, WB, objectiu, ND, look, sensor FPS, escena/presa/reel i serial: són els valors del primer fotograma del clip. Per a MPG, WAV/BWF, LRF, MP4, ProRes i la resta de formats llegeix ffprobe: còdec, resolució, FPS, durada, àudio, i timecode/data/càmera només si estan escrits al fitxer. La miniatura és el primer fotograma (ARRI: art-cmd amb el look incorporat; altres vídeos: ffmpeg). Si un valor no es pot llegir mostra N/D."),
     ]
 
     private static let part6: [Entry] = [
+        ("ExifTool dà camera, firmware, risoluzione, durata, FPS del file, timecode, data di ripresa dei clip ARRI. art-cmd (ARRI Reference Tool) dà ISO, WB, lente, ND, look, sensor FPS, scena/take/reel, serial: sono i valori del primo fotogramma del clip. Per MPG, WAV/BWF, LRF, MP4, ProRes e gli altri formati legge ffprobe: codec, risoluzione, FPS, durata, audio, e timecode/data/camera solo se scritti nel file. L'anteprima è il primo fotogramma (ARRI: art-cmd con look incorporato; altri video: ffmpeg). Se un valore non è leggibile mostra N/D.", "ExifTool provides camera, firmware, resolution, duration, file FPS, timecode and shooting date of ARRI clips. art-cmd (ARRI Reference Tool) provides ISO, WB, lens, ND, look, sensor FPS, scene/take/reel, serial: these are the values of the first frame of the clip. For MPG, WAV/BWF, LRF, MP4, ProRes and the other formats ffprobe reads codec, resolution, FPS, duration, audio, and timecode/date/camera only if written in the file. The thumbnail is the first frame (ARRI: art-cmd with embedded look; other videos: ffmpeg). If a value cannot be read it shows N/A.", "ExifTool da cámara, firmware, resolución, duración, FPS del archivo, timecode y fecha de rodaje de los clips ARRI. art-cmd (ARRI Reference Tool) da ISO, WB, objetivo, ND, look, sensor FPS, escena/toma/reel y serial: son los valores del primer fotograma del clip. Para MPG, WAV/BWF, LRF, MP4, ProRes y el resto de formatos lee ffprobe: códec, resolución, FPS, duración, audio, y timecode/fecha/cámara solo si están escritos en el archivo. La miniatura es el primer fotograma (ARRI: art-cmd con el look incorporado; otros vídeos: ffmpeg). Si un valor no se puede leer muestra N/D.", "ExifTool dona càmera, firmware, resolució, durada, FPS del fitxer, timecode i data de rodatge dels clips ARRI. art-cmd (ARRI Reference Tool) dona ISO, WB, objectiu, ND, look, sensor FPS, escena/presa/reel i serial: són els valors del primer fotograma del clip. Per a MPG, WAV/BWF, LRF, MP4, ProRes i la resta de formats llegeix ffprobe: còdec, resolució, FPS, durada, àudio, i timecode/data/càmera només si estan escrits al fitxer. La miniatura és el primer fotograma (ARRI: art-cmd amb el look incorporat; altres vídeos: ffmpeg). Si un valor no es pot llegir mostra N/D."),
         ("Nessuna clip: esegui un offload in un bin di questo progetto.", "No clips: run an offload into a bin of this project.", "Ningún clip: haz un offload en un bin de este proyecto.", "Cap clip: fes un offload en un bin d'aquest projecte."),
+        ("Sposta a sinistra", "Move left", "Mover a la izquierda", "Mou a l'esquerra"),
+        ("Sposta a destra", "Move right", "Mover a la derecha", "Mou a la dreta"),
+        ("Larghezza standard", "Default width", "Anchura predeterminada", "Amplada estàndard"),
+        ("Nascondi colonna", "Hide column", "Ocultar columna", "Amaga la columna"),
+        ("Trascina il bordo destro per cambiare la larghezza, trascina il titolo per spostare la colonna.", "Drag the right edge to change the width, drag the title to move the column.", "Arrastra el borde derecho para cambiar la anchura, arrastra el título para mover la columna.", "Arrossega la vora dreta per canviar l'amplada, arrossega el títol per moure la columna."),
         ("Cronologia", "History", "Historial", "Historial"),
         ("Cancella…", "Clear…", "Borrar…", "Esborra…"),
         ("Cancella la cronologia di questo progetto", "Clears the history of this project", "Borra el historial de este proyecto", "Esborra l'historial d'aquest projecte"),
@@ -436,15 +442,15 @@ enum LocStrings {
         ("Look Info", "Look Info", "Info del look", "Info del look"),
         ("Lente", "Lens", "Objetivo", "Objectiu"),
         ("ISO", "ISO", "ISO", "ISO"),
+    ]
+
+    private static let part7: [Entry] = [
         ("WB", "WB", "WB", "WB"),
         ("Timecode", "Timecode", "Timecode", "Timecode"),
         ("Costruttore", "Manufacturer", "Fabricante", "Fabricant"),
         ("Indice camera", "Camera index", "Índice de cámara", "Índex de càmera"),
         ("Serial lente", "Lens serial", "Serie del objetivo", "Sèrie de l'objectiu"),
         ("Distanza fuoco", "Focus distance", "Distancia de enfoque", "Distància de enfocament"),
-    ]
-
-    private static let part7: [Entry] = [
         ("Tint", "Tint", "Tinte", "Tint"),
         ("Tilt", "Tilt", "Tilt", "Tilt"),
         ("Roll", "Roll", "Roll", "Roll"),

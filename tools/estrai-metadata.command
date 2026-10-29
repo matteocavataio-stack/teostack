@@ -24,6 +24,9 @@ find_tool() {
 
 EXIF="$(find_tool exiftool)"
 PROBE="$(find_tool ffprobe)"
+# art-cmd (ARRI Reference Tool): dà ISO, WB, tint, shutter, lente, ND, tilt/roll dei clip ARRI
+ART="$(find "$HOME/ARRI" /Applications/ARRI /opt/ARRI /usr/local/ARRI -name art-cmd -type f 2>/dev/null | sort -r | head -1)"
+[ -z "$ART" ] && ART="$(command -v art-cmd 2>/dev/null)"
 
 echo "=== TeoStackXt · estrazione metadata ==="
 echo "Cartella: $DIR"
@@ -35,6 +38,7 @@ if [ -z "$EXIF" ]; then
 fi
 echo "ExifTool: $EXIF ($("$EXIF" -ver))"
 if [ -n "$PROBE" ]; then echo "ffprobe:  $PROBE"; else echo "ffprobe:  NON TROVATO (si farà senza: va bene lo stesso, ma è meglio averlo)"; fi
+if [ -n "$ART" ]; then echo "art-cmd:  $ART"; else echo "art-cmd:  non trovato (i clip ARRI saranno letti solo con ExifTool/ffprobe)"; fi
 
 mkdir -p "$OUT" "$CUTS" || { echo "Impossibile creare $OUT"; pause; exit 1; }
 {
@@ -42,6 +46,7 @@ mkdir -p "$OUT" "$CUTS" || { echo "Impossibile creare $OUT"; pause; exit 1; }
   echo "Cartella: $DIR"
   echo "ExifTool: $EXIF $("$EXIF" -ver)"
   echo "ffprobe: ${PROBE:-non trovato}"
+  echo "art-cmd: ${ART:-non trovato}"
   echo
 } > "$LOG"
 
@@ -87,6 +92,15 @@ while IFS= read -r -d '' f; do
   if [ -n "$PROBE" ]; then
     limited "$PROBE" -v error -show_format -show_streams -show_data -of json "$f" 2>/dev/null | head -c "$CAP" > "$OUT/$safe.ffprobe.json"
     [ -s "$OUT/$safe.ffprobe.json" ] || rm -f "$OUT/$safe.ffprobe.json"
+  fi
+
+  # 3b) art-cmd sui clip ARRI (MXF, MOV ProRes, ARRIRAW): metadata del primo fotogramma
+  if [ -n "$ART" ]; then
+    case "$ext" in
+      mov|mxf|ari|arx)
+        limited "$ART" export --input "$f" --duration 1 --output "$OUT/$safe.art.json" > "$OUT/$safe.art.log" 2>&1
+        if [ -s "$OUT/$safe.art.json" ]; then rm -f "$OUT/$safe.art.log"; else echo "    art-cmd: nessun metadata (vedi .art.log)"; rm -f "$OUT/$safe.art.json"; fi ;;
+    esac
   fi
 
   # 4) file piccoli di accompagnamento (XML, SRT, RMD…): copiati interi

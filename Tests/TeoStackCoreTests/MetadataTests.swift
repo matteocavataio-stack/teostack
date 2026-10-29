@@ -603,3 +603,27 @@ final class JSONNumberVersusBooleanTests: XCTestCase {
         XCTAssertEqual(z["roll"], "0"); XCTAssertEqual(z["tilt"], "1"); XCTAssertEqual(z["ndFilter"], "ND 0"); XCTAssertEqual(z["iso"], "1")
     }
 }
+
+final class ARRIShutterTests: XCTestCase {
+    func testShutterIsNormalisedAndAngleIsDerivedFromTimeAndSensorFPS() throws {
+        let m = ARTMetadataParser.parse(try Fixtures.json(Fixtures.artCmdExport))
+        XCTAssertEqual(m["shutter"], "1/50")
+        XCTAssertEqual(m["sensorFPS"], "24")
+        XCTAssertEqual(m["shutterAngle"], "172.8°", "1/50 s a 24 fps")
+    }
+
+    func testExposureTimeFormats() {
+        XCTAssertEqual(ARTMetadataParser.exposureSeconds("1/50"), 0.02)
+        XCTAssertEqual(ARTMetadataParser.exposureSeconds("0.02"), 0.02)
+        XCTAssertEqual(ARTMetadataParser.exposureSeconds(0.0208333 as NSNumber)!, 0.0208333, accuracy: 1e-9)
+        XCTAssertNil(ARTMetadataParser.exposureSeconds("n/d"))
+        XCTAssertNil(ARTMetadataParser.exposureSeconds("1/0"))
+        func parse(_ exposure: Any, rate: String) -> [String: String] {
+            ARTMetadataParser.parse(["arriJsonHeader": [:], "clipBasedMetadataSets": [], "frameBasedMetadata": ["frames": [[
+                "frameBasedMetadataSets": ["Sensor State": ["exposureTime": exposure, "sensorSampleRate": rate, "exposureIndex": 800]]]]]])
+        }
+        XCTAssertEqual(parse("1/48", rate: "24/1")["shutterAngle"], "180°")
+        XCTAssertEqual(parse(0.0208333 as NSNumber, rate: "24/1")["shutter"], "1/48")
+        XCTAssertNil(parse("1/48", rate: "")["shutterAngle"], "senza frame rate del sensore l'angolo non si calcola")
+    }
+}

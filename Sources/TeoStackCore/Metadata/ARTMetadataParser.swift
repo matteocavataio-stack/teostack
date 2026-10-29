@@ -69,8 +69,14 @@ public enum ARTMetadataParser {
 
             if let s = sets["Sensor State"] as? [String: Any] {
                 if let iso = number(s["exposureIndex"]) { out["iso"] = String(Int(iso)) }
-                if let t = string(s["exposureTime"]) { out["shutter"] = t }
-                if let r = rational(s["sensorSampleRate"]) { out["sensorFPS"] = trimmed(r, decimals: 3) }
+                let sensorFPS = rational(s["sensorSampleRate"])
+                if let r = sensorFPS { out["sensorFPS"] = trimmed(r, decimals: 3) }
+                // tempo di esposizione: «1/50», «0.02» o un numero → in secondi; l'angolo dello shutter si ricava da tempo e frame rate del sensore
+                // (angolo = 360° × tempo × fps; es. 1/50 s a 24 fps = 172,8°): è un calcolo su due valori del file, non un valore letto
+                if let seconds = exposureSeconds(s["exposureTime"]), seconds > 0 {
+                    out["shutter"] = ExifMapper.shutterText(seconds)
+                    if let fps = sensorFPS, fps > 0 { out["shutterAngle"] = "\(trimmed(360 * seconds * fps, decimals: 1))°" }
+                } else if let t = string(s["exposureTime"]) { out["shutter"] = t }
             }
             if let f = sets["Filter"] as? [String: Any], let d = number(f["ndFilterDensity"]) {
                 out["ndFilter"] = "ND \(trimmed(d, decimals: 1))"
@@ -115,6 +121,16 @@ public enum ARTMetadataParser {
         if let n = value as? NSNumber, !n.isJSONBoolean { return n.doubleValue }
         if let s = value as? String { return Double(s) }
         return nil
+    }
+
+    /// «1/50» → 0,02 · «0.02» → 0,02 · 0,02 → 0,02.
+    static func exposureSeconds(_ value: Any?) -> Double? {
+        if let s = value as? String {
+            let parts = s.split(separator: "/").map { $0.trimmingCharacters(in: .whitespaces) }
+            if parts.count == 2, let n = Double(parts[0]), let d = Double(parts[1]), d != 0 { return n / d }
+            return Double(s.trimmingCharacters(in: .whitespaces))
+        }
+        return number(value)
     }
 
     /// "24/1" → 24 · "24000/1001" → 23.976...

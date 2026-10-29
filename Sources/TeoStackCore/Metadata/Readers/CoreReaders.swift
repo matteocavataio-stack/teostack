@@ -64,8 +64,10 @@ public struct ARRIReader: MetadataReader {
         }
         guard !values.isEmpty else { return .unsupported(diagnostics) }
         var m = ClipMetadata(columns: values, family: "ARRI")
+        // ffprobe/ExifTool completano ciò che art-cmd e l'MXF non danno (numero di fotogrammi, audio…); i valori ARRI prevalgono
+        m.fillMissing(from: CameraMediaEngine.gather(file, sidecars: false).metadata)
         m.container = m.container ?? ARRIReader.containerName(file)
-        m.rawFields = RawTags.fields(from: rawTags)
+        m.rawFields.merge(RawTags.fields(from: rawTags)) { a, _ in a }
         m.diagnostics = diagnostics
         m.status = diagnostics.contains { if case .artCmdFailed = $0 { return true } else { return false } } ? .partial : .read
         return m

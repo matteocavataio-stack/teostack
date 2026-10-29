@@ -476,18 +476,71 @@ struct ClipTableView: View {
     @State private var ascending = true
     @State private var selectedClipID: Int64?
 
+    @AppStorage("clipColumnWidths") private var widthsSetting = ""
+    @State private var dragStartWidth: [String: Double] = [:]
+
+    /// Colonne visibili NELL'ORDINE scelto dall'utente (l'ordine è quello della lista salvata).
     private var visibleColumns: [ClipColumn] {
-        let wanted = Set(columnsSetting.split(separator: ",").map(String.init))
-        return ClipColumns.all.filter { wanted.contains($0.id) }
+        let ids = columnsSetting.split(separator: ",").map(String.init)
+        var seen = Set<String>()
+        return ids.compactMap { id in
+            guard seen.insert(id).inserted else { return nil }
+            return ClipColumns.column(id: id)
+        }
     }
 
     private func isVisible(_ column: ClipColumn) -> Bool { visibleColumns.contains(column) }
 
+    private func saveOrder(_ ids: [String]) {
+        columnsSetting = (ids.isEmpty ? ["name"] : ids).joined(separator: ",")
+    }
+
     private func toggle(_ column: ClipColumn) {
-        var ids = Set(visibleColumns.map(\.id))
-        if ids.contains(column.id) { ids.remove(column.id) } else { ids.insert(column.id) }
-        if ids.isEmpty { ids = ["name"] }
-        columnsSetting = ClipColumns.all.map(\.id).filter { ids.contains($0) }.joined(separator: ",")
+        var ids = visibleColumns.map(\.id)
+        if let i = ids.firstIndex(of: column.id) { ids.remove(at: i) } else { ids.append(column.id) }
+        saveOrder(ids)
+    }
+
+    /// Sposta la colonna `id` nella posizione di `target` (trascinamento o menu).
+    private func move(_ id: String, before target: String) {
+        var ids = visibleColumns.map(\.id)
+        guard id != target, let from = ids.firstIndex(of: id) else { return }
+        ids.remove(at: from)
+        let to = ids.firstIndex(of: target) ?? ids.count
+        ids.insert(id, at: to)
+        saveOrder(ids)
+    }
+
+    private func shift(_ id: String, by offset: Int) {
+        var ids = visibleColumns.map(\.id)
+        guard let i = ids.firstIndex(of: id) else { return }
+        let j = min(max(i + offset, 0), ids.count - 1)
+        guard i != j else { return }
+        ids.swapAt(i, j)
+        saveOrder(ids)
+    }
+
+    // larghezze: «id:larghezza,id:larghezza»
+    private var widths: [String: Double] {
+        var out: [String: Double] = [:]
+        for part in widthsSetting.split(separator: ",") {
+            let kv = part.split(separator: ":")
+            if kv.count == 2, let w = Double(kv[1]) { out[String(kv[0])] = w }
+        }
+        return out
+    }
+
+    private func width(_ column: ClipColumn) -> Double { min(max(widths[column.id] ?? column.width, 40), 700) }
+
+    private func setWidth(_ column: ClipColumn, _ value: Double) {
+        var all = widths
+        all[column.id] = (min(max(value, 40), 700)).rounded()
+        widthsSetting = all.sorted { $0.key < $1.key }.map { "\($0.key):\(Int($0.value))" }.joined(separator: ",")
+    }
+
+    private func resetLayout() {
+        columnsSetting = ClipColumns.defaultVisibleIDs.joined(separator: ",")
+        widthsSetting = ""
     }
 
     private var rows: [ClipRecord] {
@@ -544,6 +597,8 @@ struct ClipTableView: View {
                 .fixedSize()
                 .help(tr("Salva i metadata dei clip mostrati in JSON, CSV o ALE (Avid). Ogni riga include l'XXH64 del file."))
                 Menu(tr("Colonne")) {
+                    Button(tr("Ripristina ordine e larghezze")) { resetLayout() }
+                    Divider()
                     Section(tr("Dati dell'offload")) {
                         ForEach(ClipColumns.all.filter { !$0.isMetadata }) { c in
                             Toggle(c.localizedTitle, isOn: Binding(get: { isVisible(c) }, set: { _ in toggle(c) }))
@@ -578,8 +633,10 @@ struct ClipTableView: View {
                                 HStack(spacing: 0) {
                                     ForEach(visibleColumns) { col in
                                         cell(col, clip)
+                                        separator
                                     }
                                 }
+                                .fixedSize(horizontal: false, vertical: true)
                                 .padding(.vertical, 3)
                                 .background(clip.id == selectedClipID ? Color.accentColor.opacity(0.18) : Color.clear)
                                 .contentShape(Rectangle())
@@ -594,32 +651,79 @@ struct ClipTableView: View {
         .padding(12)
     }
 
+    private var separator: some View {
+        Rectangle().fill(Color.secondary.opacity(0.35)).frame(width: 1)
+    }
+
     private var header: some View {
         HStack(spacing: 0) {
             ForEach(visibleColumns) { col in
-                Button {
-                    guard col.id != "preview" else { return }
-                    if sortColumnID == col.id { ascending.toggle() } else { sortColumnID = col.id; ascending = true }
-                } label: {
-                    HStack(spacing: 2) {
-                        Text(col.localizedTitle).bold()
-                        if sortColumnID == col.id { Image(systemName: ascending ? "chevron.up" : "chevron.down").appFont(.caption2) }
-                        Spacer(minLength: 0)
-                    }
-                    .frame(width: col.width, alignment: .leading)
-                }
-                .buttonStyle(.plain)
+                headerCell(col)
+                separator
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 4)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private func headerCell(_ col: ClipColumn) -> some View {
+        Button {
+            guard col.id != "preview" else { return }
+            if sortColumnID == col.id { ascending.toggle() } else { sortColumnID = col.id; ascending = true }
+        } label: {
+            HStack(spacing: 2) {
+                Text(col.localizedTitle).bold().lineLimit(1)
+                if sortColumnID == col.id { Image(systemName: ascending ? "chevron.up" : "chevron.down").appFont(.caption2) }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 4)
+            .frame(width: width(col), alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .trailing) { resizeHandle(col) }
+        .draggable(col.id)
+        .dropDestination(for: String.self) { items, _ in
+            guard let dragged = items.first else { return false }
+            move(dragged, before: col.id)
+            return true
+        }
+        .contextMenu {
+            Button(tr("Sposta a sinistra")) { shift(col.id, by: -1) }
+            Button(tr("Sposta a destra")) { shift(col.id, by: 1) }
+            Button(tr("Larghezza standard")) { setWidth(col, col.width) }
+            Divider()
+            Button(tr("Nascondi colonna")) { toggle(col) }
+                .disabled(visibleColumns.count <= 1)
+        }
+        .help(tr("Trascina il bordo destro per cambiare la larghezza, trascina il titolo per spostare la colonna."))
+    }
+
+    /// Bordo destro dell'intestazione: trascinandolo si allarga o si restringe la colonna.
+    private func resizeHandle(_ col: ClipColumn) -> some View {
+        Color.clear
+            .frame(width: 8)
+            .contentShape(Rectangle())
+            .onHover { inside in
+                if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+            }
+            .gesture(
+                DragGesture(minimumDistance: 1)
+                    .onChanged { value in
+                        let start = dragStartWidth[col.id] ?? width(col)
+                        dragStartWidth[col.id] = start
+                        setWidth(col, start + Double(value.translation.width))
+                    }
+                    .onEnded { _ in dragStartWidth[col.id] = nil }
+            )
     }
 
     @ViewBuilder
     private func cell(_ col: ClipColumn, _ clip: ClipRecord) -> some View {
         if col.id == "preview" {
             ThumbnailCell(clip: clip, cache: projects.thumbnails, revision: projects.thumbnailRevision)
-                .frame(width: col.width, alignment: .leading)
+                .padding(.horizontal, 4)
+                .frame(width: width(col), alignment: .leading)
         } else {
             let text = ClipColumns.value(col, of: clip)
             Text(text)
@@ -627,7 +731,8 @@ struct ClipTableView: View {
                 .truncationMode(.middle)
                 .font(col.id == "hash" ? .system(.body, design: .monospaced) : .body)
                 .foregroundStyle(color(col, clip, text))
-                .frame(width: col.width, alignment: .leading)
+                .padding(.horizontal, 4)
+                .frame(width: width(col), alignment: .leading)
         }
     }
 
