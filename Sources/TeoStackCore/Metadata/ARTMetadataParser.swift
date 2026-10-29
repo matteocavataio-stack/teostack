@@ -112,7 +112,7 @@ public enum ARTMetadataParser {
     }
 
     private static func number(_ value: Any?) -> Double? {
-        if let n = value as? NSNumber, !(value is Bool) { return n.doubleValue }
+        if let n = value as? NSNumber, !n.isJSONBoolean { return n.doubleValue }
         if let s = value as? String { return Double(s) }
         return nil
     }

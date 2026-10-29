@@ -112,7 +112,10 @@ public struct ARRIArtCmdFallbackReader: MetadataReader {
         let diagnostics = ARRIReader.mergeArtCmd(file, into: &values, isARRI: false)
         guard !values.isEmpty else { return .unsupported(diagnostics) }
         var m = ClipMetadata(columns: values, family: "ARRI")
-        m.container = ARRIReader.containerName(file)
+        // i dati tecnici del file (ffprobe/ExifTool: durata, fps, codec, audio…) completano quelli di art-cmd, che prevalgono
+        // (serve per esempio ai ProRes ARRI .mov, dove ExifTool non riconosce la camera)
+        m.fillMissing(from: CameraMediaEngine.gather(file, sidecars: false).metadata)
+        m.container = m.container ?? ARRIReader.containerName(file)
         m.diagnostics = diagnostics
         m.status = .read
         return m
@@ -176,6 +179,12 @@ public struct FFprobeGenericReader: MetadataReader {
     }
 }
 
+extension NSNumber {
+    /// true solo per i veri «true/false» del JSON. Un numero 0 o 1 NON è un booleano (`value is Bool` darebbe true anche per 0 e 1:
+    /// scartava per esempio un tint di 0 o un roll di 0 dei clip ARRI).
+    var isJSONBoolean: Bool { String(cString: objCType) == "c" }
+}
+
 extension MetadataError {
     var asDiagnostic: MetadataDiagnostic {
         switch self {
@@ -197,7 +206,7 @@ enum RawTags {
             let text: String
             switch value {
             case let s as String: text = s
-            case let n as NSNumber: text = (value is Bool) ? ((n.boolValue) ? "true" : "false") : n.stringValue
+            case let n as NSNumber: text = n.isJSONBoolean ? (n.boolValue ? "true" : "false") : n.stringValue
             case let a as [Any]: text = a.map { "\($0)" }.joined(separator: " ")
             default: continue
             }

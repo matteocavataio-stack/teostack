@@ -580,3 +580,26 @@ final class MetadataParallelImportTests: XCTestCase {
         XCTAssertTrue(try store.clips(underNode: bin.id).allSatisfy { $0.metadata["camera"] == "ALEXA 35" })
     }
 }
+
+/// Un valore 0 o 1 nel JSON è un numero, non un booleano (prima veniva scartato: tint 0, roll 0… risultavano «N/D»).
+final class JSONNumberVersusBooleanTests: XCTestCase {
+    func testZeroAndOneAreNumbersWhileTrueAndFalseAreBooleans() throws {
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(#"{"zero":0,"one":1,"zerof":0.0,"t":true,"f":false,"x":2.5}"#.utf8)) as? [String: Any])
+        for k in ["zero", "one", "zerof", "x"] { XCTAssertFalse((obj[k] as? NSNumber)?.isJSONBoolean ?? true, k) }
+        for k in ["t", "f"] { XCTAssertTrue((obj[k] as? NSNumber)?.isJSONBoolean ?? false, k) }
+        let raw = RawTags.fields(from: obj)
+        XCTAssertEqual(raw["zero"], "0"); XCTAssertEqual(raw["one"], "1"); XCTAssertEqual(raw["t"], "true"); XCTAssertEqual(raw["f"], "false")
+    }
+
+    func testARRITintAndRollOfZeroAreKept() throws {
+        let m = ARTMetadataParser.parse(try Fixtures.json(Fixtures.artCmdExport))
+        XCTAssertEqual(m["tint"], "0", "il clip ha whiteBalanceTint 0: è un valore, non «N/D»")
+        XCTAssertEqual(m["whiteBalance"], "5600 K")
+        let zero: [String: Any] = ["arriJsonHeader": [:], "clipBasedMetadataSets": [], "frameBasedMetadata": ["frames": [[
+            "timecode": "01:00:00:00",
+            "frameBasedMetadataSets": ["Positional": ["orientation": ["roll": 0, "tilt": 1]], "Filter": ["ndFilterDensity": 0],
+                                        "Sensor State": ["exposureIndex": 1, "exposureTime": "1/48"]]]]]]
+        let z = ARTMetadataParser.parse(zero)
+        XCTAssertEqual(z["roll"], "0"); XCTAssertEqual(z["tilt"], "1"); XCTAssertEqual(z["ndFilter"], "ND 0"); XCTAssertEqual(z["iso"], "1")
+    }
+}
