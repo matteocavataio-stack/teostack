@@ -8,9 +8,10 @@ APP="$DIST/TeoStackXt.app"
 rm -rf "$DIST"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-echo "== Compilazione (arm64 + x86_64)"
-swift build -c release --arch arm64 --arch x86_64 --product TeoStackXt
-BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/TeoStackXt"
+# UNIVERSAL=0: solo per l'architettura di questo Mac (basta con i soli «Command Line Tools»; l'app universale Intel+ARM richiede Xcode completo)
+if [ "${UNIVERSAL:-1}" = "1" ]; then ARCHS=(--arch arm64 --arch x86_64); echo "== Compilazione (arm64 + x86_64)"; else ARCHS=(); echo "== Compilazione ($(uname -m))"; fi
+swift build -c release ${ARCHS[@]+"${ARCHS[@]}"} --product TeoStackXt
+BIN="$(swift build -c release ${ARCHS[@]+"${ARCHS[@]}"} --show-bin-path)/TeoStackXt"
 cp "$BIN" "$APP/Contents/MacOS/TeoStackXt"
 lipo -info "$APP/Contents/MacOS/TeoStackXt"
 
