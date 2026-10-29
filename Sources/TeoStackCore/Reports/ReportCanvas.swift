@@ -95,7 +95,7 @@ final class ReportCanvas {
 
     // MARK: Blocco titolo
 
-    /// Titolo grande (bin/giorno/progetto), progetto in grigio e «Offload started at …». Restituisce il bordo basso del blocco.
+    /// Titolo grande (bin/giorno/progetto) e progetto in grigio. Restituisce il bordo alto del primo riquadro.
     @discardableResult
     func drawTitleBlock() -> Double {
         let top = setup.contentTop + 21.8
@@ -104,10 +104,7 @@ final class ReportCanvas {
         if ctx.projectName != ctx.title {
             pdf.text(ctx.projectName, x: 40.4, top: next, size: setup.bodySize, font: .mono, color: .gray)
         }
-        next += setup.projectToOffload
-        if let d = ctx.offloadStarted {
-            pdf.text("Offload started at \(ReportFormatting.dateTime(d))", x: 40.4, top: next, size: setup.bodySize, font: .mono, color: .gray)
-        }
+        // (la riga «Offload started at …» è stata tolta su richiesta: il primo riquadro sale al suo posto)
         return next + 45.0                                   // bordo alto del primo riquadro
     }
 

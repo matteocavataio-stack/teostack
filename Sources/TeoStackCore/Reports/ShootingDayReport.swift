@@ -76,11 +76,7 @@ enum ShootingDayReport {
         let video = ctx.videoClips, audio = ctx.audioClips, other = ctx.otherFiles
         let clipItems = ctx.allClips
 
-        // Production Info
-        let info = ctx.productionInfo.flatMap { label, value -> [String] in
-            canvas.wrap("\(label): \(value)", width: canvas.setup.boxWidth - 40, size: canvas.setup.bodySize)
-        }
-        box("Production Info", lines: info)
+        // (il riquadro «Production Info» è stato tolto su richiesta)
 
         // Clips Overview
         box("Clips Overview", columns: statsColumns(""), rows: [

@@ -94,9 +94,22 @@ final class ReportGenerationTests: XCTestCase {
     func testShootingDayStatsAndBoxes() throws {
         let sc = try ReferenceScenario()
         let text = bytes(ShootingDayReport.render(try sc.context(.shootingDay)))
-        for expected in ["Production Info", "Clips Overview", "Workflow", "Backups", "Bins", "Camera Sums", "Video Formats",
+        for expected in ["Clips Overview", "Workflow", "Backups", "Bins", "Camera Sums", "Video Formats",
                          "35 sec", "20.77 GB", "4.02 KB", "ARRIRAW"] {
             XCTAssertTrue(text.contains(expected), expected)
+        }
+    }
+
+    func testNoProductionInfoBoxAndNoOffloadStartedLineInAnyReport() throws {
+        let sc = try ReferenceScenario()
+        for kind in ReportKind.allCases {
+            let data = try ReportGenerator.generate(kind, store: sc.store, projectID: sc.project.id, nodeID: sc.bin.id,
+                                                    options: ReportOptions(projectName: "Film", operatorName: "Teo", notes: "una nota"),
+                                                    thumbnails: nil).data
+            let text = bytes(data)
+            XCTAssertFalse(text.contains("Offload started"), "\(kind)")
+            XCTAssertFalse(text.contains("Production Info"), "\(kind)")
+            XCTAssertTrue(text.contains(kind.title.prefix(8)), "il report si crea comunque: \(kind)")
         }
     }
 
