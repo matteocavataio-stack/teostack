@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>TeoStackXt</title>
+    <title>TeoStackPro</title>
     <welcome file="welcome.html" mime-type="text/html"/>
     <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
     <os-version min="14.0"/>
@@ -8,5 +8,5 @@
     <choices-outline><line choice="default"><line choice="com.teostack.xt"/></line></choices-outline>
     <choice id="default"/>
     <choice id="com.teostack.xt" visible="false"><pkg-ref id="com.teostack.xt"/></choice>
-    <pkg-ref id="com.teostack.xt" version="@VERSION@" onConclusion="none">TeoStackXt-component.pkg</pkg-ref>
+    <pkg-ref id="com.teostack.xt" version="@VERSION@" onConclusion="none">TeoStackPro-component.pkg</pkg-ref>
 </installer-gui-script>

@@ -198,7 +198,7 @@ final class PDFWriter {
 
     // MARK: Serializzazione
 
-    func data(title: String, author: String? = nil, creator: String = "TeoStackXt") -> Data {
+    func data(title: String, author: String? = nil, creator: String = "TeoStackPro") -> Data {
         var out = Data("%PDF-1.4\n%\u{E2}\u{E3}\u{CF}\u{D3}\n".utf8)
         var offsets: [Int] = []
         @discardableResult func add(_ body: Data) -> Int {

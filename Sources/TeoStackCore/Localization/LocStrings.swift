@@ -437,7 +437,7 @@ enum LocStrings {
         ("Profilo «{0}» aggiornato.", "Profile “{0}” updated.", "Perfil «{0}» actualizado.", "Perfil «{0}» actualitzat."),
         ("Salva i profili in un file, per usarli su un altro Mac.", "Save the profiles to a file, to use them on another Mac.", "Guarda los perfiles en un archivo para usarlos en otro Mac.", "Desa els perfils en un fitxer, per fer-los servir en un altre Mac."),
         ("Profili salvati in {0}", "Profiles saved to {0}", "Perfiles guardados en {0}", "Perfils desats a {0}"),
-        ("Scegli un file di profili esportato da TeoStackXt.", "Choose a profiles file exported by TeoStackXt.", "Elige un archivo de perfiles exportado por TeoStackXt.", "Tria un fitxer de perfils exportat per TeoStackXt."),
+        ("Scegli un file di profili esportato da TeoStackPro.", "Choose a profiles file exported by TeoStackPro.", "Elige un archivo de perfiles exportado por TeoStackPro.", "Tria un fitxer de perfils exportat per TeoStackPro."),
         ("Importati {0} profili.", "Imported {0} profiles.", "Importados {0} perfiles.", "Importats {0} perfils."),
         ("Cartella in cui salvare i report", "Folder where to save the reports", "Carpeta donde guardar los informes", "Carpeta on desar els informes"),
         ("Salva qui", "Save here", "Guardar aquí", "Desa aquí"),

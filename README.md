@@ -1,4 +1,6 @@
-# TeoStackXt
+# TeoStackPro
+
+> Nome visibile dell'app: **TeoStackPro**. I nomi interni (modulo/prodotto Swift `TeoStackXt`, cartella dei dati `~/Library/Application Support/TeoStackXt`, identificatore `com.teostack.xt`) restano invariati per non perdere progetti e impostazioni esistenti.
 
 App macOS (Swift + SwiftUI, macOS 14+) per DIT: offload con certificazione XXH64, progetti, metadata e report.
 Versione semplificata ispirata a Silverstack XT. Interfaccia in italiano.
@@ -89,7 +91,7 @@ Si scelgono quali report creare e la cartella: **ogni report è un PDF separato*
   Compaiono solo dati letti dai clip (ExifTool / art-cmd) o calcolati dall'offload (dimensioni, date, volumi, backup, verifica, XXH64).
 - «Verified Backups» conta solo i file riletti dal disco con XXH64 identico alla sorgente.
 - Le anteprime nei report sono quelle già generate nel tab Clip; senza anteprima un clip mostra «No preview».
-- Le etichette dei report sono in inglese come nei PDF di riferimento; il piè di pagina dice «TeoStackXt».
+- Le etichette dei report sono in inglese come nei PDF di riferimento; il piè di pagina dice «TeoStackPro».
 - Font: DejaVu Sans Mono incorporato (sottoinsieme, licenza in `THIRD_PARTY_LICENSES.md`) con le stesse misure di Menlo; Helvetica per intestazione e piè di pagina.
   Le forme dei caratteri differiscono leggermente da quelle dei riferimenti, le posizioni coincidono entro circa 1 pt.
 - PDF scritto dall'app senza librerie esterne; verificato con `pdftotext`, `pdfinfo` e confronto numerico con i PDF di riferimento.
@@ -210,8 +212,8 @@ swift run TeoStackXt          # avvia l'app (oppure vedi sotto per il .app)
 ## Creare l'app (.app) e usarla sul tuo Mac
 
 ```bash
-./scripts/build_app.sh        # crea dist/TeoStackXt.app (universale, firma ad-hoc)
-cp -R dist/TeoStackXt.app /Applications/
+./scripts/build_app.sh        # crea dist/TeoStackPro.app (universale, firma ad-hoc)
+cp -R dist/TeoStackPro.app /Applications/
 ```
 
 La prima volta: tasto destro → **Apri** (l'app non è notarizzata). Alla prima lettura di una scheda macOS chiede il permesso

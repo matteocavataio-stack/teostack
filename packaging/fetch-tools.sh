@@ -60,7 +60,7 @@ for tool in ffmpeg ffprobe; do
 done
 
 cat > "$DEST/LICENSES.txt" <<'TXT'
-Programmi inclusi in TeoStackXt (Contents/Resources/tools):
+Programmi inclusi in TeoStackPro (Contents/Resources/tools):
 
 - ExifTool di Phil Harvey — https://exiftool.org — licenza Perl Artistic / GPL.
 - ffmpeg e ffprobe (build statiche di evermeet.cx, anche ridistribuite da https://github.com/ffbinaries/ffbinaries-prebuilt) — licenza GPL v3;

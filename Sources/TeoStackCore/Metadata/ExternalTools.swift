@@ -103,7 +103,7 @@ public enum ExternalTools {
 
     static let systemSearchDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin"]
 
-    /// Strumenti inclusi nell'app installata (TeoStackXt.app/Contents/Resources/tools): hanno la precedenza su quelli di sistema.
+    /// Strumenti inclusi nell'app installata (TeoStackPro.app/Contents/Resources/tools): hanno la precedenza su quelli di sistema.
     public static var bundledToolsDirectories: [String] {
         guard let resources = Bundle.main.resourcePath else { return [] }
         let tools = resources + "/tools"

@@ -31,11 +31,11 @@ jobs:
         run: packaging/build-installer.sh
       - name: Contenuto app
         run: |
-          ls -R dist/TeoStackXt.app/Contents | head -60
-          file dist/TeoStackXt.app/Contents/MacOS/TeoStackXt
+          ls -R dist/TeoStackPro.app/Contents | head -60
+          file dist/TeoStackPro.app/Contents/MacOS/TeoStackPro
       - uses: actions/upload-artifact@v4
         with:
-          name: TeoStackXt-installer
+          name: TeoStackPro-installer
           path: |
             dist/*.pkg
             dist/*.dmg
@@ -46,5 +46,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ inputs.release_tag }}" dist/*.dmg dist/*.pkg --target "${{ github.sha }}" \
-            --title "TeoStackXt ${{ inputs.release_tag }}" \
-            --notes "App macOS universale (Intel + Apple Silicon). .dmg: versione portatile (trascina TeoStackXt.app dove vuoi). .pkg: installer. Primo avvio: clic destro sull'app, poi Apri."
+            --title "TeoStackPro ${{ inputs.release_tag }}" \
+            --notes "App macOS universale (Intel + Apple Silicon). .dmg: versione portatile (trascina TeoStackPro.app dove vuoi). .pkg: installer. Primo avvio: clic destro sull'app, poi Apri."

@@ -88,7 +88,7 @@ final class ReportCanvas {
             pdf.text(ctx.kind.title, x: 18.0, top: headerTop, size: 9, font: .sans)
             pdf.text(date, x: right - 200, top: headerTop, size: 9, font: .sans, align: .right, width: 200)
             let footerTop = page.height - 28.7 + 1.1
-            pdf.text("TeoStackXt", x: 18.0, top: footerTop, size: 9, font: .sans)
+            pdf.text("TeoStackPro", x: 18.0, top: footerTop, size: 9, font: .sans)
             pdf.text("\(i + 1)/\(total)", x: right - 100, top: footerTop, size: 9, font: .sans, align: .right, width: 100)
         }
     }

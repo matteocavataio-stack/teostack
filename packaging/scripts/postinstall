@@ -4,7 +4,7 @@ LOG=/tmp/teostackxt-install.log
 exec >>"$LOG" 2>&1
 echo "== $(date) postinstall"
 
-APP="/Applications/TeoStackXt.app"
+APP="/Applications/TeoStackPro.app"
 xattr -dr com.apple.quarantine "$APP" 2>/dev/null
 
 CONSOLE_USER="$(stat -f%Su /dev/console 2>/dev/null)"

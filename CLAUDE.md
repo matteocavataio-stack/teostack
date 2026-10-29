@@ -1,4 +1,6 @@
-# TeoStackXt — contesto del progetto (letto in automatico a inizio sessione)
+# TeoStackPro (ex TeoStackXt) — contesto del progetto (letto in automatico a inizio sessione)
+
+Il software si chiama ora **TeoStackPro** (nome visibile: finestra, .app, installer, piè di pagina dei report, strumento nei file MHL). Nomi INTERNI invariati di proposito: prodotto/modulo Swift `TeoStackXt`, cartella dati `~/Library/Application Support/TeoStackXt`, bundle id `com.teostack.xt` (così progetti e impostazioni restano).
 
 ## Utente e preferenze
 - Utente italiano, DIT. Rispondere SEMPRE in italiano, risposte brevi, molto approfondite e veritiere. Non inventare: se manca un'informazione, chiedere.

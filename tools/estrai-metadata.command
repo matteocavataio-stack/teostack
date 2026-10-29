@@ -1,5 +1,5 @@
 #!/bin/bash
-# TeoStackXt — estrae i metadata di tutte le clip della cartella in cui si trova questo file.
+# TeoStackPro — estrae i metadata di tutte le clip della cartella in cui si trova questo file.
 # Uso: metti questo file nella cartella con le clip (anche dentro sottocartelle) e fai doppio clic.
 # Non modifica e non copia le clip: le legge soltanto. Crea accanto a sé la cartella «METADATA_JSON_<data>» e il file .zip con i JSON.
 
@@ -15,7 +15,8 @@ pause() { echo; read -n 1 -s -r -p "Premi un tasto per chiudere…"; echo; }
 
 find_tool() {
   local name="$1" d
-  for d in "/Applications/TeoStackXt.app/Contents/Resources/tools" "$HOME/Applications/TeoStackXt.app/Contents/Resources/tools" \
+  for d in "/Applications/TeoStackPro.app/Contents/Resources/tools" "$HOME/Applications/TeoStackPro.app/Contents/Resources/tools" \
+           "/Applications/TeoStackXt.app/Contents/Resources/tools" "$HOME/Applications/TeoStackXt.app/Contents/Resources/tools" \
            "/opt/homebrew/bin" "/usr/local/bin" "/opt/local/bin" "/usr/bin"; do
     [ -x "$d/$name" ] && { echo "$d/$name"; return; }
   done
@@ -28,7 +29,7 @@ PROBE="$(find_tool ffprobe)"
 ART="$(find "$HOME/ARRI" /Applications/ARRI /opt/ARRI /usr/local/ARRI -name art-cmd -type f 2>/dev/null | sort -r | head -1)"
 [ -z "$ART" ] && ART="$(command -v art-cmd 2>/dev/null)"
 
-echo "=== TeoStackXt · estrazione metadata ==="
+echo "=== TeoStackPro · estrazione metadata ==="
 echo "Cartella: $DIR"
 if [ -z "$EXIF" ]; then
   echo
@@ -42,7 +43,7 @@ if [ -n "$ART" ]; then echo "art-cmd:  $ART"; else echo "art-cmd:  non trovato (
 
 mkdir -p "$OUT" "$CUTS" || { echo "Impossibile creare $OUT"; pause; exit 1; }
 {
-  echo "TeoStackXt estrazione metadata — $(date)"
+  echo "TeoStackPro estrazione metadata — $(date)"
   echo "Cartella: $DIR"
   echo "ExifTool: $EXIF $("$EXIF" -ver)"
   echo "ffprobe: ${PROBE:-non trovato}"

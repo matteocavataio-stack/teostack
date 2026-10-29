@@ -242,7 +242,7 @@ struct ReportSheet: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
-        panel.message = tr("Scegli un file di profili esportato da TeoStackXt.")
+        panel.message = tr("Scegli un file di profili esportato da TeoStackPro.")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             let added = try ReportPresetStore().importData(try Data(contentsOf: url))

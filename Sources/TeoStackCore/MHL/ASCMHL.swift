@@ -5,7 +5,7 @@ import FoundationXML
 
 /// Nome e versione del programma (scritti nel file MHL).
 public enum AppInfo {
-    public static let name = "TeoStackXt"
+    public static let name = "TeoStackPro"
     public static var version: String {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0.0"
     }
