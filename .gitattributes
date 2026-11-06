@@ -1,0 +1,2 @@
+# Lo ZIP di GitHub sostituisce la riga con «<hash corto> <data>» del commit: serve a mostrare la build esatta anche senza .git
+packaging/BUILD_ID export-subst

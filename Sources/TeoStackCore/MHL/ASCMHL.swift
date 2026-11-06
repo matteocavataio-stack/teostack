@@ -9,6 +9,16 @@ public enum AppInfo {
     public static var version: String {
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0.0"
     }
+    /// Commit e data da cui è stata costruita l'app (scritti dallo script dell'installer; nil se non disponibili).
+    public static var build: String? {
+        (Bundle.main.infoDictionary?["TeoStackBuild"] as? String).flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
+    }
+    /// «1.8.0 · 8b8b124 2026-11-06»: la versione esatta, mostrata nell'angolo della finestra.
+    public static var displayVersion: String { displayVersion(version: version, build: build) }
+    static func displayVersion(version: String, build: String?) -> String {
+        guard let build, !build.isEmpty else { return version }
+        return "\(version) · \(build)"
+    }
 }
 
 public struct ASCMHLOptions {

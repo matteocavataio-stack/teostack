@@ -102,3 +102,18 @@ extension ManualTests {
         try ManualPDF.render(language: language, version: ProcessInfo.processInfo.environment["TEOSTACK_MANUAL_VERSION"] ?? AppInfo.version).write(to: URL(fileURLWithPath: out))
     }
 }
+
+final class AppVersionTests: XCTestCase {
+    func testDisplayVersionShowsBuildWhenKnown() {
+        XCTAssertEqual(AppInfo.displayVersion(version: "1.8.0", build: "8b8b124 2026-11-06"), "1.8.0 · 8b8b124 2026-11-06")
+        XCTAssertEqual(AppInfo.displayVersion(version: "1.8.0", build: nil), "1.8.0")
+        XCTAssertEqual(AppInfo.displayVersion(version: "1.8.0", build: ""), "1.8.0")
+    }
+
+    /// La versione dell'installer sta in un solo file (packaging/VERSION): deve essere del tipo x.y.z.
+    func testPackagingVersionFileIsSemantic() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appendingPathComponent("packaging/VERSION"), encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+        XCTAssertNotNil(text.range(of: #"^\d+\.\d+\.\d+$"#, options: .regularExpression), text)
+    }
+}

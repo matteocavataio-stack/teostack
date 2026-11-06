@@ -15,7 +15,7 @@ struct TeoStackXtApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("TeoStackPro") {
+        WindowGroup("TeoStackPro \(AppInfo.version)") {
             ContentView()
         }
         .windowResizability(.contentMinSize)

@@ -2,7 +2,16 @@
 # Crea TeoStackPro.app (universale Intel + Apple Silicon), l'installer .pkg e il .dmg. Da eseguire su macOS.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-$(tr -d '[:space:]' < packaging/VERSION)}"
+# Build esatta mostrata nell'app: «<hash corto> <data>» del commit. Con .git si legge da git; con lo ZIP di GitHub dal file BUILD_ID (compilato da GitHub).
+BUILD=""
+if git rev-parse --short HEAD >/dev/null 2>&1; then
+    BUILD="$(git rev-parse --short HEAD) $(git show -s --format=%cs HEAD)"
+    if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then BUILD="$BUILD (modificata)"; fi
+elif [ -f packaging/BUILD_ID ] && ! grep -q 'Format:' packaging/BUILD_ID; then
+    BUILD="$(tr -d '\n' < packaging/BUILD_ID)"
+fi
+echo "== Versione $VERSION, build ${BUILD:-non disponibile}"
 DIST="$PWD/dist"
 APP="$DIST/TeoStackPro.app"
 rm -rf "$DIST"
@@ -35,6 +44,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$VERSION</string>
+  <key>TeoStackBuild</key><string>$BUILD</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.video</string>
   <key>NSHighResolutionCapable</key><true/>
@@ -67,4 +77,4 @@ DMG_STAGE="$DIST/dmg"; mkdir -p "$DMG_STAGE"; cp -R "$APP" "$DMG_STAGE/"; ln -s 
 hdiutil create -volname "TeoStackPro" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DIST/TeoStackPro-$VERSION.dmg"
 
 rm -rf "$STAGE" "$DMG_STAGE" "$DIST/components.plist" "$DIST/distribution.xml" "$DIST/TeoStackPro-component.pkg"
-echo "== Pronto:"; ls -lh "$DIST"
+echo "== Pronto: TeoStackPro $VERSION (build ${BUILD:-non disponibile})"; ls -lh "$DIST"

@@ -59,6 +59,7 @@ struct ContentView: View {
         .id(languageSettings.language)
         .appAppearance()
         .frame(minWidth: 1280, minHeight: 760)
+        .overlay(alignment: .bottomTrailing) { VersionBadge() }
         .sheet(isPresented: $showSettings) {
             SettingsSheet { showSettings = false }
         }
@@ -608,6 +609,18 @@ struct ResultBanner: View {
             .padding(8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: 6).fill(color))
+    }
+}
+/// Versione esatta (e build) nell'angolo in basso a destra: serve a controllare subito che l'app installata sia quella giusta.
+struct VersionBadge: View {
+    var body: some View {
+        Text("TeoStackPro \(AppInfo.displayVersion)")
+            .font(.system(size: 10, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 4))
+            .padding(6)
+            .allowsHitTesting(false)
     }
 }
 #endif
