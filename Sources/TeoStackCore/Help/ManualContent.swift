@@ -133,10 +133,11 @@ enum ManualContent {
             "**Nome del bin**: è proposto dal nome della sorgente e lo puoi cambiare. Se esiste già un bin con quel nome, l'offload viene aggiunto a quello.",
             "**Destinazioni**: da 1 a 8. **Aggiungi destinazione** e poi **Scegli…** per ognuna. Sotto compare il percorso che verrà creato: la cartella scelta più il nome del bin.",
             "**Percorsi salvati**: il menu salva i percorsi che usi di solito («Salva i percorsi scelti»), li richiama per una destinazione, li applica tutti in una volta («Usa tutti i percorsi salvati») o li toglie.",
-            "**Opzioni** (sotto la barra di avanzamento): vedi sotto. Il suono di fine offload si imposta in Impostazioni.",
+            "**Opzioni del progetto** (pulsante **Opzioni progetto** nella barra in alto): vedi sotto. Il suono di fine offload si imposta in Impostazioni.",
             "Premi **Avvia**. Con **Sospendi** fermi la copia e con **Continua** riparte da dove si era fermata; con **Annulla** fermi tutto in qualsiasi momento.",
         ]),
-        .h2("Le opzioni"),
+        .h2("Le opzioni del progetto"),
+        .p("Queste tre opzioni si impostano **per ogni progetto** con il pulsante **Opzioni progetto** nella barra in alto: valgono per tutti gli offload di quel progetto. Sotto la barra di avanzamento compare un riepilogo dei valori attivi. Un progetto che non ha mai salvato le sue opzioni parte dai valori che avevi prima."),
         .table(header: ["Opzione", "Significato"], rows: [
             ["Verifica durante la copia", "Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con gli SSD. Con dischi lenti (HDD) toglila: la verifica parte a copia finita."],
             ["Crea certificato ASC MHL", "Scrive la cartella «ascmhl» nella copia (vedi sotto). Attiva di serie."],
@@ -271,6 +272,13 @@ enum ManualContent {
             ["Contact Print Report", "Griglia di anteprime, in pagina orizzontale."],
         ], widths: [1.7, 4]),
         .p("I report sono in inglese e usano «N/D» per i dati sconosciuti, come i report di riferimento. Il nome del file è «<Nome report>-<bin>-<aaaa-mm-gg-HHmm>.pdf»; un file esistente non viene mai sovrascritto (si aggiunge « 2», « 3»…)."),
+        .h2("Loghi e aspetto dei report"),
+        .p("In **Opzioni progetto** puoi scegliere due immagini per ogni progetto: **PROGETTO** (in alto a sinistra) e **SERVICE** (in alto a destra). Compaiono in testa a ogni pagina di tutti i report del progetto, con le proporzioni originali (al massimo 130 × 30 punti)."),
+        .bullets([
+            "Puoi scegliere PNG, JPEG, TIFF o PDF: l'app converte l'immagine in JPEG su fondo bianco (le parti trasparenti diventano bianche). **Rimuovi** toglie il logo.",
+            "Nei formati con il margine alto stretto (Clips e Contact Print) l'intestazione scende per fare posto ai loghi.",
+            "I report usano i font incorporati Inter (titoli, data, piè di pagina) e JetBrains Mono (corpo), e icone proprie: rombi per le valutazioni, nastro per i segnalibri, quadratini per le etichette e barre piene.",
+        ]),
         .h2("La finestra di esportazione"),
         .steps([
             "Scrivi il **nome del progetto** e l'**operatore** (il DIT).",

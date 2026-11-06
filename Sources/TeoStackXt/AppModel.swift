@@ -92,6 +92,12 @@ final class ProjectsViewModel: ObservableObject {
 
     var selectedProject: ProjectSummary? { projects.first { $0.id == selectedProjectID } }
 
+    /// Impostazioni salvate del progetto selezionato; se non ne ha, i valori di partenza (le vecchie opzioni valide per tutta l'app).
+    func projectSettings() -> ProjectSettings {
+        guard let store, let id = selectedProjectID, let saved = try? store.settings(projectID: id) else { return OffloadViewModel.legacySettings() }
+        return saved
+    }
+
     // MARK: Lettura
 
     func reload() {

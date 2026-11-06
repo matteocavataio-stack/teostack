@@ -120,7 +120,56 @@ public final class ProjectStore {
                 }
             }
         }
+        m.registerMigration("v8-project-settings") { db in
+            // Impostazioni per progetto: opzioni dell'offload e loghi PROGETTO / SERVICE dei report.
+            try db.execute(sql: """
+                CREATE TABLE project_settings (
+                    projectID INTEGER PRIMARY KEY REFERENCES project(id) ON DELETE CASCADE,
+                    overlapVerification INTEGER NOT NULL DEFAULT 1,
+                    ascMHL INTEGER NOT NULL DEFAULT 1,
+                    clearSourceWhenDone INTEGER NOT NULL DEFAULT 1,
+                    projectLogo BLOB,
+                    serviceLogo BLOB
+                )
+                """)
+        }
         return m
+    }
+
+    // MARK: Impostazioni del progetto
+
+    /// Le impostazioni salvate per il progetto; nil se non ne ha mai salvate (chi chiama usa i propri valori di partenza).
+    public func settings(projectID: Int64) throws -> ProjectSettings? {
+        try wrap {
+            try db.read { db in
+                guard let row = try Row.fetchOne(db, sql: "SELECT * FROM project_settings WHERE projectID = ?", arguments: [projectID]) else { return nil }
+                return ProjectSettings(overlapVerification: (row["overlapVerification"] as Int) != 0,
+                                       ascMHL: (row["ascMHL"] as Int) != 0,
+                                       clearSourceWhenDone: (row["clearSourceWhenDone"] as Int) != 0,
+                                       projectLogo: row["projectLogo"] as Data?,
+                                       serviceLogo: row["serviceLogo"] as Data?)
+            }
+        }
+    }
+
+    /// Salva (sostituisce) le impostazioni del progetto. I loghi devono essere JPEG validi.
+    public func saveSettings(_ settings: ProjectSettings, projectID: Int64) throws {
+        if let logo = settings.projectLogo { try ProjectSettings.validateLogo(logo) }
+        if let logo = settings.serviceLogo { try ProjectSettings.validateLogo(logo) }
+        try wrap {
+            try db.write { db in
+                guard try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM project WHERE id = ?", arguments: [projectID]) ?? 0 > 0 else {
+                    throw ProjectStoreError.notFound(tr("Progetto non trovato."))
+                }
+                try db.execute(sql: """
+                    INSERT INTO project_settings(projectID, overlapVerification, ascMHL, clearSourceWhenDone, projectLogo, serviceLogo)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(projectID) DO UPDATE SET overlapVerification = excluded.overlapVerification, ascMHL = excluded.ascMHL,
+                        clearSourceWhenDone = excluded.clearSourceWhenDone, projectLogo = excluded.projectLogo, serviceLogo = excluded.serviceLogo
+                    """, arguments: [projectID, settings.overlapVerification ? 1 : 0, settings.ascMHL ? 1 : 0,
+                                     settings.clearSourceWhenDone ? 1 : 0, settings.projectLogo, settings.serviceLogo])
+            }
+        }
     }
 
     /// Solo per i test (`@testable import`): esegue SQL grezzo, per esempio per riportare un database a uno schema precedente.

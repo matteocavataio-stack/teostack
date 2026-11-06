@@ -105,7 +105,7 @@ enum ClipsReport {
             case .rating:
                 for k in 0..<5 { canvas.drawStar(cx: x0 + sidePadding + 6.1 + Double(k) * 12.2, cy: center, radius: 5.4, filled: false) }
             case .label(let t):
-                pdf.circle(cx: x0 + sidePadding + 5.2, cy: center, radius: 4.8, strokeColor: PDFWriter.Color.line, lineWidth: 0.7)
+                canvas.drawLabelSwatch(x: x0 + sidePadding + 0.4, cy: center, size: 9.2)
                 pdf.text(t, x: x0 + 15.5, top: center - lineHeight / 2 + 0.2, size: size, font: .mono)
             }
         }

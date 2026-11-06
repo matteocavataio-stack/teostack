@@ -26,10 +26,12 @@ struct ContentView: View {
     @AppStorage("showHistory") private var showHistory = true
     @State private var showReport = false
     @State private var showSettings = false
+    @State private var showProjectSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
-            ProjectBar(projects: app.projects, request: $request, showReport: $showReport, showSettings: $showSettings, tab: $tab)
+            ProjectBar(projects: app.projects, request: $request, showReport: $showReport, showSettings: $showSettings,
+                       showProjectSettings: $showProjectSettings, tab: $tab)
                 .sheet(isPresented: $showReport) {
                     ReportSheet(projects: app.projects) { showReport = false }
                 }
@@ -63,7 +65,13 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsSheet { showSettings = false }
         }
+        .sheet(isPresented: $showProjectSettings) {
+            ProjectSettingsSheet(projects: app.projects, onSaved: { app.offload.reloadProjectSettings() }, onClose: { showProjectSettings = false })
+        }
         .onReceive(NotificationCenter.default.publisher(for: .openSettings)) { _ in showSettings = true }
+        .onReceive(NotificationCenter.default.publisher(for: .openProjectSettings)) { _ in
+            if app.projects.selectedProject != nil { showProjectSettings = true }
+        }
         .onReceive(app.projects.$placement) { app.offload.placement = $0 }
         .onReceive(NotificationCenter.default.publisher(for: .exportReport)) { _ in
             if app.projects.selectedProject != nil { showReport = true }
@@ -510,9 +518,7 @@ struct DestinationRow: View {
 
 struct ControlBar: View {
     @ObservedObject var vm: OffloadViewModel
-    @AppStorage("overlapVerification") private var overlapVerification = true
-    @AppStorage("clearSourceWhenDone") private var clearSourceWhenDone = true
-    @AppStorage("ascMHL") private var ascMHL = true
+    private func yesNo(_ value: Bool) -> String { value ? tr("sì") : tr("no") }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -540,17 +546,15 @@ struct ControlBar: View {
             }
             .appFont(.callout, monospacedDigit: true)
             HStack(spacing: 18) {
-                Toggle(tr("Verifica durante la copia"), isOn: $overlapVerification)
-                    .toggleStyle(.checkbox)
-                    .disabled(vm.isRunning)
-                    .help(tr("Ogni file viene riletto e confrontato appena scritto, mentre la copia prosegue: più veloce con dischi SSD. Disattivala con dischi lenti (HDD): la verifica partirà a copia finita."))
-                Toggle(tr("Crea certificato ASC MHL"), isOn: $ascMHL)
-                    .toggleStyle(.checkbox)
-                    .disabled(vm.isRunning)
-                    .help(tr("A offload riuscito scrive nella cartella della copia la cartella «ascmhl» con il certificato degli hash (formato ASC MHL 2.0, come Silverstack). Non viene creato se qualche file non è verificato OK."))
-                Toggle(tr("Svuota la sorgente a fine offload"), isOn: $clearSourceWhenDone)
-                    .toggleStyle(.checkbox)
-                    .help(tr("Quando tutti i file sono OK la parte «Sorgente» si svuota da sola, pronta per la scheda successiva. Se ci sono problemi resta l'elenco dei file."))
+                // Le tre opzioni dell'offload sono nelle impostazioni del progetto (pulsante «Opzioni progetto»).
+                Text(tr("Progetto · verifica durante la copia: {0} · certificato ASC MHL: {1} · svuota la sorgente: {2}",
+                        yesNo(vm.projectSettings.overlapVerification), yesNo(vm.projectSettings.ascMHL), yesNo(vm.projectSettings.clearSourceWhenDone)))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Button(tr("Opzioni progetto…")) { NotificationCenter.default.post(name: .openProjectSettings, object: nil) }
+                    .disabled(vm.placement == nil)
+                    .help(tr("Verifica durante la copia, certificato ASC MHL, svuota la sorgente e i loghi dei report: si impostano per ogni progetto."))
                 if let result = vm.result, result.outcome == .completed, result.allOK, vm.runState == .idle, vm.ejectableSourceVolume != nil {
                     Button(tr("Espelli sorgente")) { vm.ejectSource() }
                         .help(tr("Smonta ed espelle la scheda: solo dopo un offload con tutti i file OK"))

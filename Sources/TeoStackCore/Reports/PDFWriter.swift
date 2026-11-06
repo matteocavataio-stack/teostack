@@ -3,7 +3,7 @@ import Foundation
 /// Scrittore PDF minimale, senza dipendenze, per i report.
 /// - Coordinate in punti con l'origine in ALTO a sinistra (y cresce verso il basso), come nelle misure dei report di riferimento.
 /// - Pagine di dimensione diversa nello stesso documento.
-/// - Font: Helvetica (intestazioni) e DejaVu Sans Mono incorporato (corpo), testo WinAnsi con accenti italiani.
+/// - Font incorporati: Inter (titoli, data, piè di pagina) e JetBrains Mono (corpo), testo WinAnsi con accenti italiani.
 /// - Immagini JPEG (anteprime), rettangoli, rettangoli arrotondati, poligoni.
 final class PDFWriter {
     enum Font {
@@ -21,7 +21,7 @@ final class PDFWriter {
 
         var isMono: Bool { self == .mono || self == .monoBold || self == .monoItalic }
 
-        /// Distanza dal bordo alto del testo alla linea di base, in frazioni del corpo (metriche di SF e Menlo dei riferimenti).
+        /// Distanza dal bordo alto del testo alla linea di base, in frazioni del corpo.
         var ascent: Double { isMono ? 0.9282 : 0.9526 }
     }
 
@@ -87,12 +87,13 @@ final class PDFWriter {
         return out
     }
 
-    static let monoAdvance = 1233.0 / 2048.0      // larghezza dei caratteri di DejaVu Sans Mono / Menlo (em)
+    static let monoAdvance = 600.0 / 1000.0       // larghezza dei caratteri di JetBrains Mono (em)
 
     static func width(_ s: String, size: Double, font: Font) -> Double {
         if font.isMono { return Double(winAnsi(s).count) * monoAdvance * size }
         let bold = font == .sansBold
-        return Double(winAnsi(s).reduce(0) { $0 + HelveticaMetrics.width(of: $1, bold: bold) }) * size / 1000
+        let table = bold ? ReportSansMetrics.bold : ReportSansMetrics.regular
+        return Double(winAnsi(s).reduce(0) { $0 + (Int($1) >= 32 ? table[Int($1) - 32] : 0) }) * size / 1000
     }
 
     // MARK: Disegno
@@ -211,40 +212,46 @@ final class PDFWriter {
             str("<< \(dict) /Length \(bytes.count) >>\nstream\n") + bytes + str("\nendstream")
         }
 
-        // Oggetti fissi: 1 Catalog, 2 Pages, 3-4 Helvetica, 5-7 descrittori mono, 8-10 file font, 11-13 font mono, 14 Info
-        let monoFiles: [(name: String, data: Data, bold: Bool, italic: Bool)] = [
-            ("DejaVuSansMono", ReportFontData.regular, false, false),
-            ("DejaVuSansMono-Bold", ReportFontData.bold, true, false),
-            ("DejaVuSansMono-Oblique", ReportFontData.oblique, false, true),
+        // Oggetti fissi: 1 Catalog, 2 Pages, poi per ognuno dei 5 font (file, descrittore, dizionario) 3...17, 18 Info, 19... immagini
+        struct EmbeddedFont { let name: String; let data: Data; let metrics: ReportFontData.Metrics; let mono: Bool; let bold: Bool; let italic: Bool }
+        let embedded: [EmbeddedFont] = [
+            EmbeddedFont(name: "Inter", data: ReportFontData.sansRegular, metrics: ReportFontData.sansRegularMetrics, mono: false, bold: false, italic: false),
+            EmbeddedFont(name: "Inter-Bold", data: ReportFontData.sansBold, metrics: ReportFontData.sansBoldMetrics, mono: false, bold: true, italic: false),
+            EmbeddedFont(name: "JetBrainsMono", data: ReportFontData.regular, metrics: ReportFontData.regularMetrics, mono: true, bold: false, italic: false),
+            EmbeddedFont(name: "JetBrainsMono-Bold", data: ReportFontData.bold, metrics: ReportFontData.boldMetrics, mono: true, bold: true, italic: false),
+            EmbeddedFont(name: "JetBrainsMono-Italic", data: ReportFontData.oblique, metrics: ReportFontData.obliqueMetrics, mono: true, bold: false, italic: true),
         ]
-        let firstPageObject = 15 + images.count
+        let infoObject = 3 + embedded.count * 3
+        let firstImageObject = infoObject + 1
+        let firstPageObject = firstImageObject + images.count
         let kids = pages.indices.map { "\(firstPageObject + $0 * 2) 0 R" }.joined(separator: " ")
         add(str("<< /Type /Catalog /Pages 2 0 R >>"))                                                                    // 1
         add(str("<< /Type /Pages /Kids [\(kids)] /Count \(pages.count) >>"))                                            // 2
-        add(str("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"))                    // 3
-        add(str("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"))               // 4
-        for (i, m) in monoFiles.enumerated() {                                                                           // 5-7
-            let flags = 33 | (m.italic ? 64 : 0)
-            add(str("<< /Type /FontDescriptor /FontName /\(m.name) /Flags \(flags) /FontBBox [-559 -375 718 1028] /ItalicAngle \(m.italic ? -11 : 0) "
-                    + "/Ascent 928 /Descent -236 /CapHeight 729 /StemV \(m.bold ? 140 : 80) /FontFile2 \(8 + i) 0 R >>"))
-        }
-        for m in monoFiles { add(stream("/Length1 \(m.data.count)", m.data)) }                                          // 8-10
-        let widths = Array(repeating: "602", count: 224).joined(separator: " ")
-        for (i, m) in monoFiles.enumerated() {                                                                           // 11-13
+        for (i, m) in embedded.enumerated() {
+            let fileObject = 3 + i * 3, descriptorObject = fileObject + 1
+            add(stream("/Length1 \(m.data.count)", m.data))                                                              // file TrueType
+            let flags = (m.mono ? 1 : 0) | 32 | (m.italic ? 64 : 0)
+            let bb = m.metrics.bbox.map(String.init).joined(separator: " ")
+            add(str("<< /Type /FontDescriptor /FontName /\(m.name) /Flags \(flags) /FontBBox [\(bb)] /ItalicAngle \(m.italic ? -11 : 0) "
+                    + "/Ascent \(m.metrics.ascent) /Descent \(m.metrics.descent) /CapHeight \(m.metrics.capHeight) /StemV \(m.bold ? 140 : 80) /FontFile2 \(fileObject) 0 R >>"))
+            let widths = m.mono ? Array(repeating: "600", count: 224).joined(separator: " ")
+                : (m.bold ? ReportSansMetrics.bold : ReportSansMetrics.regular).map(String.init).joined(separator: " ")
             add(str("<< /Type /Font /Subtype /TrueType /BaseFont /\(m.name) /FirstChar 32 /LastChar 255 /Widths [\(widths)] "
-                    + "/Encoding /WinAnsiEncoding /FontDescriptor \(5 + i) 0 R >>"))
+                    + "/Encoding /WinAnsiEncoding /FontDescriptor \(descriptorObject) 0 R >>"))
+            _ = descriptorObject
         }
         var info = "<< /Title \(PDFWriter.pdfString(title)) /Creator \(PDFWriter.pdfString(creator))"
         if let author, !author.isEmpty { info += " /Author \(PDFWriter.pdfString(author))" }
-        add(str(info + " >>"))                                                                                           // 14
-        for img in images {                                                                                              // 15...
+        add(str(info + " >>"))                                                                                           // Info
+        for img in images {
             let cs = img.info.components == 1 ? "/DeviceGray" : "/DeviceRGB"
             add(stream("/Type /XObject /Subtype /Image /Width \(img.info.width) /Height \(img.info.height) /ColorSpace \(cs) /BitsPerComponent 8 /Filter /DCTDecode", img.data))
         }
+        let fontRefs = embedded.indices.map { "/F\($0 + 1) \(3 + $0 * 3 + 2) 0 R" }.joined(separator: " ")
         for (i, page) in pages.enumerated() {
             let contentObject = firstPageObject + i * 2 + 1
-            let xobjects = page.usedImages.sorted().map { "/Im\($0) \(15 + $0) 0 R" }.joined(separator: " ")
-            let resources = "/Font << /F1 3 0 R /F2 4 0 R /F3 11 0 R /F4 12 0 R /F5 13 0 R >>"
+            let xobjects = page.usedImages.sorted().map { "/Im\($0) \(firstImageObject + $0) 0 R" }.joined(separator: " ")
+            let resources = "/Font << \(fontRefs) >>"
                 + (xobjects.isEmpty ? "" : " /XObject << \(xobjects) >>")
             add(str("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 \(f(page.width)) \(f(page.height))] /Resources << \(resources) >> /Contents \(contentObject) 0 R >>"))
             add(stream("", Data(page.content.utf8)))
@@ -253,7 +260,7 @@ final class PDFWriter {
         let xrefPosition = out.count
         var xref = "xref\n0 \(offsets.count + 1)\n0000000000 65535 f \n"
         for o in offsets { xref += String(format: "%010d 00000 n \n", o) }
-        xref += "trailer\n<< /Size \(offsets.count + 1) /Root 1 0 R /Info 14 0 R >>\nstartxref\n\(xrefPosition)\n%%EOF\n"
+        xref += "trailer\n<< /Size \(offsets.count + 1) /Root 1 0 R /Info \(infoObject) 0 R >>\nstartxref\n\(xrefPosition)\n%%EOF\n"
         out += str(xref)
         return out
     }

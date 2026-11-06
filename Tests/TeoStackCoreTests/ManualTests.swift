@@ -27,7 +27,7 @@ final class ManualTests: XCTestCase {
                      "Percorsi salvati", "Schede collegate", "Espelli sorgente", "Svuota la sorgente", "Riprendi", "Importa log", "Esporta metadata", "ALE",
                      "Impostazioni", "Lingua", "art-cmd", "ExifTool", "ffprobe", "N/D", "MISMATCH", "teostackpart", "Shooting Day", "Contact Print",
                      "Ripristina ordine e larghezze", "Comando + virgola", "Verifica durante la copia", "Sovrascrivi",
-                     "Sospendi", "Continua", "Possibile blocco", "punto di ripresa"] {
+                     "Sospendi", "Continua", "Possibile blocco", "punto di ripresa", "Opzioni progetto", "PROGETTO", "SERVICE", "Inter", "JetBrains Mono"] {
             XCTAssertTrue(all.contains(term), "il manuale non parla di «\(term)»")
         }
     }

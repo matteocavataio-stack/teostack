@@ -117,6 +117,7 @@ extension View {
 
 extension Notification.Name {
     static let openSettings = Notification.Name("TeoStackXtOpenSettings")
+    static let openProjectSettings = Notification.Name("TeoStackXtOpenProjectSettings")
 }
 
 // MARK: - Finestra «Impostazioni»

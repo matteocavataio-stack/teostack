@@ -77,6 +77,22 @@ final class ReportGenerationTests: XCTestCase {
         }
     }
 
+    /// Scrive i cinque report nella cartella indicata da TEOSTACK_REPORT_OUT (per guardarli a occhio durante lo sviluppo).
+    func testWriteReportsForInspection() throws {
+        guard let out = ProcessInfo.processInfo.environment["TEOSTACK_REPORT_OUT"] else { throw XCTSkip("solo per ispezione manuale") }
+        let sc = try ReferenceScenario()
+        // facoltativi: TEOSTACK_LOGO_PROJECT / TEOSTACK_LOGO_SERVICE = percorsi di due JPEG
+        let env = ProcessInfo.processInfo.environment
+        let logos = ProjectSettings(projectLogo: env["TEOSTACK_LOGO_PROJECT"].flatMap { try? Data(contentsOf: URL(fileURLWithPath: $0)) },
+                                    serviceLogo: env["TEOSTACK_LOGO_SERVICE"].flatMap { try? Data(contentsOf: URL(fileURLWithPath: $0)) })
+        try sc.store.saveSettings(logos, projectID: sc.project.id)
+        for kind in ReportKind.allCases {
+            let result = try ReportGenerator.generate(kind, store: sc.store, projectID: sc.project.id, nodeID: sc.bin.id,
+                                                      options: ReportOptions(projectName: sc.projectName), thumbnails: nil)
+            try result.data.write(to: URL(fileURLWithPath: out).appendingPathComponent(result.fileName))
+        }
+    }
+
     func testPageGeometryMatchesReferenceFormats() throws {
         let sc = try ReferenceScenario()
         func mediaBox(_ kind: ReportKind) throws -> String {
@@ -318,5 +334,97 @@ final class MoveNodeTests: XCTestCase {
         XCTAssertEqual(try sc.store.clips(underNode: folder.id, mediaOnly: false).count, before.count, "ora i clip contano nella cartella")
         XCTAssertEqual(try sc.store.offloads(binID: sc.bin.id).count, 1)
         XCTAssertEqual(try sc.store.clips(underNode: sc.bin.id, mediaOnly: false).first?.dayName, "CAM_A")
+    }
+}
+
+/// Impostazioni per progetto e loghi PROGETTO / SERVICE in testa ai report.
+final class ProjectSettingsAndLogoTests: XCTestCase {
+    private let jpeg = Data(base64Encoded: ReportGenerationTests.tinyJPEG)!
+
+    func testSettingsAreStoredPerProjectAndDefaultToNil() throws {
+        let store = try ProjectStore(path: nil)
+        let a = try store.createProject(name: "A"), b = try store.createProject(name: "B")
+        XCTAssertNil(try store.settings(projectID: a.id), "senza impostazioni salvate chi chiama usa i propri valori di partenza")
+        try store.saveSettings(ProjectSettings(overlapVerification: false, ascMHL: false, clearSourceWhenDone: true, projectLogo: jpeg, serviceLogo: nil), projectID: a.id)
+        let saved = try XCTUnwrap(try store.settings(projectID: a.id))
+        XCTAssertFalse(saved.overlapVerification); XCTAssertFalse(saved.ascMHL); XCTAssertTrue(saved.clearSourceWhenDone)
+        XCTAssertEqual(saved.projectLogo, jpeg); XCTAssertNil(saved.serviceLogo)
+        XCTAssertNil(try store.settings(projectID: b.id), "le impostazioni di un progetto non toccano gli altri")
+        // aggiornamento: sostituisce
+        try store.saveSettings(ProjectSettings(serviceLogo: jpeg), projectID: a.id)
+        let updated = try XCTUnwrap(try store.settings(projectID: a.id))
+        XCTAssertTrue(updated.overlapVerification); XCTAssertNil(updated.projectLogo); XCTAssertEqual(updated.serviceLogo, jpeg)
+    }
+
+    func testDeletingTheProjectDeletesItsSettings() throws {
+        let store = try ProjectStore(path: nil)
+        let p = try store.createProject(name: "A")
+        try store.saveSettings(ProjectSettings(projectLogo: jpeg), projectID: p.id)
+        try store.deleteProject(id: p.id)
+        XCTAssertNil(try store.settings(projectID: p.id))
+    }
+
+    func testInvalidOrHugeLogosAreRefused() throws {
+        let store = try ProjectStore(path: nil)
+        let p = try store.createProject(name: "A")
+        XCTAssertThrowsError(try store.saveSettings(ProjectSettings(projectLogo: Data("non è un jpeg".utf8)), projectID: p.id))
+        XCTAssertThrowsError(try store.saveSettings(ProjectSettings(serviceLogo: Data(repeating: 0xFF, count: ProjectSettings.maxLogoBytes + 1)), projectID: p.id))
+        XCTAssertThrowsError(try store.saveSettings(ProjectSettings(), projectID: 9999), "progetto inesistente")
+        XCTAssertNil(try store.settings(projectID: p.id), "un salvataggio rifiutato non lascia nulla")
+        XCTAssertEqual(ProjectSettings.logoSize(jpeg)?.width, 16)
+    }
+
+    func testReportsCarryBothLogosOnEveryPageOnlyWhenSet() throws {
+        let sc = try ReferenceScenario()
+        func generate(_ kind: ReportKind) throws -> String {
+            String(decoding: try ReportGenerator.generate(kind, store: sc.store, projectID: sc.project.id, nodeID: sc.bin.id,
+                                                          options: ReportOptions(projectName: sc.projectName), thumbnails: nil).data, as: UTF8.self)
+        }
+        for kind in ReportKind.allCases { XCTAssertFalse(try generate(kind).contains("/Subtype /Image"), "\(kind): nessun logo se non impostato") }
+        try sc.store.saveSettings(ProjectSettings(projectLogo: jpeg, serviceLogo: jpeg), projectID: sc.project.id)
+        for kind in ReportKind.allCases {
+            let pdf = try generate(kind)
+            let pages = pdf.components(separatedBy: "/Type /Page ").count - 1
+            XCTAssertEqual(pdf.components(separatedBy: "/Subtype /Image").count - 1, 2, "\(kind): due immagini (PROGETTO e SERVICE)")
+            XCTAssertEqual(pdf.components(separatedBy: " Do Q").count - 1, 2 * pages, "\(kind): i due loghi su OGNI pagina")
+        }
+        // solo il logo PROGETTO
+        try sc.store.saveSettings(ProjectSettings(projectLogo: jpeg), projectID: sc.project.id)
+        XCTAssertEqual(try generate(.volume).components(separatedBy: "/Subtype /Image").count - 1, 1)
+    }
+
+    func testLogosSitInTheTopCornersAboveTheHeaderText() throws {
+        let sc = try ReferenceScenario()
+        var ctx = try sc.context(.volume)
+        ctx.projectLogo = jpeg; ctx.serviceLogo = jpeg
+        let canvas = ReportCanvas(ctx: ctx, setup: .volume())
+        canvas.decoratePages()
+        let text = String(decoding: canvas.pdf.data(title: "t"), as: UTF8.self)
+        // 16×10 px in una fascia 130×30 → 48×30 pt (altezza massima), a sinistra con margine 18 e a destra fino al margine della data
+        XCTAssertTrue(text.contains("48.00 0 0 30.00 18.00 "), "logo PROGETTO a sinistra")
+        XCTAssertTrue(text.contains("48.00 0 0 30.00 \(String(format: "%.2f", 595.276 - 18.2 - 48.0)) "), "logo SERVICE a destra")
+    }
+
+    func testNarrowMarginFormatsMakeRoomForTheLogos() throws {
+        let sc = try ReferenceScenario()
+        var ctx = try sc.context(.contactPrint)
+        let plain = ReportCanvas(ctx: ctx, setup: .contactPrint())
+        XCTAssertEqual(plain.setup.headerTop, 18.3, accuracy: 0.001)
+        ctx.projectLogo = jpeg
+        let withLogo = ReportCanvas(ctx: ctx, setup: .contactPrint())
+        XCTAssertEqual(withLogo.setup.headerTop, 41.3, accuracy: 0.001, "l'intestazione scende sotto la fascia dei loghi")
+        XCTAssertEqual(withLogo.setup.contentTop, plain.setup.contentTop + 23.0, accuracy: 0.001)
+        // formati con margine alto già ampio: nessuno spostamento
+        XCTAssertEqual(ReportCanvas(ctx: ctx, setup: .volume()).setup.contentTop, PageSetup.volume().contentTop, accuracy: 0.001)
+    }
+
+    func testFontsAreEmbeddedAndNoLongerHelveticaOrDejaVu() throws {
+        let sc = try ReferenceScenario()
+        let pdf = String(decoding: try ReportGenerator.generate(.shootingDay, store: sc.store, projectID: sc.project.id, nodeID: sc.bin.id,
+                                                                  options: ReportOptions(projectName: "P"), thumbnails: nil).data, as: UTF8.self)
+        XCTAssertTrue(pdf.contains("/BaseFont /JetBrainsMono"))
+        XCTAssertTrue(pdf.contains("/BaseFont /Inter"))
+        XCTAssertFalse(pdf.contains("Helvetica")); XCTAssertFalse(pdf.contains("DejaVu"))
+        XCTAssertEqual(pdf.components(separatedBy: "/FontFile2").count - 1, 5)
     }
 }

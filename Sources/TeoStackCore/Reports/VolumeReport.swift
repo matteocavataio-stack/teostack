@@ -69,10 +69,7 @@ enum VolumeReport {
             let u = usage(volume)
             pdf.text(u?.text ?? "N/A of N/A used", x: 276.2, top: 78.3, size: 10.67, font: .mono)
             let barX = 276.2 + PDFWriter.width(u?.text ?? "N/A of N/A used", size: 10.67, font: .mono) + 7.0
-            pdf.strokeRoundedRect(x: barX + 0.4, y: 76.6, width: 108.1, height: 13.6, radius: 1.8, lineWidth: 0.8, color: .line)
-            if let share = u?.share, share > 0 {
-                pdf.fillRoundedRect(x: barX + 0.9, y: 77.1, width: 107.1 * share, height: 12.6, radius: 1.4, color: .line)
-            }
+            ReportIcons.shareBar(pdf, x: barX, y: 79.0, width: 108.1, height: 9.0, share: u?.share ?? 0)
 
             // cartelle e file
             let folders = Dictionary(grouping: volume.files, by: { $0.folder }).sorted { $0.key < $1.key }
@@ -86,8 +83,7 @@ enum VolumeReport {
                 let sorted = files.sorted { $0.name < $1.name }          // ordine per byte, come nel riferimento
                 func folderRow() {
                     pdf.fillRect(x: left, y: y, width: right - left, height: folderHeight, color: .zebra)
-                    pdf.polygon([(37.2 + 0.5, 157.0 - 148.2 + y + 0.8), (37.2 + 7.5, 157.0 - 148.2 + y + 0.8), (37.2 + 4.0, 157.0 - 148.2 + y + 6.8)],
-                                fillColor: PDFWriter.Color(hex: 0x8E8E8E))
+                    ReportIcons.folderMark(pdf, x: 37.4, y: 157.0 - 148.2 + y + 0.4)
                     pdf.text(folder.isEmpty ? volume.name : folder, x: 48.7, top: y + 5.3, size: 10.67, font: .monoBold)
                     pdf.text(ReportFormatting.size(sorted.reduce(0) { $0 + $1.size }), x: sizeRight - 100, top: y + 5.5, size: 9.6, font: .mono,
                              align: .right, width: 100)
@@ -117,15 +113,8 @@ enum VolumeReport {
         return pdf.data(title: "\(ctx.kind.title) – \(ctx.title)", author: ctx.operatorName)
     }
 
-    /// Icona «disco esterno» (vettoriale).
+    /// Icona «disco esterno» (vettoriale, in ReportIcons).
     static func drawDriveIcon(_ pdf: PDFWriter, x: Double, y: Double, size: Double) {
-        let s = size / 53.6
-        func X(_ v: Double) -> Double { x + v * s }
-        func Y(_ v: Double) -> Double { y + v * s }
-        pdf.fillRoundedRect(x: X(7), y: Y(1), width: 40 * s, height: 44 * s, radius: 5 * s, color: PDFWriter.Color(hex: 0xD98A00))
-        pdf.fillRoundedRect(x: X(9), y: Y(3), width: 36 * s, height: 20 * s, radius: 4 * s, color: PDFWriter.Color(hex: 0xF5B52E))
-        pdf.fillRoundedRect(x: X(9), y: Y(23), width: 36 * s, height: 20 * s, radius: 4 * s, color: PDFWriter.Color(hex: 0xFFC83D))
-        pdf.fillRoundedRect(x: X(3), y: Y(41), width: 48 * s, height: 11 * s, radius: 5 * s, color: PDFWriter.Color(hex: 0x6C6C6C))
-        pdf.circle(cx: X(44), cy: Y(47), radius: 1.5 * s, fillColor: PDFWriter.Color(hex: 0x7ED321))
+        ReportIcons.drive(pdf, x: x, y: y, size: size)
     }
 }

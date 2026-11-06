@@ -92,8 +92,9 @@ Si scelgono quali report creare e la cartella: **ogni report è un PDF separato*
 - «Verified Backups» conta solo i file riletti dal disco con XXH64 identico alla sorgente.
 - Le anteprime nei report sono quelle già generate nel tab Clip; senza anteprima un clip mostra «No preview».
 - Le etichette dei report sono in inglese come nei PDF di riferimento; il piè di pagina dice «TeoStackPro».
-- Font: DejaVu Sans Mono incorporato (sottoinsieme, licenza in `THIRD_PARTY_LICENSES.md`) con le stesse misure di Menlo; Helvetica per intestazione e piè di pagina.
-  Le forme dei caratteri differiscono leggermente da quelle dei riferimenti, le posizioni coincidono entro circa 1 pt.
+- Font: JetBrains Mono (corpo) e Inter (titoli, data, piè di pagina), entrambi incorporati nel PDF (sottoinsiemi, licenza OFL in `THIRD_PARTY_LICENSES.md`, rigenerabili con `tools/make_report_fonts.py`).
+  Il corpo è monospazio a 0,6 em per carattere: l'impaginazione resta quella delle misure di riferimento (entro circa 1 pt), ma font e icone (rombi, nastro, quadratini, barre piene) sono propri di TeoStackPro.
+- Loghi: in «Opzioni progetto» si scelgono i loghi PROGETTO (a sinistra) e SERVICE (a destra), stampati in testa a ogni pagina di ogni report.
 - PDF scritto dall'app senza librerie esterne; verificato con `pdftotext`, `pdfinfo` e confronto numerico con i PDF di riferimento.
 
 ### Altri formati: MPG, WAV/BWF, LRF, MP4, ProRes… (ffprobe)

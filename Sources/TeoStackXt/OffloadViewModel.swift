@@ -39,9 +39,17 @@ final class OffloadViewModel: ObservableObject {
 
     /// Cartella del progetto in cui nascerà il bin e nome del bin (proposto dalla sorgente, modificabile prima dell'avvio).
     /// Su disco la destinazione è <cartella scelta>/<nome bin>.
-    @Published var placement: BinPlacement?
+    @Published var placement: BinPlacement? {
+        didSet { if placement?.projectID != oldValue?.projectID { reloadProjectSettings() } }
+    }
     @Published var binName = ""
-    var store: ProjectStore?
+    /// Impostazioni del progetto in cui si sta lavorando (verifica durante la copia, certificato ASC MHL, svuota sorgente, loghi dei report).
+    @Published var projectSettings = ProjectSettings()
+    var store: ProjectStore? {
+        didSet { reloadProjectSettings() }
+    }
+    /// Impostazioni usate dall'offload in corso (lette all'avvio: cambiarle durante il lavoro vale per il prossimo).
+    private var runSettings = ProjectSettings()
     var onBinReady: ((Int64) -> Void)?
     var onRecorded: (() -> Void)?
     var onOffloadFinished: ((UUID) -> Void)?
@@ -80,9 +88,23 @@ final class OffloadViewModel: ObservableObject {
 
     var isRunning: Bool { runState == .running }
 
-    /// «Verifica durante la copia» (impostazione dell'app, attiva se non è mai stata cambiata).
-    static var overlapVerificationEnabled: Bool {
-        UserDefaults.standard.object(forKey: "overlapVerification") as? Bool ?? true
+    /// Valori di partenza di un progetto che non ha ancora salvato le sue impostazioni: le vecchie opzioni valide per tutta l'app
+    /// (tutte attive se non sono mai state cambiate), così chi le aveva spente non si ritrova con un comportamento diverso.
+    static func legacySettings() -> ProjectSettings {
+        let d = UserDefaults.standard
+        return ProjectSettings(overlapVerification: d.object(forKey: "overlapVerification") as? Bool ?? true,
+                               ascMHL: d.object(forKey: "ascMHL") as? Bool ?? true,
+                               clearSourceWhenDone: d.object(forKey: "clearSourceWhenDone") as? Bool ?? true)
+    }
+
+    /// Impostazioni salvate del progetto indicato (o i valori di partenza).
+    func settings(forProject projectID: Int64?) -> ProjectSettings {
+        guard let store, let projectID, let saved = try? store.settings(projectID: projectID) else { return Self.legacySettings() }
+        return saved
+    }
+
+    func reloadProjectSettings() {
+        projectSettings = settings(forProject: placement?.projectID)
     }
 
     var canStart: Bool {
@@ -99,16 +121,6 @@ final class OffloadViewModel: ObservableObject {
 
     func chooseSource() {
         if let url = pickFolder(message: tr("Seleziona la scheda (sorgente)")) { setSource(url) }
-    }
-
-    /// «Svuota la sorgente a fine offload» (impostazione dell'app, attiva se non è mai stata cambiata).
-    static var clearSourceWhenDone: Bool {
-        UserDefaults.standard.object(forKey: "clearSourceWhenDone") as? Bool ?? true
-    }
-
-    /// «Crea certificato ASC MHL» (impostazione dell'app, attiva se non è mai stata cambiata).
-    static var ascMHLEnabled: Bool {
-        UserDefaults.standard.object(forKey: "ascMHL") as? Bool ?? true
     }
 
     /// Scheda dell'ultimo offload riuscito dopo che la parte «Sorgente» si è svuotata da sola: serve per «Espelli sorgente».
@@ -255,7 +267,7 @@ final class OffloadViewModel: ObservableObject {
         let roots = bases.map { target.destinationRoot(under: $0) }
         let job = OffloadJob(sourceURL: source, destinationRoots: roots, destinationBases: bases)
         guard register(job: job, binID: target.binID) else { return }
-        run(job: job, scan: scan, resume: nil)
+        run(job: job, scan: scan, resume: nil, settings: settings(forProject: placement.projectID))
     }
 
     func resume() {
@@ -283,7 +295,7 @@ final class OffloadViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     guard let self else { return }
                     self.didScan(scan)
-                    self.run(job: journal.job, scan: scan, resume: journal)
+                    self.run(job: journal.job, scan: scan, resume: journal, settings: self.settings(forProject: self.placement?.projectID))
                 }
             } catch {
                 DispatchQueue.main.async {
@@ -330,11 +342,12 @@ final class OffloadViewModel: ObservableObject {
         }
     }
 
-    private func run(job: OffloadJob, scan: ScanResult, resume: OffloadJournal?) {
+    private func run(job: OffloadJob, scan: ScanResult, resume: OffloadJournal?, settings: ProjectSettings) {
+        runSettings = settings
         var config = OffloadEngine.Configuration()
         config.journalStore = journalStore
-        config.overlapVerification = Self.overlapVerificationEnabled
-        if Self.ascMHLEnabled {
+        config.overlapVerification = settings.overlapVerification
+        if settings.ascMHL {
             config.ascMHL = ASCMHLOptions(author: UserDefaults.standard.string(forKey: "reportOperator"))
         }
         let engine = OffloadEngine(job: job, scan: scan, configuration: config, resume: resume)
@@ -399,7 +412,7 @@ final class OffloadViewModel: ObservableObject {
         }
         // Con tutti i file OK (e l'offload registrato) la sorgente si svuota da sola. Con problemi o annullato resta l'elenco dei file,
         // perché serve a vedere quali non sono andati a buon fine e a «Riprendi».
-        if result.outcome == .completed, result.allOK, errorMessage == nil, Self.clearSourceWhenDone { clearSource() }
+        if result.outcome == .completed, result.allOK, errorMessage == nil, runSettings.clearSourceWhenDone { clearSource() }
     }
 
     /// Suono (diverso se ci sono problemi) e rimbalzo nel Dock se l'app non è in primo piano.

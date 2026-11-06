@@ -14,7 +14,7 @@ enum ManualBlock {
 }
 
 /// Costruisce il manuale utente in PDF (A4) con copertina, indice con numeri di pagina, titoli, elenchi, tabelle e numeri di pagina.
-/// Usa lo scrittore PDF dei report: Helvetica per il testo, DejaVu Sans Mono incorporato per comandi e codice.
+/// Usa lo scrittore PDF dei report: Inter per il testo, JetBrains Mono incorporato per comandi e codice.
 public enum ManualPDF {
     public static let fileName = fileName(for: .italian)
 

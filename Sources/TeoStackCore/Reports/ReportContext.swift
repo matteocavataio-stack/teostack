@@ -115,6 +115,10 @@ struct ReportContext {
     var items: [ReportItem]
     var offloads: [OffloadRecord]
     var columnIDs: [String]? = nil
+    /// Loghi del progetto (JPEG): PROGETTO in alto a sinistra, SERVICE in alto a destra di ogni pagina.
+    var projectLogo: Data? = nil
+    var serviceLogo: Data? = nil
+    var hasLogos: Bool { projectLogo != nil || serviceLogo != nil }
     var scopeName: String { title }
 
     var videoClips: [ReportItem] { items.filter { $0.kind == .video } }
@@ -168,10 +172,11 @@ public enum ReportContextBuilder {
             return ReportItem(clip: clip, kind: kind, offload: byOffload[clip.offloadID], thumbnail: thumb)
         }
         items.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
+        let settings = try store.settings(projectID: projectID)
         return ReportContext(kind: kind, title: title, projectName: options.projectName,
                              offloadStarted: offloads.map(\.startedAt).min(), generatedAt: options.generatedAt,
                              operatorName: options.operatorName, notes: options.notes, items: items, offloads: offloads,
-                             columnIDs: options.columnIDs)
+                             columnIDs: options.columnIDs, projectLogo: settings?.projectLogo, serviceLogo: settings?.serviceLogo)
     }
 }
 

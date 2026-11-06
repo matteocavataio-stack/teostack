@@ -124,6 +124,7 @@ struct ProjectBar: View {
     @Binding var request: NameRequest?
     @Binding var showReport: Bool
     @Binding var showSettings: Bool
+    @Binding var showProjectSettings: Bool
     @Binding var tab: MainTab
     @State private var confirmDelete = false
 
@@ -163,6 +164,9 @@ struct ProjectBar: View {
                 if let p = projects.selectedProject { request = .renameProject(p.name) }
             }
             .disabled(projects.selectedProject == nil)
+            ToolbarButton(title: tr("Opzioni progetto"), symbol: "slider.horizontal.3") { showProjectSettings = true }
+                .disabled(projects.selectedProject == nil)
+                .help(tr("Impostazioni di QUESTO progetto: verifica durante la copia, certificato ASC MHL, svuota la sorgente e i loghi PROGETTO e SERVICE dei report."))
             ToolbarButton(title: tr("Elimina progetto"), symbol: "trash", destructive: true) { confirmDelete = true }
                 .disabled(projects.selectedProject == nil)
                 .help(tr("Elimina l'INTERO progetto. Per eliminare solo un giorno o un bin usa «Elimina selezione» nella barra laterale."))

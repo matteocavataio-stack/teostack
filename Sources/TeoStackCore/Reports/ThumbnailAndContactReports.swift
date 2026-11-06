@@ -61,13 +61,7 @@ extension ReportCanvas {
 
     /// Icona «documento» per i file che non sono clip (ALE, BIN, XML…).
     func drawDocumentIcon(x: Double, y: Double, size: Double) {
-        let s = size / 92.8
-        let w = 62.0 * s, h = 80.0 * s, left = x + (size - w) / 2, top = y + 6 * s, fold = 18 * s
-        let shadow = PDFWriter.Color(hex: 0xD8D8D8), edge = PDFWriter.Color(hex: 0xBEBEBE)
-        pdf.fillRoundedRect(x: left + 1.5 * s, y: top + 2.0 * s, width: w, height: h, radius: 2.5 * s, color: shadow)
-        pdf.polygon([(left, top), (left + w - fold, top), (left + w, top + fold), (left + w, top + h), (left, top + h)],
-                    fillColor: PDFWriter.Color(hex: 0xFBFBFB), strokeColor: edge, lineWidth: 0.6)
-        pdf.polygon([(left + w - fold, top), (left + w - fold, top + fold), (left + w, top + fold)], fillColor: PDFWriter.Color(hex: 0xE4E4E4), strokeColor: edge, lineWidth: 0.6)
+        ReportIcons.document(pdf, x: x, y: y, size: size)
     }
 }
 
@@ -118,7 +112,7 @@ enum ThumbnailReport {
                 case .rating:
                     for k in 0..<5 { canvas.drawStar(cx: valueLeft + 6 + Double(k) * 12.2, cy: rowTop + 12.0, radius: 5.4, filled: false) }
                 case .label(let t):
-                    pdf.circle(cx: valueLeft + 5.0, cy: rowTop + 5.6, radius: 4.8, strokeColor: PDFWriter.Color.line, lineWidth: 0.7)
+                    canvas.drawLabelSwatch(x: valueLeft + 0.4, cy: rowTop + 5.6, size: 9.2)
                     pdf.text(t, x: 438.3, top: rowTop, size: size, font: .mono)
                 default: break
                 }

@@ -6,7 +6,7 @@ struct PageSetup {
     var height: Double
     var headerTop: Double          // bordo alto del testo dell'intestazione
     var contentTop: Double         // inizio dell'area di contenuto
-    var bodySize: Double           // corpo del testo (Menlo)
+    var bodySize: Double           // corpo del testo (JetBrains Mono)
     var titleToProject: Double = 31.0
     var projectToOffload: Double = 16.8
     var boxRightMargin: Double = 30.0
@@ -59,8 +59,22 @@ final class ReportCanvas {
     let setup: PageSetup
     var y: Double
 
+    /// Altezza e margine riservati ai loghi in testa alla pagina (sopra l'intestazione).
+    static let logoBandTop = 6.0
+    static let logoMaxHeight = 30.0
+    static let logoMaxWidth = 130.0
+    /// Bordo alto minimo del testo di intestazione quando ci sono loghi: sotto la fascia dei loghi.
+    static let headerTopWithLogos = 41.3
+
     init(ctx: ReportContext, setup: PageSetup) {
         self.ctx = ctx
+        var setup = setup
+        if ctx.hasLogos, setup.headerTop < ReportCanvas.headerTopWithLogos {
+            // formati con il margine alto stretto (Clips, Contact Print): intestazione e contenuto scendono per far posto ai loghi
+            let delta = ReportCanvas.headerTopWithLogos - setup.headerTop
+            setup.headerTop += delta
+            setup.contentTop += delta
+        }
         self.setup = setup
         pdf = PDFWriter(width: setup.width, height: setup.height)
         y = setup.contentTop
@@ -81,9 +95,13 @@ final class ReportCanvas {
     func decoratePages() {
         let total = pdf.pages.count
         let date = ReportFormatting.dateTime(ctx.generatedAt)
+        let leftLogo = ctx.projectLogo.flatMap { pdf.addJPEG($0) }
+        let rightLogo = ctx.serviceLogo.flatMap { pdf.addJPEG($0) }
         for (i, page) in pdf.pages.enumerated() {
             pdf.select(page: i)
             let right = page.width - setup.textRightMargin
+            if let leftLogo { drawLogo(leftLogo, left: 18.0, right: nil) }
+            if let rightLogo { drawLogo(rightLogo, left: nil, right: right) }
             let headerTop = setup.headerTop + 1.1
             pdf.text(ctx.kind.title, x: 18.0, top: headerTop, size: 9, font: .sans)
             pdf.text(date, x: right - 200, top: headerTop, size: 9, font: .sans, align: .right, width: 200)
@@ -91,6 +109,16 @@ final class ReportCanvas {
             pdf.text("TeoStackPro", x: 18.0, top: footerTop, size: 9, font: .sans)
             pdf.text("\(i + 1)/\(total)", x: right - 100, top: footerTop, size: 9, font: .sans, align: .right, width: 100)
         }
+    }
+
+    /// Logo nella fascia in testa alla pagina: stesso margine a sinistra del testo (PROGETTO) o a destra della data (SERVICE), proporzioni invariate.
+    private func drawLogo(_ index: Int, left: Double?, right: Double?) {
+        let size = pdf.imageSize(index)
+        guard size.width > 0, size.height > 0 else { return }
+        let scale = min(ReportCanvas.logoMaxWidth / Double(size.width), ReportCanvas.logoMaxHeight / Double(size.height))
+        let w = Double(size.width) * scale, h = Double(size.height) * scale
+        let x = left ?? ((right ?? 0) - w)
+        pdf.image(index, x: x, y: ReportCanvas.logoBandTop + (ReportCanvas.logoMaxHeight - h) / 2, width: w, height: h)
     }
 
     // MARK: Blocco titolo
@@ -299,13 +327,9 @@ final class ReportCanvas {
                          align: column.alignment, width: w - 2 * st.padding)
             }
         case .bar(let share):
-            let bx = x + st.barPaddingLeft, by = y + (h - 11.2 * st.bodySize / 9.61) / 2 + 1.4 * st.bodySize / 9.61
-            let bh = 11.2 * st.bodySize / 9.61
-            pdf.strokeRoundedRect(x: bx + 0.4, y: by + 0.4, width: st.barWidth - 0.8, height: bh - 0.8, radius: 1.8, lineWidth: 0.8, color: .line)
-            let inner = (st.barWidth - 1.6) * max(0, min(1, share))
-            if inner > 0.5 {
-                pdf.fillRoundedRect(x: bx + 0.8, y: by + 0.8, width: inner, height: bh - 1.6, radius: 1.4, color: .line)
-            }
+            let bx = x + st.barPaddingLeft, bh = 8.0 * st.bodySize / 9.61
+            let by = y + (h - bh) / 2 + 0.6 * st.bodySize / 9.61
+            ReportIcons.shareBar(pdf, x: bx, y: by, width: st.barWidth, height: bh, share: share)
         case .stars(let filled):
             let size = 5.9 * st.bodySize / 9.61
             let cy = y + h / 2
@@ -314,7 +338,7 @@ final class ReportCanvas {
             }
         case .label(let t):
             let r = 5.2 * st.bodySize / 9.61
-            pdf.circle(cx: x + st.padding + r, cy: y + h / 2 - 0.5, radius: r - 0.4, strokeColor: Color.line, lineWidth: 0.8)
+            drawLabelSwatch(x: x + st.padding, cy: y + h / 2 - 0.5, size: 2 * r - 0.8)
             pdf.text(t, x: x + st.padding + 2 * r + 0.3, top: y + (h - textHeight) / 2, size: st.bodySize, font: .mono)
         case .flag(let t):
             drawFlag(x: x + st.padding + 1, y: y + h / 2 - 5, height: 10 * st.bodySize / 9.61)
@@ -324,22 +348,17 @@ final class ReportCanvas {
 
     typealias Color = PDFWriter.Color
 
-    // MARK: Icone vettoriali
+    // MARK: Icone vettoriali (disegnate in ReportIcons)
 
     func drawStar(cx: Double, cy: Double, radius: Double, filled: Bool) {
-        var pts: [(Double, Double)] = []
-        for i in 0..<10 {
-            let a = -Double.pi / 2 + Double(i) * Double.pi / 5
-            let r = i % 2 == 0 ? radius : radius * 0.42
-            pts.append((cx + r * cos(a), cy + r * sin(a)))
-        }
-        if filled { pdf.polygon(pts, fillColor: Color.black) } else { pdf.polygon(pts, strokeColor: Color.gray, lineWidth: 0.5) }
+        ReportIcons.ratingMark(pdf, cx: cx, cy: cy, radius: radius, filled: filled)
     }
 
-    /// Bandierina «contorno» (segnalibro dei clip).
     func drawFlag(x: Double, y: Double, height: Double) {
-        let w = height * 0.85
-        pdf.line(x1: x, y1: y, x2: x, y2: y + height, color: Color(hex: 0xA0A0A0), width: 0.7)
-        pdf.polygon([(x, y), (x + w, y + height * 0.2), (x, y + height * 0.55)], strokeColor: Color(hex: 0xA0A0A0), lineWidth: 0.7)
+        ReportIcons.flagRibbon(pdf, x: x, y: y, height: height)
+    }
+
+    func drawLabelSwatch(x: Double, cy: Double, size: Double) {
+        ReportIcons.labelSwatch(pdf, x: x, cy: cy, size: size)
     }
 }
