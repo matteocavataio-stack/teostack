@@ -98,7 +98,7 @@ enum SidecarMapper {
         // Sony: «Camera» = la camera (es. MPC-3610), «Device» = il registratore (es. AXS-R7). Senza «Camera» (XAVC, FX3…) il «Device» è la camera.
         if let cameraModel = ExifMapper.real(attr("Camera", "modelName")) {
             m.cameraMake = ExifMapper.real(attr("Camera", "manufacturer"))
-            m.cameraModel = cameraModel
+            m.cameraModel = sonyCameraNames[cameraModel] ?? cameraModel
             m.cameraSerial = ExifMapper.real(attr("Camera", "serialNo"))
             m.firmware = ExifMapper.real(flat["NonRealTimeMeta/Camera/Element@software"])
             if let recorder = ExifMapper.real(attr("Device", "modelName")) { m.extraColumns["recorder"] = recorder }
@@ -110,7 +110,7 @@ enum SidecarMapper {
         // «<Lens manufacturer="" modelName="Supreme Prime 29/T1.5        "/>»: il nome della lente come lo scrive la camera (senza spazi in coda)
         m.lensModel = ExifMapper.real(attr("Lens", "modelName"))
         m.creationDate = TagBag.date(attr("CreationDate", "value") ?? text("CreationDate"))
-        if let codec = attr("VideoFrame", "videoCodec") { m.codec = codec }
+        if let codec = attr("VideoFrame", "videoCodec") { m.codec = codecName(codec) }
         if let capture = attr("VideoFrame", "captureFps") {
             let digits = capture.filter { $0.isNumber || $0 == "." }
             if let v = Double(digits), v > 0 { m.extraColumns["sensorFPS"] = TagBag.format(v) }
@@ -187,5 +187,14 @@ enum SidecarMapper {
             if let content = flat[base + "@content"]?.trimmingCharacters(in: .whitespaces), !content.isEmpty { out[name] = content }
         }
         return out
+    }
+
+    /// Nome commerciale dei modelli Sony dal codice che la camera scrive nell'XML (il codice resta in `rawFields`). Solo codici confermati.
+    static let sonyCameraNames: [String: String] = ["MPC-3610": "VENICE 1"]
+
+    /// «F55_X-OCN_XT_6K_17:9» (etichetta interna Sony della famiglia F55/VENICE) → «X-OCN XT 6K 17:9»: il prefisso «F55_» non è la camera.
+    static func codecName(_ declared: String) -> String {
+        guard declared.hasPrefix("F55_") else { return declared }
+        return String(declared.dropFirst(4)).replacingOccurrences(of: "_", with: " ")
     }
 }

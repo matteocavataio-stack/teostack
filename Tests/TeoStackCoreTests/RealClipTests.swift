@@ -99,7 +99,9 @@ final class RealClipTests: XCTestCase {
     func testSonyVenice1XOCNWithSidecar() throws {
         let m = try RealClip.read("sony_venice1_xocn.mxf", sidecar: "sony_venice1_xocn.M01.xml", clipFileName: "G001C001_261106OJ.mxf", sidecarName: "G001C001_261106OJM01.xml", folder: "Clip/G001C001_261106OJ")
         XCTAssertEqual(m.family, "Sony")
-        XCTAssertEqual(m.cameraMake, "Sony"); XCTAssertEqual(m.cameraModel, "MPC-3610", "la camera, non il registratore AXS-R7")
+        XCTAssertEqual(m.cameraMake, "Sony"); XCTAssertEqual(m.cameraModel, "VENICE 1", "MPC-3610 = VENICE; la camera, non il registratore AXS-R7")
+        XCTAssertEqual(m.rawFields["sidecar:NonRealTimeMeta/Camera@modelName"], "MPC-3610")
+        XCTAssertEqual(m.codec, "X-OCN XT 6K 17:9", "senza l'etichetta interna «F55_»")
         XCTAssertEqual(m.cameraSerial, "0012656"); XCTAssertEqual(m.firmware, "6.30")
         XCTAssertEqual(m.extraColumns["recorder"], "AXS-R7")
         XCTAssertEqual(m.lensModel, "Supreme Prime 29/T1.5")
