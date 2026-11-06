@@ -63,6 +63,10 @@ public enum ThumbnailGenerator {
             reasons.append(tr("ffmpeg non installato"))
         }
 
+        // X-OCN (RAW compresso Sony, es. VENICE): ffmpeg non lo decodifica; lo si dice in chiaro invece di un errore generico
+        if (clip.metadata["codec"] ?? "").uppercased().contains("X-OCN") {
+            reasons.insert(tr("I clip X-OCN (RAW compresso Sony) non si possono decodificare con ffmpeg: l'anteprima richiede il software Sony (RAW Viewer / Catalyst), non incluso."), at: 0)
+        }
         let reason = tr("Anteprima non disponibile: formato non decodificabile con gli strumenti installati.") + " " + reasons.joined(separator: " · ")
         cache.recordFailure(clipID: clip.id, reason: reason)
         throw MetadataError.toolFailed(reason)

@@ -168,7 +168,7 @@ final class CameraFamilyReaderTests: XCTestCase {
     }
 
     /// Struttura come negli esempi pubblici (ticket ffmpeg #5901, ExifTool forum): CreationDate, Device, Duration, LtcChangeTable, Acquisition/Group/Item.
-    /// I nomi delle voci di acquisizione di VENICE non sono verificati su un file vero.
+    /// (Nomi reali di VENICE: vedi `RealClipTests.testSonyVenice1XOCNWithSidecar`; l'angolo shutter è in 1/60 di grado.)
     func testSonyNonRealTimeMetaWithAcquisitionItems() throws {
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -178,11 +178,12 @@ final class CameraFamilyReaderTests: XCTestCase {
           <LtcChangeTable tcFps="25" halfStep="false"><LtcChange frameCount="0" value="00000000" status="increment"/></LtcChangeTable>
           <CreationDate value="2022-06-09T21:14:00Z"/>
           <Device manufacturer="Sony" modelName="MPC-3610" serialNo="000123"/>
+          <VideoFormat><VideoFrame videoCodec="X" captureFps="24.00p" formatFps="24p"/></VideoFormat>
           <AcquisitionRecord>
             <Group name="CameraUnitMetadataSet">
               <Item name="ISOSensitivity" value="800"/>
               <Item name="WhiteBalance" value="5600"/>
-              <Item name="ShutterSpeed_Angle" value="172.80"/>
+              <Item name="ShutterSpeed_Angle" value="10368"/>
               <Item name="CaptureGammaEquation" value="s-log3-cine"/>
             </Group>
             <Group name="LensUnitMetadataSet"><Item name="IrisFNumber" value="2.8"/></Group>

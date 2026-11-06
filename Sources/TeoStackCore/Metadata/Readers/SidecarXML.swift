@@ -95,9 +95,20 @@ enum SidecarMapper {
             }
             return nil
         }
-        m.cameraMake = attr("Device", "manufacturer") ?? text("Manufacturer")
-        m.cameraModel = attr("Device", "modelName") ?? text("ModelName")
-        m.cameraSerial = attr("Device", "serialNo") ?? text("SerialNo") ?? text("SerialNumber")
+        // Sony: «Camera» = la camera (es. MPC-3610), «Device» = il registratore (es. AXS-R7). Senza «Camera» (XAVC, FX3…) il «Device» è la camera.
+        if let cameraModel = ExifMapper.real(attr("Camera", "modelName")) {
+            m.cameraMake = ExifMapper.real(attr("Camera", "manufacturer"))
+            m.cameraModel = cameraModel
+            m.cameraSerial = ExifMapper.real(attr("Camera", "serialNo"))
+            m.firmware = ExifMapper.real(flat["NonRealTimeMeta/Camera/Element@software"])
+            if let recorder = ExifMapper.real(attr("Device", "modelName")) { m.extraColumns["recorder"] = recorder }
+        } else {
+            m.cameraMake = attr("Device", "manufacturer") ?? text("Manufacturer")
+            m.cameraModel = attr("Device", "modelName") ?? text("ModelName")
+            m.cameraSerial = attr("Device", "serialNo") ?? text("SerialNo") ?? text("SerialNumber")
+        }
+        // «<Lens manufacturer="" modelName="Supreme Prime 29/T1.5        "/>»: il nome della lente come lo scrive la camera (senza spazi in coda)
+        m.lensModel = ExifMapper.real(attr("Lens", "modelName"))
         m.creationDate = TagBag.date(attr("CreationDate", "value") ?? text("CreationDate"))
         if let codec = attr("VideoFrame", "videoCodec") { m.codec = codec }
         if let capture = attr("VideoFrame", "captureFps") {
@@ -109,20 +120,72 @@ enum SidecarMapper {
         }
         // «<Duration value="252"/>»: numero di fotogrammi (come lo leggono ffmpeg e telemetry-parser)
         if let frames = attr("Duration", "value").flatMap(Int.init), frames > 0 { m.frameCount = frames }
-        // Voci di acquisizione («Item» con nome e valore): solo i nomi del dizionario SMPTE RDD 18 che si ritrovano anche nei MOV (isosensitivity, whitebalance,
-        // shutterspeed_angle, irisfnumber). NON verificato su un XML vero di VENICE: i nomi esatti dipendono dal modello.
-        func item(_ name: String) -> String? {
-            for key in flat.keys.sorted() where key.hasPrefix("Item:") && key.lowercased().hasSuffix("/" + name.lowercased()) { return flat[key] }
+        // Voci di acquisizione («Item» con nome e valore). Nomi e unità verificati su un XML vero di VENICE (MPC-3610 + AXS-R7) e sullo schema EBU Tech 3349.
+        func item(_ names: String...) -> String? {
+            for name in names {
+                for key in flat.keys.sorted() where key.hasPrefix("Item:") && key.lowercased().hasSuffix("/" + name.lowercased()) { return flat[key] }
+            }
             return nil
         }
-        if let iso = ExifMapper.leadingNumber(item("ISOSensitivity")), iso > 0 { m.iso = String(Int(iso.rounded())) }
+        if let iso = ExifMapper.leadingNumber(item("ISOSensitivity", "ExposureIndexOfPhotoMeter")), iso > 0 { m.iso = String(Int(iso.rounded())) }
         if let k = ExifMapper.leadingNumber(item("WhiteBalance")), k > 0 { m.whiteBalance = "\(Int(k.rounded())) K" }
-        if let a = ExifMapper.leadingNumber(item("ShutterSpeed_Angle")), a > 0 { m.shutterAngle = "\(TagBag.format(a, decimals: 1))°" }
+        // Angolo dello shutter: in 1/60 di grado (EBU Tech 3349: 21600 = 360°; VENICE scrive 10800 per 180°). Il tempo (1/48…) si deriva dal frame rate di ripresa.
+        if let raw = ExifMapper.leadingNumber(item("ShutterSpeedAngle", "ShutterSpeed_Angle")), raw > 0 {
+            let angle = raw / 60
+            m.shutterAngle = "\(TagBag.format(angle, decimals: 1))°"
+            if let fps = m.extraColumns["sensorFPS"].flatMap(Double.init), fps > 0 {
+                let text = ExifMapper.shutterText(angle / 360 / fps)
+                if text.hasPrefix("1/") { m.shutter = text }
+            }
+        }
         if let f = ExifMapper.leadingNumber(item("IrisFNumber")), f > 0 { m.aperture = TagBag.format(f, decimals: 1) }
+        if let nd = ndFilter(item("NeutralDensityFilterWheelSetting")) { m.extraColumns["ndFilter"] = nd }
+        if let look = lookInfo(flat) { m.extraColumns["lookInfo"] = look }
         m.gamma = ExifMapper.real(item("CaptureGammaEquation"))
         m.colorSpace = ExifMapper.real(item("CaptureColorPrimaries"))
+        // «UserDescriptiveMetadata»: Meta name="Scene" content="12": solo i campi compilati
+        let meta = userMeta(flat)
+        if let c = meta["CameraIndex"] { m.extraColumns["cameraIndex"] = c }
+        if let r = meta["Reel"] { m.reel = (meta["CameraIndex"] ?? "") + r }
+        if let v = meta["Scene"] { m.extraColumns["scene"] = v }
+        if let v = meta["Take"] { m.extraColumns["take"] = v }
         for (k, v) in flat { m.rawFields["sidecar:" + k] = v }
         m.status = m.hasValues ? .read : .unsupported
         return m
+    }
+
+    /// Filtro ND: «NeutralDensityFilterWheelSetting» è il reciproco del rapporto di attenuazione (1 = «clear», 4 = 2 stop = ND 0.6, 8 = ND 0.9…; EBU Tech 3349).
+    static func ndFilter(_ raw: String?) -> String? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        guard let n = Double(raw), n >= 1 else { return raw }       // valore non previsto dallo schema: così come dichiarato
+        if n == 1 { return "Clear" }
+        return "ND \(TagBag.format(log10(n), decimals: 1))"
+    }
+
+    /// Look applicato in ripresa: la trasformazione prima del CDL (es. «LUT:SL3SG3tos709.cube» → «SL3SG3tos709.cube»); «(baked)» se è impresso nell'immagine.
+    static func lookInfo(_ flat: [String: String]) -> String? {
+        func value(_ name: String) -> String? {
+            for key in flat.keys.sorted() where key.hasPrefix("Item:") && key.hasSuffix("/" + name) {
+                let t = flat[key]?.trimmingCharacters(in: .whitespaces) ?? ""
+                return ["", "none", "unknown"].contains(t.lowercased()) ? nil : t
+            }
+            return nil
+        }
+        guard var look = value("PreCDLTransform") else { return nil }
+        if look.lowercased().hasPrefix("lut:") { look = String(look.dropFirst(4)) }
+        if look.isEmpty { return nil }
+        if value("LookProcessBaked")?.lowercased() == "true" { look += " (baked)" }
+        return look
+    }
+
+    /// «<Meta name="Scene" content="12"/>» → ["Scene": "12"] (voci vuote escluse).
+    static func userMeta(_ flat: [String: String]) -> [String: String] {
+        var out: [String: String] = [:]
+        let prefix = "NonRealTimeMeta/UserDescriptiveMetadata/Meta"
+        for (key, name) in flat where key.hasPrefix(prefix) && key.hasSuffix("@name") {
+            let base = String(key.dropLast("@name".count))
+            if let content = flat[base + "@content"]?.trimmingCharacters(in: .whitespaces), !content.isEmpty { out[name] = content }
+        }
+        return out
     }
 }

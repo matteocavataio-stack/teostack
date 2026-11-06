@@ -24,8 +24,8 @@ enum RealClip {
     }
 
     /// Un ClipFile le cui letture di ExifTool/ffprobe vengono dai JSON veri.
-    static func file(_ name: String, art: Bool = false) -> ClipFile {
-        let url = URL(fileURLWithPath: "/Volumes/CARD/" + name)
+    static func file(_ name: String, art: Bool = false, at location: URL? = nil) -> ClipFile {
+        let url = location ?? URL(fileURLWithPath: "/Volumes/CARD/" + name)
         let exif = json(name + ".exiftool.json")
         let ee = json(name + ".exiftool-ee.json")
         let probe = json(name + ".ffprobe.json")
@@ -37,6 +37,16 @@ enum RealClip {
     }
 
     static func read(_ name: String) -> ClipMetadata { ReaderRegistry.standard().read(file(name)) }
+
+    /// Come `read`, ma con il file XML della camera accanto al clip (come sulla scheda: `Clip/<nome>/<nome>.mxf` + `<nome>M01.xml`).
+    static func read(_ name: String, sidecar: String, clipFileName: String, sidecarName: String, folder: String) throws -> ClipMetadata {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("teostack-real-\(UUID().uuidString)")
+        let clipDir = root.appendingPathComponent(folder)
+        try FileManager.default.createDirectory(at: clipDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.copyItem(at: dir.appendingPathComponent(sidecar), to: clipDir.appendingPathComponent(sidecarName))
+        return ReaderRegistry.standard().read(file(name, at: clipDir.appendingPathComponent(clipFileName)))
+    }
 }
 
 /// Aspettative sui clip VERI dell'utente. Ogni valore è nei JSON reali (o derivato con una regola documentata); ciò che il file non dichiara è nil.
@@ -83,6 +93,29 @@ final class RealClipTests: XCTestCase {
         XCTAssertEqual(m.creationDate, "2022-06-09 21:14:00")
         XCTAssertEqual(m.rawFields["Track2:SampledWidth"], "8664")
         XCTAssertEqual(m.rawFields["ffprobe:format.tags.company_name"], "Sony")
+    }
+
+    /// VENICE (MPC-3610) con AXS-R7, X-OCN XT 6K: il file XML accanto al clip (…M01.xml) è la fonte di camera, lente e impostazioni.
+    func testSonyVenice1XOCNWithSidecar() throws {
+        let m = try RealClip.read("sony_venice1_xocn.mxf", sidecar: "sony_venice1_xocn.M01.xml", clipFileName: "G001C001_261106OJ.mxf", sidecarName: "G001C001_261106OJM01.xml", folder: "Clip/G001C001_261106OJ")
+        XCTAssertEqual(m.family, "Sony")
+        XCTAssertEqual(m.cameraMake, "Sony"); XCTAssertEqual(m.cameraModel, "MPC-3610", "la camera, non il registratore AXS-R7")
+        XCTAssertEqual(m.cameraSerial, "0012656"); XCTAssertEqual(m.firmware, "6.30")
+        XCTAssertEqual(m.extraColumns["recorder"], "AXS-R7")
+        XCTAssertEqual(m.lensModel, "Supreme Prime 29/T1.5")
+        XCTAssertEqual(m.iso, "500"); XCTAssertEqual(m.whiteBalance, "3200 K")
+        XCTAssertEqual(m.shutterAngle, "180°", "ShutterSpeedAngle = 10800 in 1/60 di grado (EBU Tech 3349)")
+        XCTAssertEqual(m.shutter, "1/48")
+        XCTAssertEqual(m.extraColumns["ndFilter"], "Clear", "NeutralDensityFilterWheelSetting = 1 → «clear»")
+        XCTAssertEqual(m.extraColumns["lookInfo"], "SL3SG3tos709.cube")
+        XCTAssertNil(m.extraColumns["tint"], "il file XML non contiene il tint: non si inventa")
+        XCTAssertEqual(m.extraColumns["cameraIndex"], "G"); XCTAssertEqual(m.reel, "G001")
+        XCTAssertEqual(m.extraColumns["sensorFPS"], "24")
+        XCTAssertEqual(m.gamma, "scene-linear")
+        XCTAssertEqual(m.frameCount, 536)
+        XCTAssertEqual(m.timecodeStart, "10:48:06:12")
+        XCTAssertEqual(m.width, 6054); XCTAssertEqual(m.height, 3192)
+        XCTAssertEqual(m.rawFields["sidecar:Item:SonyF65CameraMetadataSet/PreCDLTransform"], "LUT:SL3SG3tos709.cube")
     }
 
     func testDJIInspire3ProResRAW() {

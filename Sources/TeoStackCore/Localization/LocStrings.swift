@@ -203,6 +203,7 @@ enum LocStrings {
         ("Generale", "General", "General", "General"),
         ("Suono al termine", "Sound when finished", "Sonido al terminar", "So en acabar"),
         ("Un suono a fine offload (diverso se ci sono problemi) e il Dock rimbalza se l'app non è in primo piano.", "A sound when the offload ends (different if there are problems), and the Dock icon bounces if the app is in the background.", "Un sonido al terminar el offload (distinto si hay problemas) y el icono del Dock rebota si la app no está en primer plano.", "Un so en acabar l'offload (diferent si hi ha problemes) i la icona del Dock rebota si l'app no és en primer pla."),
+        ("I clip X-OCN (RAW compresso Sony) non si possono decodificare con ffmpeg: l'anteprima richiede il software Sony (RAW Viewer / Catalyst), non incluso.", "X-OCN clips (Sony compressed RAW) cannot be decoded by ffmpeg: a preview needs Sony software (RAW Viewer / Catalyst), which is not included.", "Los clips X-OCN (RAW comprimido de Sony) no se pueden decodificar con ffmpeg: la vista previa necesita el software de Sony (RAW Viewer / Catalyst), que no está incluido.", "Els clips X-OCN (RAW comprimit de Sony) no es poden descodificar amb ffmpeg: la vista prèvia necessita el programari de Sony (RAW Viewer / Catalyst), que no està inclòs."),
         ("Aspetto", "Appearance", "Apariencia", "Aparença"),
         ("Modelli pronti", "Ready-made themes", "Temas predefinidos", "Temes predefinits"),
         ("Scegli…", "Choose…", "Elegir…", "Tria…"),
