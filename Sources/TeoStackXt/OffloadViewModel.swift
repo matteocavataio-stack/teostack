@@ -298,6 +298,22 @@ final class OffloadViewModel: ObservableObject {
         engine?.cancel()
     }
 
+    /// Sospende l'offload (si ferma al prossimo blocco di dati) e `continueRun()` lo fa ripartire esattamente da dove si era fermato.
+    func pause() { engine?.pause() }
+    func continueRun() { engine?.resume() }
+    var isPaused: Bool { isRunning && snapshot.isPaused }
+
+    private var stallAlerted = false
+
+    /// Un solo segnale acustico quando un disco o il lettore smette di rispondere (il messaggio resta in evidenza finché dura il blocco).
+    private func handleStall(_ snap: OffloadSnapshot) {
+        if snap.stall != nil {
+            if !stallAlerted { stallAlerted = true; NSSound.beep() }
+        } else {
+            stallAlerted = false
+        }
+    }
+
     /// Registra l'offload nel bin PRIMA di iniziare. Se la registrazione fallisce non si parte.
     private func register(job: OffloadJob, binID: Int64) -> Bool {
         guard let store else {
@@ -340,6 +356,7 @@ final class OffloadViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self?.flushUpdates()
                 self?.snapshot = snap
+                self?.handleStall(snap)
             }
         }
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -364,6 +381,7 @@ final class OffloadViewModel: ObservableObject {
 
     private func finish(_ result: OffloadResult) {
         flushUpdates()
+        stallAlerted = false
         self.result = result
         runState = .idle
         engine = nil

@@ -26,7 +26,8 @@ final class ManualTests: XCTestCase {
         for term in ["Offload", "XXH64", "ASC MHL", "Importa media", "Leggi metadata", "Crea anteprime", "Esporta report", "Profilo", "Salva come",
                      "Percorsi salvati", "Schede collegate", "Espelli sorgente", "Svuota la sorgente", "Riprendi", "Importa log", "Esporta metadata", "ALE",
                      "Impostazioni", "Lingua", "art-cmd", "ExifTool", "ffprobe", "N/D", "MISMATCH", "teostackpart", "Shooting Day", "Contact Print",
-                     "Ripristina ordine e larghezze", "Comando + virgola", "Verifica durante la copia", "Sovrascrivi"] {
+                     "Ripristina ordine e larghezze", "Comando + virgola", "Verifica durante la copia", "Sovrascrivi",
+                     "Sospendi", "Continua", "Possibile blocco", "punto di ripresa"] {
             XCTAssertTrue(all.contains(term), "il manuale non parla di «\(term)»")
         }
     }

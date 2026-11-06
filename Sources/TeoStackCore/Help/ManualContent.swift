@@ -134,7 +134,7 @@ enum ManualContent {
             "**Destinazioni**: da 1 a 8. **Aggiungi destinazione** e poi **Scegli…** per ognuna. Sotto compare il percorso che verrà creato: la cartella scelta più il nome del bin.",
             "**Percorsi salvati**: il menu salva i percorsi che usi di solito («Salva i percorsi scelti»), li richiama per una destinazione, li applica tutti in una volta («Usa tutti i percorsi salvati») o li toglie.",
             "**Opzioni** (sotto la barra di avanzamento): vedi sotto. Il suono di fine offload si imposta in Impostazioni.",
-            "Premi **Avvia**. Con **Annulla** fermi tutto in qualsiasi momento.",
+            "Premi **Avvia**. Con **Sospendi** fermi la copia e con **Continua** riparte da dove si era fermata; con **Annulla** fermi tutto in qualsiasi momento.",
         ]),
         .h2("Le opzioni"),
         .table(header: ["Opzione", "Significato"], rows: [
@@ -159,8 +159,10 @@ enum ManualContent {
         ]),
         .h2("Annullare, riprendere, problemi"),
         .bullets([
+            "**Sospendi** ferma la copia al prossimo blocco di dati (pochi MB); **Continua** la fa ripartire esattamente da dove si era fermata. Dischi e file restano aperti: non scollegarli durante la pausa.",
             "**Annulla** rimuove i file parziali e le cartelle create dall'offload. I file già verificati restano.",
-            "**Riprendi** continua dai file già verificati (la memoria è nella cartella Journal): si ricopiano solo gli altri.",
+            "**Riprendi** continua un offload interrotto (errore, scheda staccata, blocco, programma chiuso) senza ripartire da zero: i file già verificati non si ricopiano e un file grande riparte dall'ultimo punto di ripresa (registrato circa ogni 1 GB), dopo aver riletto dal disco la parte già scritta e controllato che il suo hash coincida. Se non coincide, o se la sorgente è cambiata, quel file riparte da zero. Un file già copiato per intero e non ancora verificato viene solo verificato.",
+            "**Possibile blocco**: se un disco o il lettore di schede non risponde da più di 15 secondi compare un riquadro arancione che indica quale (sorgente o destinazione) e suona un avviso. Scollega e ricollega il lettore o il disco: appena risponde l'offload continua da solo. Se il programma resta bloccato, chiudilo e usa «Riprendi»: il lavoro già fatto non va perso.",
             "Se un **disco di destinazione sparisce** o si riempie, quella destinazione si interrompe con un messaggio chiaro e le altre continuano. L'app non ricrea mai il percorso di un disco scollegato sul disco di avvio.",
             "Se nella destinazione esiste già un file con lo stesso nome e contenuto diverso, **non viene toccato** e il file risulta in MISMATCH.",
             "Le date di modifica dei file e delle cartelle sono riportate sulle copie.",

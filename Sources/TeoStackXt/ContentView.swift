@@ -517,7 +517,8 @@ struct ControlBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 18) {
-                Text(vm.snapshot.phase.label).bold()
+                Text(vm.isPaused ? tr("In pausa") : vm.snapshot.phase.label).bold()
+                    .foregroundStyle(vm.isPaused ? Color.orange : Color.primary)
                 Text(tr("Lettura sorgente: {0}", Format.megabytesPerSecond(vm.snapshot.readSpeed)))
                 Text(tr("Tempo: {0}", Format.duration(vm.snapshot.elapsed)))
                 Text(tr("ETA: {0}", Format.duration(vm.snapshot.eta)))
@@ -527,6 +528,10 @@ struct ControlBar: View {
                 Spacer()
                 Button(tr("Riprendi")) { vm.resume() }
                     .disabled(vm.resumable == nil || vm.runState != .idle)
+                    .help(tr("Continua un offload interrotto (errore, scheda staccata, blocco, programma chiuso): i file già verificati non si ricopiano e un file grande riparte dall'ultimo punto di ripresa, dopo aver riletto dal disco la parte già scritta."))
+                Button(vm.isPaused ? tr("Continua") : tr("Sospendi")) { vm.isPaused ? vm.continueRun() : vm.pause() }
+                    .disabled(!vm.isRunning)
+                    .help(tr("Ferma la copia al prossimo blocco di dati e la fa ripartire esattamente da dove si era fermata. Dischi e file restano aperti: non scollegarli durante la pausa."))
                 Button(tr("Annulla")) { vm.cancel() }
                     .disabled(!vm.isRunning)
                 Button(tr("Avvia")) { vm.start() }
@@ -553,6 +558,17 @@ struct ControlBar: View {
                 Spacer()
             }
             .appFont(.callout)
+            if let stall = vm.snapshot.stall, vm.isRunning {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(tr("POSSIBILE BLOCCO: {0}", stall.message)).appFont(.callout, bold: true)
+                    Text(tr("Se non riparte, scollega e ricollega il lettore o il disco: appena risponde l'offload continua da solo. Se il programma resta bloccato, chiudilo e usa «Riprendi»: il lavoro già fatto non va perso."))
+                        .appFont(.caption)
+                }
+                .foregroundStyle(.white)
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.orange))
+            }
             if let result = vm.result { ResultBanner(result: result) }
         }
         .padding(12)

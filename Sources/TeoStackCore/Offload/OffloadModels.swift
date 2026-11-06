@@ -83,6 +83,17 @@ public struct DestFileResult: Codable, Equatable {
     public var message: String?
 }
 
+/// Punto di ripresa di un file in copia: i primi `offset` byte sono già stati letti dalla sorgente, scritti e sincronizzati su disco su ogni destinazione.
+/// Alla ripresa la parte già scritta viene RILETTA dal disco e il suo XXH64 confrontato con `prefixHash`: solo se coincide si continua da `offset`,
+/// altrimenti il file riparte da zero. Nessun dato non riletto viene mai considerato buono.
+public struct CopyCheckpoint: Codable, Equatable {
+    public var offset: Int64
+    /// Stato dell'hash XXH64 della sorgente dopo `offset` byte (per continuare il calcolo senza rileggere la parte già copiata).
+    public var hashState: Data
+    /// XXH64 dei primi `offset` byte della sorgente.
+    public var prefixHash: String
+}
+
 public struct FileResult: Codable {
     public var relativePath: String
     public var size: Int64
@@ -91,6 +102,8 @@ public struct FileResult: Codable {
     public var destinations: [DestFileResult]
     /// Data di modifica del file sulla sorgente (la stessa viene riportata sulle copie).
     public var modificationDate: Date?
+    /// Ultimo punto di ripresa registrato mentre il file era in copia (nil a file concluso).
+    public var checkpoint: CopyCheckpoint?
 }
 
 public enum OffloadOutcome: String, Codable {
@@ -151,6 +164,29 @@ public struct DestinationProgress {
     public var fatalError: String?
 }
 
+/// Un'operazione su disco che non risponde da troppo tempo (lettore di schede o disco bloccato, cavo, porta…).
+public struct StallWarning: Equatable {
+    public enum Kind: Equatable {
+        case sourceRead
+        case destinationWrite(Int)
+        case destinationVerify(Int)
+    }
+    public var kind: Kind
+    public var seconds: TimeInterval
+
+    public var message: String {
+        let s = Int(seconds.rounded())
+        switch kind {
+        case .sourceRead:
+            return tr("La sorgente (scheda o lettore) non risponde da {0} s. Il lettore di schede, il cavo o la porta potrebbero essere bloccati.", s)
+        case .destinationWrite(let d):
+            return tr("La destinazione {0} non risponde da {1} s durante la scrittura. Il disco, il cavo o la porta potrebbero essere bloccati.", d + 1, s)
+        case .destinationVerify(let d):
+            return tr("La destinazione {0} non risponde da {1} s durante la verifica. Il disco, il cavo o la porta potrebbero essere bloccati.", d + 1, s)
+        }
+    }
+}
+
 public struct OffloadSnapshot {
     public var phase: OffloadPhase = .idle
     public var currentFile: String?
@@ -162,6 +198,10 @@ public struct OffloadSnapshot {
     public var destinations: [DestinationProgress] = []
     public var elapsed: TimeInterval = 0
     public var eta: TimeInterval?          // della fase corrente
+    /// L'offload è in pausa (sospeso dall'utente): nessun dato viene letto o scritto finché non si continua.
+    public var isPaused = false
+    /// Presente quando un'operazione su disco non risponde da più della soglia (vedi `Configuration.stallThreshold`).
+    public var stall: StallWarning?
 
     public init() {}
 }

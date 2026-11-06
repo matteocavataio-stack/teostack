@@ -37,6 +37,15 @@ public final class OffloadEngine {
         public var deferredSyncThreshold: Int64 = 64 * 1024 * 1024
         /// Se presente, a offload riuscito su una destinazione si scrive la cartella `ascmhl` (ASC MHL 2.0) dentro la copia. nil = disattivato.
         public var ascMHL: ASCMHLOptions?
+        /// Ogni quanti byte letti di un file grande si registra un punto di ripresa (dati sincronizzati su disco): se l'offload si interrompe
+        /// (errore, scheda staccata, blocco, chiusura del programma) «Riprendi» continua da lì invece che da zero. 0 = nessun punto di ripresa.
+        public var checkpointInterval: Int64 = 1 << 30
+        /// Dopo quanti secondi senza risposta da disco o lettore si segnala un possibile blocco (`OffloadSnapshot.stall`).
+        public var stallThreshold: TimeInterval = 15
+        /// Solo per i test: chiamato dopo ogni blocco letto dalla sorgente (indice del file, byte letti finora).
+        public var afterChunk: ((Int, Int64) -> Void)?
+        /// Solo per i test: chiamato dentro ogni scrittura su una destinazione (indice della destinazione), per simulare un disco lento o bloccato.
+        public var duringWrite: ((Int) -> Void)?
         public init() {}
     }
 
@@ -83,6 +92,17 @@ public final class OffloadEngine {
     private var lastJournalSave = Date.distantPast
 
     private let resumeHashes: [String: String]   // hash sorgente registrati in un tentativo precedente
+    private let resumeCheckpoints: [String: CopyCheckpoint]   // punti di ripresa di un tentativo precedente (file con sorgente invariata)
+    private let sourceUnchanged: Set<String>     // file la cui sorgente ha ancora dimensione e data del tentativo precedente
+
+    // Pausa, sospensione e controllo dei blocchi
+    private let pauseCondition = NSCondition()
+    private var pauseFlag = false
+    private var pausedSince: Date?
+    private var pausedTotal: TimeInterval = 0
+    private var suspendFlag = false
+    private enum Activity: Hashable { case readSource, writeDest(Int), verifyDest(Int) }
+    private var activities: [Activity: Date] = [:]
 
     private struct VerifyItem {
         let fileIndex: Int
@@ -102,11 +122,18 @@ public final class OffloadEngine {
                        destinations: Array(repeating: blank, count: n), modificationDate: $0.modificationDate)
         }
         var hashes: [String: String] = [:]
+        var checkpoints: [String: CopyCheckpoint] = [:]
+        var unchanged = Set<String>()
         if let resume, resume.job.destinationRoots.map({ $0.standardizedFileURL.path }) == job.destinationRoots.map({ $0.standardizedFileURL.path }) {
             let previous = Dictionary(resume.files.map { ($0.relativePath, $0) }, uniquingKeysWith: { a, _ in a })
             for i in initial.indices {
                 guard let old = previous[initial[i].relativePath], old.size == initial[i].size,
                       old.destinations.count == n else { continue }
+                // Il registro salva le date al secondo: si accetta una differenza minore di un secondo.
+                if let a = old.modificationDate, let b = initial[i].modificationDate, abs(a.timeIntervalSince(b)) < 1 {
+                    unchanged.insert(initial[i].relativePath)
+                    if let cp = old.checkpoint { checkpoints[initial[i].relativePath] = cp }
+                }
                 if let h = old.sourceHash { hashes[initial[i].relativePath] = h }
                 for d in 0..<n where old.destinations[d].status == .ok {
                     // Un OK precedente vale solo se il file definitivo esiste ancora con la stessa dimensione.
@@ -120,6 +147,8 @@ public final class OffloadEngine {
         }
         results = initial
         resumeHashes = hashes
+        resumeCheckpoints = checkpoints
+        sourceUnchanged = unchanged
         deadReason = Array(repeating: nil, count: n)
         createdDirs = Array(repeating: [], count: n)
         partialPaths = Array(repeating: [], count: n)
@@ -140,7 +169,63 @@ public final class OffloadEngine {
 
     public func cancel() {
         lock.lock(); cancelFlag = true; lock.unlock()
+        wakePausedThreads()
     }
+
+    /// Interrompe l'offload CONSERVANDO i file parziali e il punto di ripresa (per «Riprendi» più tardi, anche dopo aver chiuso il programma).
+    /// A differenza di `cancel()` non rimuove nulla dalle destinazioni.
+    public func suspend() {
+        lock.lock(); suspendFlag = true; cancelFlag = true; lock.unlock()
+        wakePausedThreads()
+    }
+
+    private var isSuspended: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return suspendFlag
+    }
+
+    /// Mette in pausa: la lettura, la scrittura e la verifica si fermano al prossimo blocco (pochi MB) e restano ferme finché non si chiama `resume()`.
+    /// Dischi e file restano aperti: si continua esattamente da dove ci si è fermati.
+    public func pause() {
+        lock.lock()
+        if !pauseFlag { pauseFlag = true; pausedSince = Date() }
+        lock.unlock()
+    }
+
+    public func resume() {
+        lock.lock()
+        if pauseFlag {
+            pauseFlag = false
+            if let since = pausedSince { pausedTotal += Date().timeIntervalSince(since) }
+            pausedSince = nil
+            // le operazioni in corso ripartono ora: il tempo di pausa non conta come blocco
+            let now = Date()
+            for key in activities.keys { activities[key] = now }
+        }
+        lock.unlock()
+        wakePausedThreads()
+    }
+
+    public var isPaused: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return pauseFlag
+    }
+
+    private func wakePausedThreads() {
+        pauseCondition.lock(); pauseCondition.broadcast(); pauseCondition.unlock()
+    }
+
+    /// Si ferma qui finché l'offload è in pausa (esce subito se annullato o sospeso).
+    private func waitIfPaused() {
+        pauseCondition.lock()
+        while isPaused && !isCancelled { pauseCondition.wait(until: Date().addingTimeInterval(0.5)) }
+        pauseCondition.unlock()
+    }
+
+    // Controllo dei blocchi: si ricorda da quando è in corso ogni operazione su disco.
+    private func beginActivity(_ a: Activity) { lock.lock(); activities[a] = Date(); lock.unlock() }
+    private func touchActivity(_ a: Activity) { lock.lock(); if activities[a] != nil { activities[a] = Date() }; lock.unlock() }
+    private func endActivity(_ a: Activity) { lock.lock(); activities[a] = nil; lock.unlock() }
 
     private var isCancelled: Bool {
         lock.lock(); defer { lock.unlock() }
@@ -184,7 +269,8 @@ public final class OffloadEngine {
         let cancelled = isCancelled
         var mhl: [ASCMHLOutcome?] = []
         if cancelled {
-            cleanUpPartialFiles()
+            // Sospeso: i file parziali e i punti di ripresa restano per «Riprendi». Annullato: si toglie ogni traccia.
+            if !isSuspended { cleanUpPartialFiles() }
         } else {
             applyDirectoryDates()
             if let options = configuration.ascMHL {
@@ -289,6 +375,7 @@ public final class OffloadEngine {
     private func copyPhase() {
         let pool = ChunkPool(chunkSize: configuration.chunkSize, count: configuration.bufferCount)
         for i in scan.files.indices {
+            waitIfPaused()
             if isCancelled { return }
             copyFile(index: i, pool: pool)
         }
@@ -298,7 +385,9 @@ public final class OffloadEngine {
         let file = scan.files[i]
         let n = job.destinationRoots.count
         var targets: [Target] = []
-        var verifyOnly: [Int] = []
+        var verifyOnly: [Int] = []       // il file definitivo esiste già: solo verificato
+        var partialVerify: [Int] = []    // ripresa: la copia parziale è già completa, solo da verificare
+        var needsCopy: [Int] = []        // destinazioni da scrivere (da zero o riprendendo da un punto di ripresa)
 
         for d in 0..<n {
             if getStatus(i, d) == .ok { continue }
@@ -318,10 +407,63 @@ public final class OffloadEngine {
                     setStatus(i, d, .copied, message: tr("File già presente in destinazione: non copiato, solo verificato"))
                     continue
                 }
+                if hasCompletePartial(i, tempPath) {
+                    // Ripresa: la copia era già finita, mancava la verifica. Si verifica, non si ricopia.
+                    partialVerify.append(d)
+                    registerPartial(d, tempPath)
+                    setStatus(i, d, .copied, message: tr("Ripresa: copia già completa, solo verificata"))
+                    continue
+                }
                 try ensureDirectory((finalPath as NSString).deletingLastPathComponent, destination: d)
-                let fd = try DiskIO.openForWriting(path: tempPath)
+                needsCopy.append(d)
+            } catch let e as DiskIOError {
+                fail(i, d, e)
+            } catch {
+                setStatus(i, d, .error, message: error.localizedDescription)
+            }
+        }
+        verifyOnly = (0..<n).filter { d in getStatus(i, d) == .copied && !partialVerify.contains(d) }
+
+        // Tutto ciò che serve è già scritto e il suo hash è noto (stessa sorgente del tentativo precedente): non occorre rileggere la sorgente.
+        if needsCopy.isEmpty && verifyOnly.isEmpty && !partialVerify.isEmpty, let known = resumeHashes[file.relativePath],
+           sourceUnchanged.contains(file.relativePath) {
+            setCurrentFile(file.relativePath)
+            lock.lock()
+            results[i].sourceHash = known
+            results[i].checkpoint = nil
+            filesCopied += 1
+            journalDirty = true
+            lock.unlock()
+            creditProgress(read: file.size, written: partialVerify.map { ($0, file.size) })
+            for d in partialVerify {
+                queueVerification(d, VerifyItem(fileIndex: i, path: destPath(d, file.relativePath) + OffloadEngine.partialSuffix, isPartial: true))
+            }
+            return
+        }
+
+        // Punto di ripresa: la parte già scritta viene riletta dal disco e confrontata con l'hash registrato; solo se coincide si continua da lì.
+        var resumePoint: CopyCheckpoint?
+        if !needsCopy.isEmpty {
+            switch validResumePoint(i, destinations: needsCopy) {
+            case .cancelled: return
+            case .none: break
+            case .valid(let cp): resumePoint = cp
+            }
+        }
+
+        for d in needsCopy {
+            let tempPath = destPath(d, file.relativePath) + OffloadEngine.partialSuffix
+            do {
+                beginActivity(.writeDest(d))
+                defer { endActivity(.writeDest(d)) }
+                let fd: Int32
+                if let resumePoint {
+                    fd = try DiskIO.openForResuming(path: tempPath, at: resumePoint.offset)
+                } else {
+                    fd = try DiskIO.openForWriting(path: tempPath)
+                }
                 registerPartial(d, tempPath)
-                targets.append(Target(d: d, finalPath: finalPath, tempPath: tempPath, fd: fd))
+                targets.append(Target(d: d, finalPath: destPath(d, file.relativePath), tempPath: tempPath, fd: fd))
                 setStatus(i, d, .copying)
             } catch let e as DiskIOError {
                 fail(i, d, e)
@@ -329,41 +471,61 @@ public final class OffloadEngine {
                 setStatus(i, d, .error, message: error.localizedDescription)
             }
         }
-        verifyOnly = (0..<n).filter { d in getStatus(i, d) == .copied }
-        if targets.isEmpty && verifyOnly.isEmpty { return }
+        if targets.isEmpty && verifyOnly.isEmpty && partialVerify.isEmpty { return }
+        // Se non tutte le destinazioni da scrivere si sono aperte, un punto di ripresa vale comunque per quelle aperte (stesso offset).
 
         setCurrentFile(file.relativePath)
         let sourcePath = job.sourceURL.standardizedFileURL.path + "/" + file.relativePath
 
-        func abort(_ message: String) {
+        /// `keepPartial`: la copia parziale e il suo punto di ripresa restano per «Riprendi» (solo se esiste un punto di ripresa valido).
+        func abort(_ message: String, keepPartial: Bool = false) {
+            let keep = keepPartial && hasCheckpoint(i)
             for t in targets {
                 close(t.fd)
-                removePartial(t.d, t.tempPath)
+                if !keep { removePartial(t.d, t.tempPath) }
                 setStatus(i, t.d, .error, message: message)
             }
+            if !keep { clearCheckpoint(i) }
             for d in verifyOnly { setStatus(i, d, .error, message: message) }
+            for d in partialVerify { setStatus(i, d, .error, message: message) }
         }
 
         let srcFD: Int32
         do {
+            beginActivity(.readSource)
+            defer { endActivity(.readSource) }
             srcFD = try DiskIO.openForReading(path: sourcePath, uncached: true)
         } catch {
-            abort(tr("Sorgente non leggibile: {0}", error))
+            abort(tr("Sorgente non leggibile: {0}", error), keepPartial: true)
             return
         }
 
         let hasher = XXH64Hasher()
         var offset: Int64 = 0
+        if let resumePoint {
+            if hasher.restore(resumePoint.hashState), lseek(srcFD, off_t(resumePoint.offset), SEEK_SET) == off_t(resumePoint.offset) {
+                offset = resumePoint.offset
+                creditProgress(read: offset, written: targets.map { ($0.d, offset) })
+            } else {
+                close(srcFD)
+                abort(tr("Impossibile riprendere la copia da metà file: il file riparte da zero al prossimo tentativo."))
+                return
+            }
+        }
+        var lastCheckpoint = offset
         var readError: DiskIOError?
         var cancelledMidFile = false
         let group = DispatchGroup()
 
         while true {
+            waitIfPaused()
             if isCancelled { cancelledMidFile = true; break }
-            if !targets.isEmpty && verifyOnly.isEmpty && targets.allSatisfy({ $0.error != nil }) { break }
+            if !targets.isEmpty && verifyOnly.isEmpty && partialVerify.isEmpty && targets.allSatisfy({ $0.error != nil }) { break }
             let chunk = pool.take()
             let got: Int
             do {
+                beginActivity(.readSource)
+                defer { endActivity(.readSource) }
                 got = try DiskIO.readFully(fd: srcFD, into: chunk.buffer, count: configuration.chunkSize, path: sourcePath)
             } catch let e as DiskIOError {
                 readError = e
@@ -390,6 +552,9 @@ public final class OffloadEngine {
                         defer { chunk.release() }
                         if t.error != nil { return }
                         do {
+                            beginActivity(.writeDest(t.d))
+                            defer { endActivity(.writeDest(t.d)) }
+                            configuration.duringWrite?(t.d)
                             try DiskIO.writeFully(fd: t.fd, from: chunk.buffer, count: chunk.count, path: t.tempPath)
                             addWritten(t.d, chunk.count)
                         } catch let e as DiskIOError {
@@ -400,22 +565,37 @@ public final class OffloadEngine {
                     }
                 }
             }
+            configuration.afterChunk?(i, offset)
+            // Punto di ripresa: tutti i dati scritti finora sono sul disco e il loro hash è registrato.
+            if configuration.checkpointInterval > 0, !targets.isEmpty, offset < file.size,
+               offset - lastCheckpoint >= configuration.checkpointInterval {
+                group.wait()
+                if recordCheckpoint(i, targets: targets, hasher: hasher, offset: offset) { lastCheckpoint = offset }
+            }
             if got < configuration.chunkSize { break }
         }
         group.wait()
         close(srcFD)
 
         if cancelledMidFile {
-            for t in targets { close(t.fd) }   // i file parziali vengono rimossi da cleanUpPartialFiles()
+            // Sospeso (non annullato): si registra l'ultimo punto di ripresa e i file parziali restano.
+            let keep = isSuspended && !targets.isEmpty && offset > 0 && offset < file.size
+                && recordCheckpoint(i, targets: targets, hasher: hasher, offset: offset)
+            for t in targets {
+                close(t.fd)
+                if !keep { removePartial(t.d, t.tempPath) }
+            }
+            if !keep { clearCheckpoint(i) }
             for d in verifyOnly { setStatus(i, d, .pending) }
+            for d in partialVerify { setStatus(i, d, .copied) }   // la copia parziale completa resta: alla ripresa si verifica soltanto
             for t in targets { setStatus(i, t.d, .pending) }
             return
         }
         if let readError {
-            abort(tr("Errore di lettura della sorgente: {0}", readError))
+            abort(tr("Errore di lettura della sorgente: {0}", readError), keepPartial: true)
             return
         }
-        if targets.allSatisfy({ $0.error != nil }) && verifyOnly.isEmpty && !targets.isEmpty && offset != file.size {
+        if targets.allSatisfy({ $0.error != nil }) && verifyOnly.isEmpty && partialVerify.isEmpty && !targets.isEmpty && offset != file.size {
             // Interrotto prima della fine perché tutte le destinazioni sono fallite: mostrare gli errori di scrittura.
         } else if offset != file.size {
             abort(tr("La dimensione della sorgente è cambiata durante la lettura (attesi {0} byte, letti {1}).", file.size, offset))
@@ -437,16 +617,24 @@ public final class OffloadEngine {
         lock.unlock()
 
         for d in verifyOnly { queueVerification(d, VerifyItem(fileIndex: i, path: destPath(d, file.relativePath), isPartial: false)) }
+        for d in partialVerify {
+            creditProgress(read: 0, written: [(d, file.size)])
+            queueVerification(d, VerifyItem(fileIndex: i, path: destPath(d, file.relativePath) + OffloadEngine.partialSuffix, isPartial: true))
+        }
 
         let deferSync = file.size < configuration.deferredSyncThreshold
+        var keptForResume = false
         for t in targets {
             if let e = t.error {
                 close(t.fd)
-                removePartial(t.d, t.tempPath)
+                // Errore di scrittura su questa destinazione: se c'è un punto di ripresa la copia parziale resta (disco pieno liberato, disco ricollegato…).
+                if hasCheckpoint(i) { keptForResume = true } else { removePartial(t.d, t.tempPath) }
                 fail(i, t.d, e)
                 continue
             }
             do {
+                beginActivity(.writeDest(t.d))
+                defer { endActivity(.writeDest(t.d)) }
                 if deferSync { try DiskIO.syncData(fd: t.fd, path: t.tempPath) } else { try DiskIO.flushToDisk(fd: t.fd, path: t.tempPath) }
                 if close(t.fd) != 0 { throw DiskIOError(code: errno, operation: tr("Chiusura file"), path: t.tempPath) }
                 try DiskIO.applyTimes(DiskIO.FileTimes(modification: file.modificationDate, creation: file.creationDate),
@@ -462,6 +650,129 @@ public final class OffloadEngine {
                 setStatus(i, t.d, .error, message: error.localizedDescription)
             }
         }
+        // File concluso su tutte le destinazioni: il punto di ripresa non serve più (resta solo se una copia parziale è conservata per «Riprendi»).
+        if !keptForResume { clearCheckpoint(i) }
+    }
+
+    // MARK: Ripresa da metà file
+
+    private enum ResumeDecision { case valid(CopyCheckpoint), none, cancelled }
+
+    /// Una copia parziale con la dimensione completa del file e un hash sorgente già noto (stessa sorgente): resta solo da verificare.
+    private func hasCompletePartial(_ i: Int, _ tempPath: String) -> Bool {
+        let file = scan.files[i]
+        guard resumeHashes[file.relativePath] != nil, sourceUnchanged.contains(file.relativePath),
+              let st = try? DiskIO.lstatInfo(path: tempPath), st.isRegular, st.size == file.size else { return false }
+        return true
+    }
+
+    /// Controlla che il punto di ripresa registrato sia ancora buono su OGNI destinazione da scrivere: sorgente invariata, file parziali presenti e lunghi
+    /// almeno `offset`, e — soprattutto — i primi `offset` byte riletti dal disco hanno l'XXH64 registrato. Altrimenti il file riparte da zero.
+    private func validResumePoint(_ i: Int, destinations: [Int]) -> ResumeDecision {
+        let file = scan.files[i]
+        guard let cp = resumeCheckpoints[file.relativePath], cp.offset > 0, cp.offset < file.size,
+              sourceUnchanged.contains(file.relativePath) else { return .none }
+        // la parte di stato salvata deve riprodurre l'hash registrato
+        let probe = XXH64Hasher()
+        guard probe.restore(cp.hashState), probe.hexDigest() == cp.prefixHash else { return .none }
+        var paths: [Int: String] = [:]
+        for d in destinations {
+            let path = destPath(d, file.relativePath) + OffloadEngine.partialSuffix
+            guard let st = try? DiskIO.lstatInfo(path: path), st.isRegular, st.size >= cp.offset else { return .none }
+            paths[d] = path
+        }
+        for d in destinations {
+            setStatus(i, d, .copying, message: tr("Ripresa: ricontrollo la parte già copiata ({0})", Format.bytes(cp.offset)))
+        }
+        setCurrentFile(file.relativePath)
+        let outcomes = Outcomes(count: destinations.count)
+        DispatchQueue.concurrentPerform(iterations: destinations.count) { k in
+            let d = destinations[k]
+            beginActivity(.verifyDest(d))
+            defer { endActivity(.verifyDest(d)) }
+            do {
+                let (hash, bytes) = try FileVerifier.hash(path: paths[d]!, uncached: true, bufferSize: configuration.verifyBufferSize, limit: cp.offset,
+                                                          isCancelled: { self.waitIfPaused(); return self.isCancelled },
+                                                          onProgress: { _ in self.touchActivity(.verifyDest(d)) })
+                outcomes.set(k, bytes == cp.offset && hash == cp.prefixHash ? .good : .bad)
+            } catch is CancellationError {
+                outcomes.set(k, .cancelled)
+            } catch {
+                outcomes.set(k, .bad)
+            }
+        }
+        if outcomes.contains(.cancelled) {
+            for d in destinations { setStatus(i, d, .pending) }
+            return .cancelled
+        }
+        guard outcomes.all(.good) else {
+            for d in destinations { setStatus(i, d, .pending, message: nil) }
+            return .none
+        }
+        return .valid(cp)
+    }
+
+    private final class Outcomes {
+        enum Value { case unset, good, bad, cancelled }
+        private var values: [Value]
+        private let lock = NSLock()
+        init(count: Int) { values = Array(repeating: .unset, count: count) }
+        func set(_ k: Int, _ v: Value) { lock.lock(); values[k] = v; lock.unlock() }
+        func contains(_ v: Value) -> Bool { lock.lock(); defer { lock.unlock() }; return values.contains(v) }
+        func all(_ v: Value) -> Bool { lock.lock(); defer { lock.unlock() }; return values.allSatisfy { $0 == v } }
+    }
+
+    /// Registra un punto di ripresa: dati già scritti sincronizzati su ogni destinazione viva, stato dell'hash e hash dei primi `offset` byte.
+    /// Chiamare solo con tutte le scritture accodate già concluse (`group.wait()`).
+    private func recordCheckpoint(_ i: Int, targets: [Target], hasher: XXH64Hasher, offset: Int64) -> Bool {
+        let live = targets.filter { $0.error == nil }
+        guard !live.isEmpty, let state = hasher.exportState() else { return false }
+        for t in live {
+            beginActivity(.writeDest(t.d))
+            defer { endActivity(.writeDest(t.d)) }
+            do { try DiskIO.flushToDisk(fd: t.fd, path: t.tempPath) } catch let e as DiskIOError {
+                t.error = e
+                return false
+            } catch {
+                t.error = DiskIOError(code: EIO, operation: tr("Sincronizzazione su disco"), path: t.tempPath)
+                return false
+            }
+        }
+        let checkpoint = CopyCheckpoint(offset: offset, hashState: state, prefixHash: hasher.hexDigest())
+        lock.lock()
+        results[i].checkpoint = checkpoint
+        journalDirty = true
+        lock.unlock()
+        saveJournal(.running, force: true)
+        return true
+    }
+
+    private func hasCheckpoint(_ i: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return results[i].checkpoint != nil
+    }
+
+    private func clearCheckpoint(_ i: Int) {
+        lock.lock()
+        if results[i].checkpoint != nil { results[i].checkpoint = nil; journalDirty = true }
+        lock.unlock()
+    }
+
+    /// Conta come già fatti i byte che una ripresa non rilegge/riscrive, senza falsare le velocità (le medie mobili ripartono da qui).
+    private func creditProgress(read: Int64, written: [(Int, Int64)]) {
+        lock.lock()
+        let elapsed = Date().timeIntervalSince(startedAt) - pausedTotal
+        if read > 0 {
+            readBytes += read
+            readRate = RateWindow(window: configuration.rateWindow)
+            readRate.add(time: elapsed, value: readBytes)
+        }
+        for (d, bytes) in written where bytes > 0 {
+            writtenBytes[d] += bytes
+            writeRates[d] = RateWindow(window: configuration.rateWindow)
+            writeRates[d].add(time: elapsed, value: writtenBytes[d])
+        }
+        lock.unlock()
     }
 
     // MARK: Fase di verifica
@@ -499,6 +810,7 @@ public final class OffloadEngine {
 
     private func verifyDestination(_ d: Int) {
         while true {
+            waitIfPaused()
             if isCancelled { return }
             let next = nextVerifyItem(d)
             guard let item = next.item else {
@@ -511,12 +823,14 @@ public final class OffloadEngine {
             let size = scan.files[i].size
             setStatus(i, d, .verifying)
             if currentPhase == .verifying { setCurrentFile(scan.files[i].relativePath) }
+            beginActivity(.verifyDest(d))
+            defer { endActivity(.verifyDest(d)) }
             do {
                 if item.needsDeviceFlush { try flushDeviceCacheIfNeeded(d) }
                 let (hash, bytes) = try FileVerifier.hash(path: item.path, uncached: true,
                                                           bufferSize: configuration.verifyBufferSize,
-                                                          isCancelled: { self.isCancelled },
-                                                          onProgress: { self.addVerified(d, $0) })
+                                                          isCancelled: { self.waitIfPaused(); return self.isCancelled },
+                                                          onProgress: { self.addVerified(d, $0); self.touchActivity(.verifyDest(d)) })
                 if bytes != size {
                     setStatus(i, d, .mismatch, message: tr("Dimensione riletta {0} byte, attesa {1} byte", bytes, size), hash: hash)
                 } else if hash != sourceHash {
@@ -562,6 +876,7 @@ public final class OffloadEngine {
         lock.lock()
         partialPaths = Array(repeating: [], count: partials.count)
         for i in results.indices {
+            results[i].checkpoint = nil
             for d in results[i].destinations.indices {
                 switch results[i].destinations[d].status {
                 case .copying, .copied, .verifying, .mismatch:
@@ -752,8 +1067,10 @@ public final class OffloadEngine {
 
     private func makeSnapshot(sampleRates: Bool) -> OffloadSnapshot {
         lock.lock(); defer { lock.unlock() }
-        let elapsed = Date().timeIntervalSince(startedAt)
-        if sampleRates {
+        let now = Date()
+        // il tempo in pausa non conta (né per la durata né per le velocità)
+        let elapsed = now.timeIntervalSince(startedAt) - pausedTotal - (pausedSince.map { now.timeIntervalSince($0) } ?? 0)
+        if sampleRates && !pauseFlag {
             readRate.add(time: elapsed, value: readBytes)
             for d in writeRates.indices {
                 writeRates[d].add(time: elapsed, value: writtenBytes[d])
@@ -769,6 +1086,22 @@ public final class OffloadEngine {
         snap.filesTotal = results.count
         snap.filesCopied = filesCopied
         snap.elapsed = elapsed
+        snap.isPaused = pauseFlag
+        if !pauseFlag, phase != .finished {
+            // l'operazione su disco ferma da più tempo (oltre la soglia) è quella da segnalare
+            var worst: (Activity, TimeInterval)?
+            for (activity, since) in activities {
+                let age = now.timeIntervalSince(since)
+                if age >= configuration.stallThreshold, age > (worst?.1 ?? 0) { worst = (activity, age) }
+            }
+            if let (activity, age) = worst {
+                switch activity {
+                case .readSource: snap.stall = StallWarning(kind: .sourceRead, seconds: age)
+                case .writeDest(let d): snap.stall = StallWarning(kind: .destinationWrite(d), seconds: age)
+                case .verifyDest(let d): snap.stall = StallWarning(kind: .destinationVerify(d), seconds: age)
+                }
+            }
+        }
         var etas: [TimeInterval?] = []
         for d in job.destinationRoots.indices {
             var p = DestinationProgress(root: job.destinationRoots[d])
@@ -811,7 +1144,7 @@ public final class OffloadEngine {
         lock.lock(); defer { lock.unlock() }
         return OffloadResult(job: job, outcome: outcome, files: results, preflightErrors: preflightErrors,
                              destinationErrors: deadReason, skippedAlreadyVerified: skippedAlreadyVerified,
-                             elapsed: Date().timeIntervalSince(startedAt))
+                             elapsed: Date().timeIntervalSince(startedAt) - pausedTotal)
     }
 
     private func saveJournalIfDue() {

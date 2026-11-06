@@ -75,6 +75,19 @@ public enum DiskIO {
         return fd
     }
 
+    /// Riapre un file parziale per CONTINUARE a scriverlo da `offset`: scarta ciò che segue quel punto e si posiziona lì (nessuna creazione, nessun troncamento a zero).
+    public static func openForResuming(path: String, at offset: Int64) throws -> Int32 {
+        let fd = open(path, O_WRONLY)
+        if fd < 0 { throw DiskIOError(code: errno, operation: tr("Apertura per riprendere la copia"), path: path) }
+        if ftruncate(fd, off_t(offset)) != 0 || lseek(fd, off_t(offset), SEEK_SET) != off_t(offset) {
+            let code = errno
+            close(fd)
+            throw DiskIOError(code: code, operation: tr("Apertura per riprendere la copia"), path: path)
+        }
+        disableCaching(fd: fd)
+        return fd
+    }
+
     public static func disableCaching(fd: Int32) {
         #if canImport(Darwin)
         _ = fcntl(fd, F_NOCACHE, 1)

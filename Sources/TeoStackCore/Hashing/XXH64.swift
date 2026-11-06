@@ -16,6 +16,26 @@ public final class XXH64Hasher {
         if let state { XXH64_freeState(state) }
     }
 
+    /// Stato dell'hash in corso (serve a riprendere una copia da metà file). Valido solo per la stessa versione di xxHash: `restore` ne controlla la dimensione.
+    public func exportState() -> Data? {
+        let size = teo_xxh64_state_size()
+        var out = Data(count: size)
+        let written = out.withUnsafeMutableBytes { raw -> Int in
+            guard let base = raw.bindMemory(to: UInt8.self).baseAddress else { return 0 }
+            return teo_xxh64_export_state(state, base, size)
+        }
+        return written == size ? out : nil
+    }
+
+    /// Ripristina uno stato salvato con `exportState`. false se la dimensione non corrisponde (stato di un'altra versione): in quel caso non si usa.
+    @discardableResult
+    public func restore(_ saved: Data) -> Bool {
+        saved.withUnsafeBytes { raw -> Bool in
+            guard let base = raw.bindMemory(to: UInt8.self).baseAddress else { return false }
+            return teo_xxh64_import_state(state, base, saved.count) != 0
+        }
+    }
+
     public func reset() {
         _ = XXH64_reset(state, 0)
     }

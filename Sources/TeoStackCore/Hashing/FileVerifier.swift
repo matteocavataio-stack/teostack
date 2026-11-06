@@ -7,10 +7,12 @@ public enum FileVerifier {
 
     /// Legge il file per intero (F_NOCACHE se `uncached`), calcola XXH64 e restituisce (hash, byte letti).
     /// La lettura e il calcolo dell'hash avvengono in parallelo (un thread legge il blocco successivo mentre l'altro calcola l'hash del precedente).
+    /// Con `limit` si leggono solo i primi `limit` byte (per ricontrollare la parte già scritta di una copia interrotta).
     /// `onProgress` riceve i byte appena letti; `isCancelled` interrompe la lettura (lancia CancellationError).
     public static func hash(path: String,
                             uncached: Bool,
                             bufferSize: Int = defaultBufferSize,
+                            limit: Int64? = nil,
                             isCancelled: () -> Bool = { false },
                             onProgress: (Int) -> Void = { _ in }) throws -> (hash: String, bytes: Int64) {
         let fd = try DiskIO.openForReading(path: path, uncached: uncached)
@@ -33,9 +35,19 @@ public enum FileVerifier {
                 freeSlots.wait()
                 lock.lock(); let stopped = stop; lock.unlock()
                 if stopped { return }
+                var want = bufferSize
+                if let limit {
+                    let remaining = limit - offset
+                    if remaining <= 0 {
+                        lock.lock(); queue.append((slot, 0)); lock.unlock()
+                        filledSlots.signal()
+                        return
+                    }
+                    want = Int(min(Int64(bufferSize), remaining))
+                }
                 let n: Int
                 do {
-                    n = try DiskIO.readFully(fd: fd, into: buffers[slot], count: bufferSize, path: path)
+                    n = try DiskIO.readFully(fd: fd, into: buffers[slot], count: want, path: path)
                 } catch {
                     lock.lock(); readError = error; queue.append((slot, -1)); lock.unlock()
                     filledSlots.signal()
@@ -45,7 +57,7 @@ public enum FileVerifier {
                 offset += Int64(n)
                 lock.lock(); queue.append((slot, n)); lock.unlock()
                 filledSlots.signal()
-                if n < bufferSize { return }
+                if n < want { return }
                 slot = (slot + 1) % bufferCount
             }
         }
@@ -55,6 +67,9 @@ public enum FileVerifier {
             lock.lock(); stop = true; lock.unlock()
             for _ in 0..<bufferCount { freeSlots.signal() }
             reader.wait()
+            // Un semaforo non può essere liberato con un valore inferiore a quello iniziale (libdispatch lo considera un errore e il programma si chiude):
+            // il lettore, svegliato per uscire, ne ha consumato uno. Si riporta il valore sopra l'iniziale.
+            for _ in 0..<bufferCount { freeSlots.signal() }
         }
 
         let hasher = XXH64Hasher()
