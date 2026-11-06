@@ -192,9 +192,12 @@ enum SidecarMapper {
     /// Nome commerciale dei modelli Sony dal codice che la camera scrive nell'XML (il codice resta in `rawFields`). Solo codici confermati.
     static let sonyCameraNames: [String: String] = ["MPC-3610": "VENICE 1"]
 
-    /// «F55_X-OCN_XT_6K_17:9» (etichetta interna Sony della famiglia F55/VENICE) → «X-OCN XT 6K 17:9»: il prefisso «F55_» non è la camera.
+    /// «F55_X-OCN_XT_6K_17:9» → «X-OCN XT»: solo il codec. «F55_» è un'etichetta interna Sony (non il nome della camera); «6K» e «17:9» sono risoluzione e
+    /// proporzioni, che l'app mostra nelle loro colonne. Il testo originale resta in `rawFields`.
     static func codecName(_ declared: String) -> String {
         guard declared.hasPrefix("F55_") else { return declared }
-        return String(declared.dropFirst(4)).replacingOccurrences(of: "_", with: " ")
+        let tokens = declared.dropFirst(4).split(separator: "_").map(String.init)
+        let codec = tokens.prefix { $0.range(of: #"^\d+[Kk]$"#, options: .regularExpression) == nil && !$0.contains(":") }
+        return codec.isEmpty ? declared : codec.joined(separator: " ")
     }
 }
